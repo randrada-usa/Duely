@@ -11,7 +11,7 @@ function task(overrides: Partial<Task> = {}): Task {
   return {
     id: 'task-1',
     title: 'Submit lab report',
-    subject: 'Chemistry',
+    subjectId: 'subject-chemistry',
     notes: '',
     dueAt: '2026-08-22T12:00:00.000Z',
     taskType: 'assignment',

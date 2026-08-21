@@ -16,9 +16,9 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 Current milestone: **M2 — Local task experience**
 
-Current outcome: the core offline task workflow now includes the internal month calendar, local Android reminders, native Android date/time dialogs, task types, and workload estimates. Existing local tasks migrate safely, and task cards expose the new metadata without relying on the edit form.
+Current outcome: the core offline task workflow now includes the internal month calendar, local Android reminders, native Android date/time dialogs, task types, workload estimates, and locally managed subjects. Existing subject strings migrate to stable subject IDs, while deletion safely moves affected tasks to `Unassigned`.
 
-Next recommended task: add subject creation, editing, deletion, and explicit `Unassigned` behavior.
+Next recommended task: add the remaining task filters and the grouping/sorting controls, starting with Open, Completed, Overdue, and No deadline.
 
 ## Locked Product Decisions
 
@@ -139,13 +139,13 @@ Status: `[~] In progress`
 - [x] Add reminder settings to the task model.
 - [x] Add task type.
 - [x] Add estimated effort.
+- [x] Add subject creation, renaming, deletion, filtering, and explicit `Unassigned` behavior.
 
 ### Remaining
 
 - [x] Replace typed deadline strings with an accessible date/time picker.
 - [ ] Add source-image reference and extraction provenance fields.
-- [ ] Add subject creation, editing, deletion, and `Unassigned` behavior.
-- [ ] Add filter chips: Open, Completed, Overdue, No deadline, Subject, Task type, Priority.
+- [~] Add filter chips: Subject is complete; Open, Completed, Overdue, No deadline, Task type, and Priority remain.
 - [ ] Add grouping: deadline, subject, status, or none.
 - [ ] Add sorting: smart priority, due date, date created, and title.
 - [ ] Add completion undo.

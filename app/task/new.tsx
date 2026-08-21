@@ -11,7 +11,7 @@ export default function NewTaskScreen() {
   const { defaultReminder } = useReminders();
   const initial: TaskDraft = {
     title: '',
-    subject: '',
+    subjectId: null,
     notes: '',
     dueAt: typeof dueDate === 'string' ? dueAtForLocalDate(dueDate) : null,
     taskType: 'assignment',

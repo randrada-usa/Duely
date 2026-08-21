@@ -14,7 +14,7 @@ function formatDueDate(dueAt: string | null) {
 }
 
 export function TaskCard({ task }: { task: Task }) {
-  const { toggleTask } = useTasks();
+  const { getSubjectName, toggleTask } = useTasks();
   const overdue = isOverdue(task);
 
   return (
@@ -46,7 +46,7 @@ export function TaskCard({ task }: { task: Task }) {
           {task.title}
         </Text>
         <Text numberOfLines={1} style={styles.metadata}>
-          {task.subject || 'Unassigned'} · {formatDueDate(task.dueAt)}
+          {getSubjectName(task.subjectId)} · {formatDueDate(task.dueAt)}
         </Text>
         <Text numberOfLines={1} style={styles.metadata}>
           {taskTypeLabel(task.taskType)} · {effortLabel(task.estimatedEffortMinutes)}

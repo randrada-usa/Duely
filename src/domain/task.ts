@@ -28,7 +28,7 @@ export const EFFORT_OPTIONS: ReadonlyArray<{
 export type Task = {
   id: string;
   title: string;
-  subject: string;
+  subjectId: string | null;
   notes: string;
   dueAt: string | null;
   taskType: TaskType;
@@ -43,7 +43,7 @@ export type Task = {
 export type TaskDraft = Pick<
   Task,
   | 'title'
-  | 'subject'
+  | 'subjectId'
   | 'notes'
   | 'dueAt'
   | 'taskType'
@@ -71,10 +71,18 @@ export function normalizeTask(task: Task): Task {
     : null;
 
   return {
-    ...task,
+    id: task.id,
+    title: task.title,
+    subjectId: typeof task.subjectId === 'string' ? task.subjectId : null,
+    notes: task.notes,
+    dueAt: task.dueAt,
     taskType,
     estimatedEffortMinutes,
+    priority: task.priority,
     reminderMinutesBefore: task.reminderMinutesBefore ?? null,
+    status: task.status,
+    createdAt: task.createdAt,
+    completedAt: task.completedAt,
   };
 }
 

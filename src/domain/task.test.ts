@@ -12,7 +12,7 @@ function task(overrides: Partial<Task> = {}): Task {
   return {
     id: 'task-1',
     title: 'Write reflection',
-    subject: 'English',
+    subjectId: 'subject-english',
     notes: '',
     dueAt: null,
     taskType: 'assignment',

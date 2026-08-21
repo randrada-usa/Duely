@@ -14,7 +14,7 @@ function task(id: string, title: string, dueAt: string | null): Task {
   return {
     id,
     title,
-    subject: 'Synthetic course',
+    subjectId: 'subject-synthetic',
     notes: '',
     dueAt,
     taskType: 'assignment',
