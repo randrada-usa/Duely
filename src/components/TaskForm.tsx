@@ -1,5 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -57,6 +57,7 @@ export function TaskForm({
   onSubmit,
   onDirtyChange,
 }: TaskFormProps) {
+  const formRef = useRef<ScrollView>(null);
   const { addSubject, subjects } = useTasks();
   const parts = deadlineParts(initial.dueAt);
   const [title, setTitle] = useState(initial.title);
@@ -102,6 +103,14 @@ export function TaskForm({
   useEffect(() => {
     onDirtyChange?.(hasUnsavedChanges);
   }, [hasUnsavedChanges, onDirtyChange]);
+
+  useEffect(() => {
+    if (!error) return;
+    const frame = requestAnimationFrame(() => {
+      formRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [error]);
 
   function submit() {
     if (!title.trim()) {
@@ -170,6 +179,7 @@ export function TaskForm({
     <ScrollView
       contentContainerStyle={styles.form}
       keyboardShouldPersistTaps="handled"
+      ref={formRef}
     >
       <Field
         label="Title *"

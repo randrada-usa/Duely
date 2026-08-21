@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { StyleSheet, Text } from 'react-native';
 
 import { colors, minimumTouchTarget } from '../../src/theme/tokens';
 
@@ -18,12 +19,39 @@ export default function TabLayout() {
       headerShown: false,
       tabBarActiveTintColor: colors.primary,
       tabBarInactiveTintColor: colors.textMuted,
-      tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-      tabBarStyle: { height: 76, paddingBottom: 8, paddingTop: 8, borderTopColor: colors.border, backgroundColor: colors.surface },
+      tabBarLabel: ({ children, color }) => (
+        <Text
+          maxFontSizeMultiplier={1.3}
+          numberOfLines={1}
+          style={[styles.tabLabel, { color }]}
+        >
+          {children}
+        </Text>
+      ),
+      tabBarStyle: {
+        height: 76,
+        paddingBottom: 8,
+        paddingTop: 8,
+        borderTopColor: colors.border,
+        backgroundColor: colors.surface,
+      },
       tabBarItemStyle: { minHeight: minimumTouchTarget },
       tabBarIcon: ({ color, focused, size }) => {
         const icon = icons[route.name] ?? icons.index;
-        return <Ionicons accessibilityElementsHidden color={route.name === 'scan' ? colors.surface : color} name={focused ? icon.active : icon.inactive} size={route.name === 'scan' ? 26 : size} style={route.name === 'scan' ? { width: 52, height: 52, borderRadius: 26, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', backgroundColor: colors.primary } : undefined} />;
+        return (
+          <Ionicons
+            accessibilityElementsHidden
+            allowFontScaling={false}
+            color={route.name === 'scan' ? colors.surface : color}
+            name={focused ? icon.active : icon.inactive}
+            size={route.name === 'scan' ? 26 : size}
+            style={
+              route.name === 'scan'
+                ? styles.scanIcon
+                : undefined
+            }
+          />
+        );
       },
     })}>
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
@@ -34,3 +62,16 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  scanIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    overflow: 'hidden',
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    backgroundColor: colors.primary,
+  },
+  tabLabel: { fontSize: 11, fontWeight: '600' },
+});

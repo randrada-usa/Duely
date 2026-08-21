@@ -14,11 +14,11 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 ## Current Position
 
-Current milestone: **M2 — Local task experience**
+Current milestone: **M4 — Image Intake and Preparation**
 
-Current outcome: the core offline task workflow now includes the internal month calendar, local Android reminders, native Android date/time dialogs, task types, workload estimates, locally managed subjects, the complete Tasks browse controls, a time-limited completion undo, unsaved-change protection on task forms, explicit recovery from unreadable local task data, and privacy-minimizing source-image/provenance metadata for future scan review. Students can combine status, deadline, subject, type, priority, and search filters, then sort or group the result without changing stored task data.
+Current outcome: the M2 local task experience and M3 internal calendar/reminder milestone are complete. The offline workflow now includes local-timezone boundary coverage, a 200% Android font-scale acceptance pass, adaptive primary navigation labels, accessible form-error recovery, explicit recovery from unreadable local task data, and privacy-minimizing source-image/provenance metadata for future scan review.
 
-Next recommended task: finish the local-timezone and large-text lifecycle acceptance checks, then begin M4 image intake and preparation.
+Next recommended task: begin M4 with the Camera/Gallery choice screen and contextual permission/recovery states, using the local DuelyPages references.
 
 ## Locked Product Decisions
 
@@ -119,7 +119,7 @@ Status: `[x] Complete`
 
 ## M2 — Local Task Experience
 
-Status: `[~] In progress`
+Status: `[x] Complete`
 
 ### Completed
 
@@ -157,10 +157,10 @@ Status: `[~] In progress`
 
 - [x] A guest can create, edit, search, complete, reopen, and delete a task offline.
 - [x] Restarting the app preserves all valid task data.
-- [ ] Overdue state is correct around local timezone boundaries.
+- [x] Overdue state is correct around local timezone boundaries.
 - [x] Smart-priority ordering is deterministic and covered by regression tests.
-- [ ] Large text does not hide task actions or form errors.
-- [ ] Destructive actions require confirmation.
+- [x] Large text does not hide task actions or form errors.
+- [x] Destructive actions require confirmation.
 
 ---
 

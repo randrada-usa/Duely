@@ -33,18 +33,21 @@ function task(overrides: Partial<Task> = {}): Task {
 }
 
 describe('task model', () => {
-  it('becomes overdue only after an open task deadline passes', () => {
-    const dueAt = '2026-08-21T12:00:00.000Z';
+  it('becomes overdue only after a Philippines-local deadline passes', () => {
+    const dueAt = '2026-08-22T00:00:00.000+08:00';
     const dueTask = task({ dueAt });
 
+    expect(
+      isOverdue(dueTask, new Date('2026-08-21T23:59:59.999+08:00')),
+    ).toBe(false);
     expect(isOverdue(dueTask, new Date(dueAt))).toBe(false);
-    expect(isOverdue(dueTask, new Date('2026-08-21T12:00:00.001Z'))).toBe(
-      true,
-    );
+    expect(
+      isOverdue(dueTask, new Date('2026-08-22T00:00:00.001+08:00')),
+    ).toBe(true);
     expect(
       isOverdue(
         task({ dueAt, status: 'completed', completedAt: dueAt }),
-        new Date('2026-08-22T12:00:00.000Z'),
+        new Date('2026-08-23T00:00:00.000+08:00'),
       ),
     ).toBe(false);
   });
