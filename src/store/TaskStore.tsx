@@ -37,7 +37,15 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
     let active = true;
     AsyncStorage.getItem(STORAGE_KEY)
       .then((value) => {
-        if (active && value) setTasks(JSON.parse(value) as Task[]);
+        if (active && value) {
+          const saved = JSON.parse(value) as Task[];
+          setTasks(
+            saved.map((task) => ({
+              ...task,
+              reminderMinutesBefore: task.reminderMinutesBefore ?? null,
+            })),
+          );
+        }
       })
       .catch(() => {
         // A storage failure should not prevent local task creation this session.

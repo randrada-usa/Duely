@@ -1,13 +1,19 @@
 import type { PropsWithChildren } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../theme/tokens';
 
-export function ScreenShell({ children }: PropsWithChildren) {
+type ScreenShellProps = PropsWithChildren<{ scroll?: boolean }>;
+
+export function ScreenShell({ children, scroll = false }: ScreenShellProps) {
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.content}>{children}</View>
+      {scroll ? (
+        <ScrollView contentContainerStyle={styles.scrollContent}>{children}</ScrollView>
+      ) : (
+        <View style={styles.content}>{children}</View>
+      )}
     </SafeAreaView>
   );
 }
@@ -21,5 +27,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxl,
+    gap: spacing.lg,
   },
 });

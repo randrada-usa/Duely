@@ -18,6 +18,7 @@ function task(id: string, title: string, dueAt: string | null): Task {
     notes: '',
     dueAt,
     priority: 'medium',
+    reminderMinutesBefore: null,
     status: 'open',
     createdAt: '2026-08-01T00:00:00.000Z',
     completedAt: null,

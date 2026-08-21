@@ -14,11 +14,11 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 ## Current Position
 
-Current milestone: **M3 — Internal calendar and reminders**
+Current milestone: **M2 — Local task experience**
 
-Current outcome: the Expo application shell, core offline task workflow, and internal month calendar compile and run on the Android 13 emulator. Calendar dates show task counts, selected-day tasks, empty states, month navigation, a Today shortcut, and date-prefilled task creation.
+Current outcome: the core offline task workflow now includes the internal month calendar and local Android reminders. Students can choose fixed task reminders, configure a default, recover from denied notification permission, and keep saving tasks when scheduling is unavailable. Reminder reconciliation is deterministic across edits, completion, deletion, and restarts.
 
-Next recommended task: add reminder settings to the task model, then implement local notifications and reminder preferences.
+Next recommended task: replace typed deadline strings with an accessible Android date/time picker.
 
 ## Locked Product Decisions
 
@@ -45,7 +45,7 @@ Next recommended task: add reminder settings to the task model, then implement l
 | M0 | Planning and product foundation | Complete | — |
 | M1 | Expo and engineering foundation | Complete | M0 |
 | M2 | Local task experience | In progress | M1 |
-| M3 | Internal calendar and reminders | In progress | M2 |
+| M3 | Internal calendar and reminders | Complete | M2 |
 | M4 | Image intake and preparation | Not started | M1 |
 | M5 | On-device OCR and review | Not started | M4 |
 | M6 | Supabase backend and authentication | Not started | M2 |
@@ -112,7 +112,7 @@ Status: `[x] Complete`
 
 - [x] `npm run typecheck` passes.
 - [x] Expo production web export succeeds.
-- [ ] Android development build launches without runtime errors.
+- [x] Android development build launches without runtime errors.
 - [ ] Navigation works with TalkBack labels and Android back behavior.
 
 ---
@@ -136,13 +136,13 @@ Status: `[~] In progress`
 - [x] Display prioritized open tasks on Home.
 - [x] Add empty Tasks and no-results states.
 - [x] Add accessible task-card completion controls.
+- [x] Add reminder settings to the task model.
 
 ### Remaining
 
 - [ ] Replace typed deadline strings with an accessible date/time picker.
 - [ ] Add task type.
 - [ ] Add estimated effort.
-- [ ] Add reminder settings to the task model.
 - [ ] Add source-image reference and extraction provenance fields.
 - [ ] Add subject creation, editing, deletion, and `Unassigned` behavior.
 - [ ] Add filter chips: Open, Completed, Overdue, No deadline, Subject, Task type, Priority.
@@ -166,7 +166,7 @@ Status: `[~] In progress`
 
 ## M3 — Internal Calendar and Reminders
 
-Status: `[~] In progress`
+Status: `[x] Complete`
 
 ### Calendar
 
@@ -181,21 +181,21 @@ Status: `[~] In progress`
 
 ### Reminders
 
-- [ ] Install and configure Expo Notifications.
-- [ ] Explain notification permission before requesting it.
-- [ ] Handle denied and permanently denied permission states.
-- [ ] Add configurable default reminder timing.
-- [ ] Add task-level fixed reminder selections.
-- [ ] Schedule, update, and cancel reminders idempotently.
-- [ ] Handle reminder scheduling failure without losing the task.
-- [ ] Reconcile reminders after task edits, completion, or deletion.
+- [x] Install and configure Expo Notifications.
+- [x] Explain notification permission before requesting it.
+- [x] Handle denied and permanently denied permission states.
+- [x] Add configurable default reminder timing.
+- [x] Add task-level fixed reminder selections.
+- [x] Schedule, update, and cancel reminders idempotently.
+- [x] Handle reminder scheduling failure without losing the task.
+- [x] Reconcile reminders after task edits, completion, or deletion.
 
 ### Acceptance criteria
 
 - [x] Every saved deadline appears on the correct calendar date.
-- [ ] Reminder changes do not produce duplicate notifications.
-- [ ] Calendar and reminder behavior works offline.
-- [ ] Denied permissions have a clear settings-recovery path.
+- [x] Reminder changes do not produce duplicate notifications.
+- [x] Calendar and reminder behavior works offline.
+- [x] Denied permissions have a clear settings-recovery path.
 
 ---
 

@@ -1,5 +1,6 @@
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type TaskStatus = 'open' | 'completed';
+export type ReminderMinutes = 0 | 15 | 60 | 1440;
 
 export type Task = {
   id: string;
@@ -8,6 +9,7 @@ export type Task = {
   notes: string;
   dueAt: string | null;
   priority: TaskPriority;
+  reminderMinutesBefore: ReminderMinutes | null;
   status: TaskStatus;
   createdAt: string;
   completedAt: string | null;
@@ -15,7 +17,7 @@ export type Task = {
 
 export type TaskDraft = Pick<
   Task,
-  'title' | 'subject' | 'notes' | 'dueAt' | 'priority'
+  'title' | 'subject' | 'notes' | 'dueAt' | 'priority' | 'reminderMinutesBefore'
 >;
 
 export function isOverdue(task: Task, now = new Date()) {
