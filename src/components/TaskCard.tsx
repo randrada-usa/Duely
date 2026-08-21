@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { effortLabel, isOverdue, taskTypeLabel, type Task } from '../domain/task';
 import { useTasks } from '../store/TaskStore';
 import { colors, minimumTouchTarget, radius, spacing } from '../theme/tokens';
+import { useCompletionUndo } from './CompletionUndoProvider';
 
 function formatDueDate(dueAt: string | null) {
   if (!dueAt) return 'No deadline';
@@ -14,7 +15,8 @@ function formatDueDate(dueAt: string | null) {
 }
 
 export function TaskCard({ task }: { task: Task }) {
-  const { getSubjectName, toggleTask } = useTasks();
+  const { getSubjectName } = useTasks();
+  const { toggleTaskCompletion } = useCompletionUndo();
   const overdue = isOverdue(task);
 
   return (
@@ -33,7 +35,7 @@ export function TaskCard({ task }: { task: Task }) {
         accessibilityRole="checkbox"
         accessibilityState={{ checked: task.status === 'completed' }}
         hitSlop={8}
-        onPress={() => toggleTask(task.id)}
+        onPress={() => toggleTaskCompletion(task)}
         style={[styles.checkbox, task.status === 'completed' && styles.checked]}
       >
         <Text style={styles.checkmark}>{task.status === 'completed' ? '✓' : ''}</Text>

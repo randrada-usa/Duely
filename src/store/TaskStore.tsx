@@ -20,6 +20,12 @@ import {
   type Subject,
 } from '../domain/subject';
 import type { Task, TaskDraft } from '../domain/task';
+import {
+  completeTask as markTaskComplete,
+  reopenTask as markTaskOpen,
+  undoTaskCompletion as restoreTaskCompletion,
+  type TaskCompletionUndo,
+} from '../domain/taskCompletion';
 
 const STORAGE_KEY = 'duely.local-task-data.v2';
 const LEGACY_TASK_STORAGE_KEY = 'duely.tasks.v1';
@@ -35,7 +41,9 @@ type TaskStoreValue = LocalTaskData & {
   storageError: string | null;
   addTask: (draft: TaskDraft) => Task;
   updateTask: (id: string, draft: TaskDraft) => void;
-  toggleTask: (id: string) => void;
+  completeTask: (id: string, completedAt: string) => void;
+  reopenTask: (id: string) => void;
+  undoTaskCompletion: (undo: TaskCompletionUndo) => void;
   deleteTask: (id: string) => void;
   getTask: (id: string) => Task | undefined;
   addSubject: (name: string) => SubjectMutationResult;
@@ -156,19 +164,24 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
     });
   }, []);
 
-  const toggleTask = useCallback((id: string) => {
+  const completeTask = useCallback((id: string, completedAt: string) => {
     setData((current) => ({
       ...current,
-      tasks: current.tasks.map((task) =>
-        task.id === id
-          ? {
-              ...task,
-              status: task.status === 'open' ? 'completed' : 'open',
-              completedAt:
-                task.status === 'open' ? new Date().toISOString() : null,
-            }
-          : task,
-      ),
+      tasks: markTaskComplete(current.tasks, id, completedAt),
+    }));
+  }, []);
+
+  const reopenTask = useCallback((id: string) => {
+    setData((current) => ({
+      ...current,
+      tasks: markTaskOpen(current.tasks, id),
+    }));
+  }, []);
+
+  const undoTaskCompletion = useCallback((undo: TaskCompletionUndo) => {
+    setData((current) => ({
+      ...current,
+      tasks: restoreTaskCompletion(current.tasks, undo),
     }));
   }, []);
 
@@ -230,7 +243,9 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
       storageError,
       addTask,
       updateTask,
-      toggleTask,
+      completeTask,
+      reopenTask,
+      undoTaskCompletion,
       deleteTask,
       getTask: (id) => data.tasks.find((task) => task.id === id),
       addSubject,
@@ -242,13 +257,15 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
     [
       addSubject,
       addTask,
+      completeTask,
       data,
       deleteSubject,
       deleteTask,
       isHydrated,
       renameSubject,
+      reopenTask,
       storageError,
-      toggleTask,
+      undoTaskCompletion,
       updateTask,
     ],
   );
