@@ -12,6 +12,7 @@ import {
 
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { TaskCard } from '../../src/components/TaskCard';
+import { TaskStorageWarning } from '../../src/components/TaskStorageWarning';
 import {
   calendarMonthCells,
   moveLocalMonth,
@@ -33,7 +34,7 @@ export default function CalendarScreen() {
   const today = useMemo(() => new Date(), []);
   const [visibleMonth, setVisibleMonth] = useState(() => startOfLocalMonth(today));
   const [selectedDate, setSelectedDate] = useState(today);
-  const { isHydrated, tasks } = useTasks();
+  const { canEditTasks, isHydrated, tasks } = useTasks();
   const monthCells = useMemo(
     () => calendarMonthCells(visibleMonth),
     [visibleMonth],
@@ -77,6 +78,8 @@ export default function CalendarScreen() {
             />
           </View>
         </View>
+
+        <TaskStorageWarning />
 
         <View style={styles.calendarCard}>
           <View accessibilityRole="header" style={styles.weekdayRow}>
@@ -205,8 +208,14 @@ export default function CalendarScreen() {
         <Pressable
           accessibilityHint={`Prefills the deadline as ${selectedDate.toLocaleDateString()}`}
           accessibilityRole="button"
+          accessibilityState={{ disabled: !canEditTasks }}
+          disabled={!canEditTasks}
           onPress={() => router.push(`/task/new?dueDate=${selectedKey}`)}
-          style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
+          style={({ pressed }) => [
+            styles.addButton,
+            pressed && styles.addButtonPressed,
+            !canEditTasks && styles.addButtonDisabled,
+          ]}
         >
           <Ionicons
             accessibilityElementsHidden
@@ -374,5 +383,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   addButtonPressed: { backgroundColor: colors.primaryPressed },
+  addButtonDisabled: { opacity: 0.45 },
   addButtonText: { color: colors.surface, fontSize: 16, fontWeight: '800' },
 });

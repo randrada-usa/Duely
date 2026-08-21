@@ -12,7 +12,6 @@ import {
 
 import {
   deleteSubjectFromData,
-  migrateLocalTaskData,
   normalizeSubjectName,
   subjectNameError,
   subjectNameForId,
@@ -26,11 +25,24 @@ import {
   undoTaskCompletion as restoreTaskCompletion,
   type TaskCompletionUndo,
 } from '../domain/taskCompletion';
+import {
+  loadLocalTaskData,
+  persistLocalTaskData,
+  resetLocalTaskData as clearLocalTaskData,
+} from '../services/taskStorage';
 
-const STORAGE_KEY = 'duely.local-task-data.v2';
-const LEGACY_TASK_STORAGE_KEY = 'duely.tasks.v1';
+const CORRUPT_ERROR =
+  'Your saved tasks could not be read. Duely left the stored data untouched.';
+const READ_ERROR =
+  'Local task storage is temporarily unavailable. Close and reopen Duely to try again.';
 const WRITE_ERROR = 'Your latest task changes could not be saved on this device.';
+const RESET_ERROR =
+  'Duely could not finish resetting local data. Your tasks remain unavailable; try again.';
+const STORAGE_LOCKED_ERROR =
+  'Resolve the local storage issue before changing tasks or subjects.';
 const emptyData: LocalTaskData = { tasks: [], subjects: [] };
+
+type TaskStorageIssue = 'corrupt' | 'read' | 'write' | null;
 
 type SubjectMutationResult =
   | { subject: Subject; error: null }
@@ -38,8 +50,12 @@ type SubjectMutationResult =
 
 type TaskStoreValue = LocalTaskData & {
   isHydrated: boolean;
+  canEditTasks: boolean;
   storageError: string | null;
-  addTask: (draft: TaskDraft) => Task;
+  canResetLocalData: boolean;
+  isResettingLocalData: boolean;
+  resetLocalData: () => Promise<boolean>;
+  addTask: (draft: TaskDraft) => Task | null;
   updateTask: (id: string, draft: TaskDraft) => void;
   completeTask: (id: string, completedAt: string) => void;
   reopenTask: (id: string) => void;
@@ -63,44 +79,31 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [canPersist, setCanPersist] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const [storageIssue, setStorageIssue] = useState<TaskStorageIssue>(null);
+  const [isResettingLocalData, setIsResettingLocalData] = useState(false);
   const persistenceQueue = useRef(Promise.resolve());
 
   useEffect(() => {
     let active = true;
 
-    Promise.all([
-      AsyncStorage.getItem(STORAGE_KEY),
-      AsyncStorage.getItem(LEGACY_TASK_STORAGE_KEY),
-    ])
-      .then(([currentValue, legacyTasksValue]) => {
+    loadLocalTaskData(AsyncStorage)
+      .then((result) => {
         if (!active) return;
 
-        try {
-          if (currentValue) {
-            const parsed: unknown = JSON.parse(currentValue);
-            if (!parsed || typeof parsed !== 'object') throw new Error();
-            const saved = parsed as Partial<LocalTaskData>;
-            if (!Array.isArray(saved.tasks) || !Array.isArray(saved.subjects)) {
-              throw new Error();
-            }
-            setData(migrateLocalTaskData(saved.tasks, saved.subjects));
-          } else {
-            const legacyTasks = legacyTasksValue
-              ? JSON.parse(legacyTasksValue)
-              : [];
-            if (!Array.isArray(legacyTasks)) throw new Error();
-            setData(migrateLocalTaskData(legacyTasks, []));
-          }
-          setCanPersist(true);
-        } catch {
-          setStorageError(
-            'Your saved tasks could not be read. Duely left the stored data untouched.',
-          );
+        if (result.status === 'corrupt') {
+          setStorageIssue('corrupt');
+          setStorageError(CORRUPT_ERROR);
+          return;
         }
+        setData(result.data);
+        setStorageIssue(null);
+        setStorageError(null);
+        setCanPersist(true);
       })
       .catch(() => {
         if (active) {
-          setStorageError('Local task storage is temporarily unavailable.');
+          setStorageIssue('read');
+          setStorageError(READ_ERROR);
         }
       })
       .finally(() => {
@@ -114,19 +117,41 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (!isHydrated || !canPersist) return;
-    const snapshot = JSON.stringify({ version: 2, ...data });
     persistenceQueue.current = persistenceQueue.current
-      .then(() => AsyncStorage.setItem(STORAGE_KEY, snapshot))
+      .then(() => persistLocalTaskData(AsyncStorage, data))
       .then(() => {
+        setStorageIssue((current) => (current === 'write' ? null : current));
         setStorageError((current) => (current === WRITE_ERROR ? null : current));
       })
       .catch(() => {
+        setStorageIssue('write');
         setStorageError(WRITE_ERROR);
       });
   }, [canPersist, data, isHydrated]);
 
+  const resetLocalData = useCallback(async () => {
+    if (storageIssue !== 'corrupt' || isResettingLocalData) return false;
+
+    setIsResettingLocalData(true);
+    try {
+      await clearLocalTaskData(AsyncStorage);
+      setData(emptyData);
+      setStorageIssue(null);
+      setStorageError(null);
+      setCanPersist(true);
+      return true;
+    } catch {
+      setStorageError(RESET_ERROR);
+      return false;
+    } finally {
+      setIsResettingLocalData(false);
+    }
+  }, [isResettingLocalData, storageIssue]);
+
   const addTask = useCallback(
     (draft: TaskDraft) => {
+      if (!canPersist) return null;
+
       const task: Task = {
         ...draft,
         subjectId: data.subjects.some(
@@ -145,55 +170,77 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
       }));
       return task;
     },
-    [data.subjects],
+    [canPersist, data.subjects],
   );
 
-  const updateTask = useCallback((id: string, draft: TaskDraft) => {
-    setData((current) => {
-      const subjectId = current.subjects.some(
-        (subject) => subject.id === draft.subjectId,
-      )
-        ? draft.subjectId
-        : null;
-      return {
+  const updateTask = useCallback(
+    (id: string, draft: TaskDraft) => {
+      if (!canPersist) return;
+      setData((current) => {
+        const subjectId = current.subjects.some(
+          (subject) => subject.id === draft.subjectId,
+        )
+          ? draft.subjectId
+          : null;
+        return {
+          ...current,
+          tasks: current.tasks.map((task) =>
+            task.id === id ? { ...task, ...draft, subjectId } : task,
+          ),
+        };
+      });
+    },
+    [canPersist],
+  );
+
+  const completeTask = useCallback(
+    (id: string, completedAt: string) => {
+      if (!canPersist) return;
+      setData((current) => ({
         ...current,
-        tasks: current.tasks.map((task) =>
-          task.id === id ? { ...task, ...draft, subjectId } : task,
-        ),
-      };
-    });
-  }, []);
+        tasks: markTaskComplete(current.tasks, id, completedAt),
+      }));
+    },
+    [canPersist],
+  );
 
-  const completeTask = useCallback((id: string, completedAt: string) => {
-    setData((current) => ({
-      ...current,
-      tasks: markTaskComplete(current.tasks, id, completedAt),
-    }));
-  }, []);
+  const reopenTask = useCallback(
+    (id: string) => {
+      if (!canPersist) return;
+      setData((current) => ({
+        ...current,
+        tasks: markTaskOpen(current.tasks, id),
+      }));
+    },
+    [canPersist],
+  );
 
-  const reopenTask = useCallback((id: string) => {
-    setData((current) => ({
-      ...current,
-      tasks: markTaskOpen(current.tasks, id),
-    }));
-  }, []);
+  const undoTaskCompletion = useCallback(
+    (undo: TaskCompletionUndo) => {
+      if (!canPersist) return;
+      setData((current) => ({
+        ...current,
+        tasks: restoreTaskCompletion(current.tasks, undo),
+      }));
+    },
+    [canPersist],
+  );
 
-  const undoTaskCompletion = useCallback((undo: TaskCompletionUndo) => {
-    setData((current) => ({
-      ...current,
-      tasks: restoreTaskCompletion(current.tasks, undo),
-    }));
-  }, []);
-
-  const deleteTask = useCallback((id: string) => {
-    setData((current) => ({
-      ...current,
-      tasks: current.tasks.filter((task) => task.id !== id),
-    }));
-  }, []);
+  const deleteTask = useCallback(
+    (id: string) => {
+      if (!canPersist) return;
+      setData((current) => ({
+        ...current,
+        tasks: current.tasks.filter((task) => task.id !== id),
+      }));
+    },
+    [canPersist],
+  );
 
   const addSubject = useCallback(
     (value: string): SubjectMutationResult => {
+      if (!canPersist) return { subject: null, error: STORAGE_LOCKED_ERROR };
+
       const error = subjectNameError(data.subjects, value);
       if (error) return { subject: null, error };
 
@@ -210,11 +257,13 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
       }));
       return { subject, error: null };
     },
-    [data.subjects],
+    [canPersist, data.subjects],
   );
 
   const renameSubject = useCallback(
     (id: string, value: string) => {
+      if (!canPersist) return STORAGE_LOCKED_ERROR;
+
       const error = subjectNameError(data.subjects, value, id);
       if (error) return error;
 
@@ -229,18 +278,26 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
       }));
       return null;
     },
-    [data.subjects],
+    [canPersist, data.subjects],
   );
 
-  const deleteSubject = useCallback((id: string) => {
-    setData((current) => deleteSubjectFromData(current, id));
-  }, []);
+  const deleteSubject = useCallback(
+    (id: string) => {
+      if (!canPersist) return;
+      setData((current) => deleteSubjectFromData(current, id));
+    },
+    [canPersist],
+  );
 
   const value = useMemo<TaskStoreValue>(
     () => ({
       ...data,
       isHydrated,
+      canEditTasks: canPersist,
       storageError,
+      canResetLocalData: storageIssue === 'corrupt',
+      isResettingLocalData,
+      resetLocalData,
       addTask,
       updateTask,
       completeTask,
@@ -257,14 +314,18 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
     [
       addSubject,
       addTask,
+      canPersist,
       completeTask,
       data,
       deleteSubject,
       deleteTask,
       isHydrated,
+      isResettingLocalData,
       renameSubject,
       reopenTask,
+      resetLocalData,
       storageError,
+      storageIssue,
       undoTaskCompletion,
       updateTask,
     ],

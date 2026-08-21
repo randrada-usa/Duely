@@ -16,6 +16,7 @@ import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { SubjectManagerModal } from '../../src/components/SubjectManagerModal';
 import { TaskCard } from '../../src/components/TaskCard';
+import { TaskStorageWarning } from '../../src/components/TaskStorageWarning';
 import { TaskViewOptionsModal } from '../../src/components/TaskViewOptionsModal';
 import { taskTypeLabel } from '../../src/domain/task';
 import {
@@ -38,7 +39,7 @@ import {
 } from '../../src/theme/tokens';
 
 export default function TasksScreen() {
-  const { isHydrated, storageError, subjects, tasks } = useTasks();
+  const { canEditTasks, isHydrated, subjects, tasks } = useTasks();
   const [taskQuery, setTaskQuery] = useState<TaskQuery>(DEFAULT_TASK_QUERY);
   const [showSubjectManager, setShowSubjectManager] = useState(false);
   const [showViewOptions, setShowViewOptions] = useState(false);
@@ -103,12 +104,7 @@ export default function TasksScreen() {
           <Text style={styles.subtitle}>Everything you need, easy to find.</Text>
         </View>
 
-        {!!storageError && (
-          <View accessibilityRole="alert" style={styles.storageWarning}>
-            <Text style={styles.storageWarningTitle}>Local storage needs attention</Text>
-            <Text style={styles.storageWarningText}>{storageError}</Text>
-          </View>
-        )}
+        <TaskStorageWarning />
 
         <TextInput
           accessibilityLabel="Search tasks"
@@ -120,7 +116,11 @@ export default function TasksScreen() {
           value={taskQuery.search}
         />
 
-        <PrimaryButton label="Add task" onPress={() => router.push('/task/new')} />
+        <PrimaryButton
+          disabled={!canEditTasks}
+          label="Add task"
+          onPress={() => router.push('/task/new')}
+        />
 
         <Text style={styles.filterLabel}>Quick filters</Text>
         <ScrollView
@@ -150,10 +150,13 @@ export default function TasksScreen() {
           <Text style={styles.sectionTitle}>Subjects</Text>
           <Pressable
             accessibilityRole="button"
+            accessibilityState={{ disabled: !canEditTasks }}
+            disabled={!canEditTasks}
             onPress={() => setShowSubjectManager(true)}
             style={({ pressed }) => [
               styles.manageButton,
               pressed && styles.pressed,
+              !canEditTasks && styles.disabled,
             ]}
           >
             <Text style={styles.manageButtonText}>Manage</Text>
@@ -314,17 +317,6 @@ const styles = StyleSheet.create({
   header: { paddingBottom: spacing.md },
   title: { color: colors.text, fontSize: 30, fontWeight: '800' },
   subtitle: { marginTop: spacing.xs, color: colors.textMuted, fontSize: 16 },
-  storageWarning: {
-    gap: spacing.xs,
-    marginBottom: spacing.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.danger,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-  },
-  storageWarningTitle: { color: colors.danger, fontSize: 14, fontWeight: '800' },
-  storageWarningText: { color: colors.text, fontSize: 14, lineHeight: 20 },
   search: {
     minHeight: minimumTouchTarget,
     marginBottom: spacing.md,
@@ -441,4 +433,5 @@ const styles = StyleSheet.create({
   },
   loadingText: { color: colors.textMuted, fontSize: 16 },
   pressed: { opacity: 0.65 },
+  disabled: { opacity: 0.45 },
 });
