@@ -6,7 +6,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 
@@ -26,8 +25,8 @@ import {
   type TaskCompletionUndo,
 } from '../domain/taskCompletion';
 import {
+  createTaskPersistenceQueue,
   loadLocalTaskData,
-  persistLocalTaskData,
   resetLocalTaskData as clearLocalTaskData,
 } from '../services/taskStorage';
 
@@ -81,7 +80,22 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
   const [storageError, setStorageError] = useState<string | null>(null);
   const [storageIssue, setStorageIssue] = useState<TaskStorageIssue>(null);
   const [isResettingLocalData, setIsResettingLocalData] = useState(false);
-  const persistenceQueue = useRef(Promise.resolve());
+  const persistenceQueue = useMemo(
+    () =>
+      createTaskPersistenceQueue(AsyncStorage, {
+        onWriteSuccess: () => {
+          setStorageIssue((current) => (current === 'write' ? null : current));
+          setStorageError((current) =>
+            current === WRITE_ERROR ? null : current,
+          );
+        },
+        onWriteError: () => {
+          setStorageIssue('write');
+          setStorageError(WRITE_ERROR);
+        },
+      }),
+    [],
+  );
 
   useEffect(() => {
     let active = true;
@@ -117,17 +131,8 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (!isHydrated || !canPersist) return;
-    persistenceQueue.current = persistenceQueue.current
-      .then(() => persistLocalTaskData(AsyncStorage, data))
-      .then(() => {
-        setStorageIssue((current) => (current === 'write' ? null : current));
-        setStorageError((current) => (current === WRITE_ERROR ? null : current));
-      })
-      .catch(() => {
-        setStorageIssue('write');
-        setStorageError(WRITE_ERROR);
-      });
-  }, [canPersist, data, isHydrated]);
+    void persistenceQueue.enqueue(data);
+  }, [canPersist, data, isHydrated, persistenceQueue]);
 
   const resetLocalData = useCallback(async () => {
     if (storageIssue !== 'corrupt' || isResettingLocalData) return false;

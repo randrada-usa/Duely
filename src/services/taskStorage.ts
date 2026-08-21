@@ -17,6 +17,11 @@ export type TaskStorageLoadResult =
   | { status: 'ready'; data: LocalTaskData }
   | { status: 'corrupt' };
 
+type TaskPersistenceCallbacks = {
+  onWriteSuccess: () => void;
+  onWriteError: () => void;
+};
+
 const TASK_TYPES = new Set([
   'assignment',
   'quiz',
@@ -154,6 +159,24 @@ export function persistLocalTaskData(
   data: LocalTaskData,
 ) {
   return storage.setItem(TASK_STORAGE_KEY, serializeLocalTaskData(data));
+}
+
+export function createTaskPersistenceQueue(
+  storage: TaskStorageAdapter,
+  { onWriteSuccess, onWriteError }: TaskPersistenceCallbacks,
+) {
+  let queue = Promise.resolve();
+
+  return {
+    enqueue(data: LocalTaskData) {
+      const snapshot = serializeLocalTaskData(data);
+      queue = queue
+        .then(() => storage.setItem(TASK_STORAGE_KEY, snapshot))
+        .then(onWriteSuccess)
+        .catch(onWriteError);
+      return queue;
+    },
+  };
 }
 
 export function resetLocalTaskData(storage: TaskStorageAdapter) {

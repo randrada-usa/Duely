@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type { LocalTaskData } from '../domain/subject';
 import {
+  createTaskPersistenceQueue,
   decodeLocalTaskData,
   LEGACY_TASK_STORAGE_KEY,
   loadLocalTaskData,
@@ -25,10 +27,26 @@ const legacyTask = {
 function storage(values: Record<string, string | null> = {}) {
   return {
     getItem: vi.fn(async (key: string) => values[key] ?? null),
-    setItem: vi.fn(async () => undefined),
-    multiRemove: vi.fn(async () => undefined),
+    setItem: vi.fn(
+      async (_key: string, _value: string): Promise<void> => undefined,
+    ),
+    multiRemove: vi.fn(
+      async (_keys: readonly string[]): Promise<void> => undefined,
+    ),
   } satisfies TaskStorageAdapter;
 }
+
+const emptyData: LocalTaskData = { tasks: [], subjects: [] };
+const dataWithSubject: LocalTaskData = {
+  tasks: [],
+  subjects: [
+    {
+      id: 'subject-english',
+      name: 'English',
+      createdAt: '2026-08-21T00:00:00.000Z',
+    },
+  ],
+};
 
 describe('local task storage', () => {
   it('loads an empty collection when no local data exists', () => {
@@ -110,5 +128,56 @@ describe('local task storage', () => {
     await resetLocalTaskData(adapter);
     expect(adapter.multiRemove).toHaveBeenCalledOnce();
     expect(adapter.multiRemove).toHaveBeenCalledWith(TASK_STORAGE_KEYS);
+  });
+
+  it('serializes persistence writes in the order they were requested', async () => {
+    const adapter = storage();
+    let releaseFirstWrite = () => {};
+    adapter.setItem.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseFirstWrite = resolve;
+        }),
+    );
+    const queue = createTaskPersistenceQueue(adapter, {
+      onWriteSuccess: vi.fn(),
+      onWriteError: vi.fn(),
+    });
+
+    const firstWrite = queue.enqueue(emptyData);
+    const secondWrite = queue.enqueue(dataWithSubject);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(adapter.setItem).toHaveBeenCalledTimes(1);
+
+    releaseFirstWrite();
+    await Promise.all([firstWrite, secondWrite]);
+    expect(adapter.setItem).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(adapter.setItem.mock.calls[0][1])).toMatchObject(
+      emptyData,
+    );
+    expect(JSON.parse(adapter.setItem.mock.calls[1][1])).toMatchObject(
+      dataWithSubject,
+    );
+  });
+
+  it('continues queued persistence after a failed write', async () => {
+    const adapter = storage();
+    adapter.setItem
+      .mockRejectedValueOnce(new Error('storage unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const onWriteSuccess = vi.fn();
+    const onWriteError = vi.fn();
+    const queue = createTaskPersistenceQueue(adapter, {
+      onWriteSuccess,
+      onWriteError,
+    });
+
+    await queue.enqueue(emptyData);
+    await queue.enqueue(dataWithSubject);
+
+    expect(adapter.setItem).toHaveBeenCalledTimes(2);
+    expect(onWriteError).toHaveBeenCalledOnce();
+    expect(onWriteSuccess).toHaveBeenCalledOnce();
   });
 });

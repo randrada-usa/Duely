@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   effortLabel,
+  isOverdue,
   normalizeTask,
   sortBySmartPriority,
   taskTypeLabel,
@@ -27,6 +28,22 @@ function task(overrides: Partial<Task> = {}): Task {
 }
 
 describe('task model', () => {
+  it('becomes overdue only after an open task deadline passes', () => {
+    const dueAt = '2026-08-21T12:00:00.000Z';
+    const dueTask = task({ dueAt });
+
+    expect(isOverdue(dueTask, new Date(dueAt))).toBe(false);
+    expect(isOverdue(dueTask, new Date('2026-08-21T12:00:00.001Z'))).toBe(
+      true,
+    );
+    expect(
+      isOverdue(
+        task({ dueAt, status: 'completed', completedAt: dueAt }),
+        new Date('2026-08-22T12:00:00.000Z'),
+      ),
+    ).toBe(false);
+  });
+
   it('migrates legacy tasks to safe type and effort defaults', () => {
     const legacy = {
       ...task(),

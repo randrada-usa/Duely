@@ -18,7 +18,7 @@ Current milestone: **M2 — Local task experience**
 
 Current outcome: the core offline task workflow now includes the internal month calendar, local Android reminders, native Android date/time dialogs, task types, workload estimates, locally managed subjects, the complete Tasks browse controls, a time-limited completion undo, unsaved-change protection on task forms, and explicit recovery from unreadable local task data. Students can combine status, deadline, subject, type, priority, and search filters, then sort or group the result without changing stored task data.
 
-Next recommended task: add broader task-domain and persistence tests, then complete the remaining source-image and extraction-provenance fields.
+Next recommended task: complete the remaining source-image and extraction-provenance fields, then finish the local-timezone lifecycle acceptance checks.
 
 ## Locked Product Decisions
 
@@ -151,12 +151,12 @@ Status: `[~] In progress`
 - [x] Add completion undo.
 - [x] Add unsaved-change confirmation when leaving task forms.
 - [x] Add safe handling for corrupted local storage data.
-- [ ] Add task-domain and persistence tests.
+- [x] Add task-domain and persistence tests.
 
 ### Acceptance criteria
 
-- [ ] A guest can create, edit, search, complete, reopen, and delete a task offline.
-- [ ] Restarting the app preserves all valid task data.
+- [x] A guest can create, edit, search, complete, reopen, and delete a task offline.
+- [x] Restarting the app preserves all valid task data.
 - [ ] Overdue state is correct around local timezone boundaries.
 - [x] Smart-priority ordering is deterministic and covered by regression tests.
 - [ ] Large text does not hide task actions or form errors.
