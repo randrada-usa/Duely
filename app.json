@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Duely",
+    "slug": "duely",
+    "version": "1.0.0",
+    "scheme": "duely",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.duely.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F8FF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "45655a6e-8201-4380-9d27-668bb04207bd"
+      }
+    },
+    "owner": "rayands"
+  }
+}
