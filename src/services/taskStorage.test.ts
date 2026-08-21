@@ -24,6 +24,23 @@ const legacyTask = {
   completedAt: null,
 };
 
+const extractedTask = {
+  ...legacyTask,
+  taskType: 'assignment',
+  estimatedEffortMinutes: null,
+  reminderMinutesBefore: null,
+  sourceImageRef: 'scan-source-1',
+  extractionProvenance: {
+    title: {
+      sources: ['ml-kit'],
+      confidenceBySource: { 'ml-kit': 'high' },
+      comparison: 'not-compared',
+      userAction: 'accepted',
+      confirmedAt: '2026-08-21T10:00:00.000Z',
+    },
+  },
+};
+
 function storage(values: Record<string, string | null> = {}) {
   return {
     getItem: vi.fn(async (key: string) => values[key] ?? null),
@@ -108,6 +125,56 @@ describe('local task storage', () => {
       });
       expect(result.data.subjects[0].name).toBe('English');
     }
+  });
+
+  it('loads opaque image references and validated field provenance', () => {
+    const result = decodeLocalTaskData(
+      JSON.stringify({ version: 2, tasks: [extractedTask], subjects: [] }),
+      null,
+    );
+    expect(result.status).toBe('ready');
+    if (result.status === 'ready') {
+      expect(result.data.tasks[0]).toMatchObject({
+        sourceImageRef: 'scan-source-1',
+        extractionProvenance: extractedTask.extractionProvenance,
+      });
+    }
+  });
+
+  it('preserves storage instead of accepting raw OCR values as provenance', () => {
+    const unsafe = {
+      ...extractedTask,
+      extractionProvenance: {
+        title: {
+          ...extractedTask.extractionProvenance.title,
+          rawValue: 'private OCR text',
+        },
+      },
+    };
+    expect(
+      decodeLocalTaskData(
+        JSON.stringify({ version: 2, tasks: [unsafe], subjects: [] }),
+        null,
+      ),
+    ).toEqual({ status: 'corrupt' });
+  });
+
+  it('preserves storage instead of accepting inline source image bytes', () => {
+    expect(
+      decodeLocalTaskData(
+        JSON.stringify({
+          version: 2,
+          tasks: [
+            {
+              ...extractedTask,
+              sourceImageRef: 'data:image/png;base64,private-image',
+            },
+          ],
+          subjects: [],
+        }),
+        null,
+      ),
+    ).toEqual({ status: 'corrupt' });
   });
 
   it('does not overwrite or remove corrupt data while loading it', async () => {

@@ -17,7 +17,7 @@ import {
   type LocalTaskData,
   type Subject,
 } from '../domain/subject';
-import type { Task, TaskDraft } from '../domain/task';
+import { normalizeTask, type Task, type TaskDraft } from '../domain/task';
 import {
   completeTask as markTaskComplete,
   reopenTask as markTaskOpen,
@@ -157,7 +157,7 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
     (draft: TaskDraft) => {
       if (!canPersist) return null;
 
-      const task: Task = {
+      const task: Task = normalizeTask({
         ...draft,
         subjectId: data.subjects.some(
           (subject) => subject.id === draft.subjectId,
@@ -168,7 +168,9 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
         status: 'open',
         createdAt: new Date().toISOString(),
         completedAt: null,
-      };
+        sourceImageRef: draft.sourceImageRef ?? null,
+        extractionProvenance: draft.extractionProvenance ?? null,
+      });
       setData((current) => ({
         ...current,
         tasks: [task, ...current.tasks],
@@ -190,7 +192,21 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
         return {
           ...current,
           tasks: current.tasks.map((task) =>
-            task.id === id ? { ...task, ...draft, subjectId } : task,
+            task.id === id
+              ? normalizeTask({
+                  ...task,
+                  ...draft,
+                  subjectId,
+                  sourceImageRef:
+                    draft.sourceImageRef === undefined
+                      ? task.sourceImageRef
+                      : draft.sourceImageRef,
+                  extractionProvenance:
+                    draft.extractionProvenance === undefined
+                      ? task.extractionProvenance
+                      : draft.extractionProvenance,
+                })
+              : task,
           ),
         };
       });

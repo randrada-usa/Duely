@@ -16,9 +16,9 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 Current milestone: **M2 — Local task experience**
 
-Current outcome: the core offline task workflow now includes the internal month calendar, local Android reminders, native Android date/time dialogs, task types, workload estimates, locally managed subjects, the complete Tasks browse controls, a time-limited completion undo, unsaved-change protection on task forms, and explicit recovery from unreadable local task data. Students can combine status, deadline, subject, type, priority, and search filters, then sort or group the result without changing stored task data.
+Current outcome: the core offline task workflow now includes the internal month calendar, local Android reminders, native Android date/time dialogs, task types, workload estimates, locally managed subjects, the complete Tasks browse controls, a time-limited completion undo, unsaved-change protection on task forms, explicit recovery from unreadable local task data, and privacy-minimizing source-image/provenance metadata for future scan review. Students can combine status, deadline, subject, type, priority, and search filters, then sort or group the result without changing stored task data.
 
-Next recommended task: complete the remaining source-image and extraction-provenance fields, then finish the local-timezone lifecycle acceptance checks.
+Next recommended task: finish the local-timezone and large-text lifecycle acceptance checks, then begin M4 image intake and preparation.
 
 ## Locked Product Decisions
 
@@ -144,7 +144,7 @@ Status: `[~] In progress`
 ### Remaining
 
 - [x] Replace typed deadline strings with an accessible date/time picker.
-- [ ] Add source-image reference and extraction provenance fields.
+- [x] Add source-image reference and extraction provenance fields.
 - [x] Add filters for Open, Completed, Overdue, No deadline, Subject, Task type, and Priority.
 - [x] Add grouping: deadline, subject, status, or none.
 - [x] Add sorting: smart priority, due date, date created, and title.

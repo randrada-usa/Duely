@@ -21,6 +21,8 @@ function task(overrides: Partial<Task> = {}): Task {
     status: 'open',
     createdAt: '2026-08-21T00:00:00.000Z',
     completedAt: null,
+    sourceImageRef: null,
+    extractionProvenance: null,
     ...overrides,
   };
 }

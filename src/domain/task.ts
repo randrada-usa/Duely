@@ -3,6 +3,30 @@ export type TaskStatus = 'open' | 'completed';
 export type ReminderMinutes = 0 | 15 | 60 | 1440;
 export type TaskType = 'assignment' | 'quiz' | 'exam' | 'project' | 'reading' | 'other';
 export type EstimatedEffortMinutes = 30 | 60 | 120 | 180 | 240;
+export type ExtractionEngine = 'ml-kit' | 'gemini';
+export type ExtractionConfidence = 'low' | 'medium' | 'high';
+export type ExtractionComparison = 'not-compared' | 'agree' | 'disagree';
+export type ExtractionUserAction = 'accepted' | 'edited' | 'entered' | 'cleared';
+export type ExtractedTaskField =
+  | 'title'
+  | 'subject'
+  | 'dueAt'
+  | 'taskType'
+  | 'priority'
+  | 'estimatedEffortMinutes'
+  | 'notes';
+
+export type TaskFieldProvenance = {
+  sources: ExtractionEngine[];
+  confidenceBySource: Partial<Record<ExtractionEngine, ExtractionConfidence>>;
+  comparison: ExtractionComparison;
+  userAction: ExtractionUserAction;
+  confirmedAt: string;
+};
+
+export type TaskExtractionProvenance = Partial<
+  Record<ExtractedTaskField, TaskFieldProvenance>
+>;
 
 export const TASK_TYPE_OPTIONS: ReadonlyArray<{ label: string; value: TaskType }> = [
   { label: 'Assignment', value: 'assignment' },
@@ -38,6 +62,8 @@ export type Task = {
   status: TaskStatus;
   createdAt: string;
   completedAt: string | null;
+  sourceImageRef: string | null;
+  extractionProvenance: TaskExtractionProvenance | null;
 };
 
 export type TaskDraft = Pick<
@@ -50,7 +76,10 @@ export type TaskDraft = Pick<
   | 'estimatedEffortMinutes'
   | 'priority'
   | 'reminderMinutesBefore'
->;
+> & {
+  sourceImageRef?: string | null;
+  extractionProvenance?: TaskExtractionProvenance | null;
+};
 
 export function taskTypeLabel(value: TaskType) {
   return TASK_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? 'Other';
@@ -58,6 +87,135 @@ export function taskTypeLabel(value: TaskType) {
 
 export function effortLabel(value: EstimatedEffortMinutes | null) {
   return EFFORT_OPTIONS.find((option) => option.value === value)?.label ?? 'Not estimated';
+}
+
+const EXTRACTION_ENGINES = new Set<ExtractionEngine>(['ml-kit', 'gemini']);
+const EXTRACTION_CONFIDENCES = new Set<ExtractionConfidence>([
+  'low',
+  'medium',
+  'high',
+]);
+const EXTRACTION_COMPARISONS = new Set<ExtractionComparison>([
+  'not-compared',
+  'agree',
+  'disagree',
+]);
+const EXTRACTION_USER_ACTIONS = new Set<ExtractionUserAction>([
+  'accepted',
+  'edited',
+  'entered',
+  'cleared',
+]);
+const EXTRACTED_TASK_FIELDS = new Set<ExtractedTaskField>([
+  'title',
+  'subject',
+  'dueAt',
+  'taskType',
+  'priority',
+  'estimatedEffortMinutes',
+  'notes',
+]);
+const TASK_FIELD_PROVENANCE_KEYS = new Set([
+  'sources',
+  'confidenceBySource',
+  'comparison',
+  'userAction',
+  'confirmedAt',
+]);
+const MAX_SOURCE_IMAGE_REF_LENGTH = 2_048;
+
+export function isSourceImageReference(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const reference = value.trim();
+  return (
+    reference.length > 0 &&
+    reference.length <= MAX_SOURCE_IMAGE_REF_LENGTH &&
+    !reference.toLowerCase().startsWith('data:')
+  );
+}
+
+export function isTaskExtractionProvenance(
+  value: unknown,
+): value is TaskExtractionProvenance {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+
+  return Object.entries(value).every(([field, candidate]) => {
+    if (!EXTRACTED_TASK_FIELDS.has(field as ExtractedTaskField)) return false;
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+      return false;
+    }
+
+    const provenance = candidate as Record<string, unknown>;
+    const provenanceKeys = Object.keys(provenance);
+    if (
+      provenanceKeys.length !== TASK_FIELD_PROVENANCE_KEYS.size ||
+      provenanceKeys.some((key) => !TASK_FIELD_PROVENANCE_KEYS.has(key))
+    ) {
+      return false;
+    }
+    if (!Array.isArray(provenance.sources)) return false;
+    const sources = provenance.sources;
+    if (
+      !sources.every((source) =>
+        EXTRACTION_ENGINES.has(source as ExtractionEngine),
+      ) ||
+      new Set(sources).size !== sources.length
+    ) {
+      return false;
+    }
+
+    const confidence = provenance.confidenceBySource;
+    if (!confidence || typeof confidence !== 'object' || Array.isArray(confidence)) {
+      return false;
+    }
+    const confidenceEntries = Object.entries(confidence);
+    if (
+      confidenceEntries.some(
+        ([source, level]) =>
+          !EXTRACTION_ENGINES.has(source as ExtractionEngine) ||
+          !EXTRACTION_CONFIDENCES.has(level as ExtractionConfidence) ||
+          !sources.includes(source),
+      ) ||
+      sources.some(
+        (source) => !Object.prototype.hasOwnProperty.call(confidence, source),
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      !EXTRACTION_COMPARISONS.has(
+        provenance.comparison as ExtractionComparison,
+      ) ||
+      (sources.length < 2 &&
+        provenance.comparison !== 'not-compared') ||
+      (sources.length === 2 &&
+        provenance.comparison === 'not-compared') ||
+      !EXTRACTION_USER_ACTIONS.has(
+        provenance.userAction as ExtractionUserAction,
+      ) ||
+      typeof provenance.confirmedAt !== 'string' ||
+      Number.isNaN(new Date(provenance.confirmedAt).getTime())
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function normalizeExtractionProvenance(value: unknown) {
+  if (!isTaskExtractionProvenance(value)) return null;
+  return Object.fromEntries(
+    Object.entries(value).map(([field, provenance]) => [
+      field,
+      {
+        ...provenance,
+        sources: [...provenance.sources],
+        confidenceBySource: { ...provenance.confidenceBySource },
+      },
+    ]),
+  ) as TaskExtractionProvenance;
 }
 
 export function normalizeTask(task: Task): Task {
@@ -83,6 +241,12 @@ export function normalizeTask(task: Task): Task {
     status: task.status,
     createdAt: task.createdAt,
     completedAt: task.completedAt,
+    sourceImageRef: isSourceImageReference(task.sourceImageRef)
+      ? task.sourceImageRef.trim()
+      : null,
+    extractionProvenance: normalizeExtractionProvenance(
+      task.extractionProvenance,
+    ),
   };
 }
 

@@ -35,6 +35,8 @@ function task(overrides: Partial<Task> = {}): Task {
     status: 'open',
     createdAt: at(20, 8),
     completedAt: null,
+    sourceImageRef: null,
+    extractionProvenance: null,
     ...overrides,
   };
 }

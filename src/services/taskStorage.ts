@@ -1,4 +1,8 @@
 import { migrateLocalTaskData, type LocalTaskData } from '../domain/subject';
+import {
+  isSourceImageReference,
+  isTaskExtractionProvenance,
+} from '../domain/task';
 
 export const TASK_STORAGE_KEY = 'duely.local-task-data.v2';
 export const LEGACY_TASK_STORAGE_KEY = 'duely.tasks.v1';
@@ -65,6 +69,12 @@ function isStoredTask(value: unknown) {
       task.reminderMinutesBefore === null ||
       (typeof task.reminderMinutesBefore === 'number' &&
         REMINDER_VALUES.has(task.reminderMinutesBefore))) &&
+    (task.sourceImageRef === undefined ||
+      task.sourceImageRef === null ||
+      isSourceImageReference(task.sourceImageRef)) &&
+    (task.extractionProvenance === undefined ||
+      task.extractionProvenance === null ||
+      isTaskExtractionProvenance(task.extractionProvenance)) &&
     (task.priority === 'low' ||
       task.priority === 'medium' ||
       task.priority === 'high') &&

@@ -24,6 +24,8 @@ function task(id: string, title: string, dueAt: string | null): Task {
     status: 'open',
     createdAt: '2026-08-01T00:00:00.000Z',
     completedAt: null,
+    sourceImageRef: null,
+    extractionProvenance: null,
   };
 }
 

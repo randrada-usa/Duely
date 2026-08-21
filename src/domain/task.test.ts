@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   effortLabel,
+  isSourceImageReference,
+  isTaskExtractionProvenance,
   isOverdue,
   normalizeTask,
   sortBySmartPriority,
   taskTypeLabel,
   type Task,
+  type TaskExtractionProvenance,
 } from './task';
 
 function task(overrides: Partial<Task> = {}): Task {
@@ -23,6 +26,8 @@ function task(overrides: Partial<Task> = {}): Task {
     status: 'open',
     createdAt: '2026-08-21T00:00:00.000Z',
     completedAt: null,
+    sourceImageRef: null,
+    extractionProvenance: null,
     ...overrides,
   };
 }
@@ -50,13 +55,80 @@ describe('task model', () => {
       taskType: undefined,
       estimatedEffortMinutes: undefined,
       reminderMinutesBefore: undefined,
+      sourceImageRef: undefined,
+      extractionProvenance: undefined,
     } as unknown as Task;
 
     expect(normalizeTask(legacy)).toMatchObject({
       taskType: 'assignment',
       estimatedEffortMinutes: null,
       reminderMinutesBefore: null,
+      sourceImageRef: null,
+      extractionProvenance: null,
     });
+  });
+
+  it('keeps provider-distinct field provenance without raw OCR values', () => {
+    const extractionProvenance: TaskExtractionProvenance = {
+      title: {
+        sources: ['ml-kit', 'gemini'],
+        confidenceBySource: { 'ml-kit': 'high', gemini: 'medium' },
+        comparison: 'disagree',
+        userAction: 'edited',
+        confirmedAt: '2026-08-21T10:00:00.000Z',
+      },
+    };
+
+    expect(isTaskExtractionProvenance(extractionProvenance)).toBe(true);
+    expect(
+      normalizeTask(
+        task({
+          sourceImageRef: 'scan-source-1',
+          extractionProvenance,
+        }),
+      ),
+    ).toMatchObject({ sourceImageRef: 'scan-source-1', extractionProvenance });
+  });
+
+  it('accepts bounded image references but rejects inline image payloads', () => {
+    expect(isSourceImageReference(' scan-source-1 ')).toBe(true);
+    expect(isSourceImageReference('data:image/png;base64,private-image')).toBe(
+      false,
+    );
+    expect(isSourceImageReference('x'.repeat(2_049))).toBe(false);
+    expect(
+      normalizeTask(task({ sourceImageRef: ' scan-source-1 ' })),
+    ).toMatchObject({ sourceImageRef: 'scan-source-1' });
+  });
+
+  it('rejects ambiguous, incomplete, or raw-value provenance records', () => {
+    const base = {
+      confidenceBySource: { 'ml-kit': 'high' },
+      comparison: 'not-compared',
+      userAction: 'accepted',
+      confirmedAt: '2026-08-21T10:00:00.000Z',
+    };
+
+    expect(
+      isTaskExtractionProvenance({
+        title: { ...base, sources: ['ml-kit', 'ml-kit'] },
+      }),
+    ).toBe(false);
+    expect(
+      isTaskExtractionProvenance({
+        title: {
+          ...base,
+          sources: ['ml-kit', 'gemini'],
+          confidenceBySource: { 'ml-kit': 'high', gemini: 'medium' },
+          comparison: 'not-compared',
+        },
+      }),
+    ).toBe(false);
+    expect(
+      isTaskExtractionProvenance({
+        title: { ...base, sources: ['ml-kit'], rawValue: 'private OCR text' },
+      }),
+    ).toBe(false);
   });
 
   it('normalizes unsupported stored values', () => {
