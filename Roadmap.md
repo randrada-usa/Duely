@@ -14,11 +14,11 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 ## Current Position
 
-Current milestone: **M2 — Local task experience**
+Current milestone: **M3 — Internal calendar and reminders**
 
-Current outcome: the Expo application shell and core offline task workflow compile and bundle. Manual tasks can be created, searched, edited, completed, deleted, persisted locally, and sorted using deterministic smart priority.
+Current outcome: the Expo application shell, core offline task workflow, and internal month calendar compile and run on the Android 13 emulator. Calendar dates show task counts, selected-day tasks, empty states, month navigation, a Today shortcut, and date-prefilled task creation.
 
-Next recommended task: build the internal calendar on top of the existing local task store, then add local notifications and reminder preferences.
+Next recommended task: add reminder settings to the task model, then implement local notifications and reminder preferences.
 
 ## Locked Product Decisions
 
@@ -45,7 +45,7 @@ Next recommended task: build the internal calendar on top of the existing local 
 | M0 | Planning and product foundation | Complete | — |
 | M1 | Expo and engineering foundation | Complete | M0 |
 | M2 | Local task experience | In progress | M1 |
-| M3 | Internal calendar and reminders | Not started | M2 |
+| M3 | Internal calendar and reminders | In progress | M2 |
 | M4 | Image intake and preparation | Not started | M1 |
 | M5 | On-device OCR and review | Not started | M4 |
 | M6 | Supabase backend and authentication | Not started | M2 |
@@ -103,9 +103,9 @@ Status: `[x] Complete`
 - [x] Add type-check script.
 - [ ] Integrate Nunito and Inter as bundled local fonts.
 - [ ] Add linting and formatting configuration.
-- [ ] Add unit-test framework and baseline tests.
+- [x] Add unit-test framework and baseline tests.
 - [x] Create development and preview profiles in `eas.json`.
-- [ ] Confirm application launch on the Android 13 emulator.
+- [x] Confirm application launch on the Android 13 emulator.
 - [ ] Confirm application launch on the physical Android 13 phone.
 
 ### Exit verification
@@ -166,18 +166,18 @@ Status: `[~] In progress`
 
 ## M3 — Internal Calendar and Reminders
 
-Status: `[ ] Not started`
+Status: `[~] In progress`
 
 ### Calendar
 
-- [ ] Build month view with previous/next controls.
-- [ ] Add a Today shortcut.
-- [ ] Add a clear selected-date state.
-- [ ] Indicate populated dates without relying on color alone.
-- [ ] Show selected-day task list below the month.
-- [ ] Add task from a selected date with deadline prefilled.
-- [ ] Add empty selected-date state.
-- [ ] Test month/year transitions and timezone boundaries.
+- [x] Build month view with previous/next controls.
+- [x] Add a Today shortcut.
+- [x] Add a clear selected-date state.
+- [x] Indicate populated dates without relying on color alone.
+- [x] Show selected-day task list below the month.
+- [x] Add task from a selected date with deadline prefilled.
+- [x] Add empty selected-date state.
+- [x] Test month/year transitions and local-date boundaries.
 
 ### Reminders
 
@@ -192,7 +192,7 @@ Status: `[ ] Not started`
 
 ### Acceptance criteria
 
-- [ ] Every saved deadline appears on the correct calendar date.
+- [x] Every saved deadline appears on the correct calendar date.
 - [ ] Reminder changes do not produce duplicate notifications.
 - [ ] Calendar and reminder behavior works offline.
 - [ ] Denied permissions have a clear settings-recovery path.
