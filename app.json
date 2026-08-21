@@ -31,7 +31,31 @@
           "defaultChannel": "task-reminders"
         }
       ],
-      "@react-native-community/datetimepicker"
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow Duely to use your camera to capture one assignment image.",
+          "photosPermission": "Allow Duely to access the one assignment image you choose.",
+          "microphonePermission": false,
+          "colors": {
+            "cropToolbarColor": "#1A1A2E",
+            "cropToolbarIconColor": "#FFFFFF",
+            "cropToolbarActionTextColor": "#FFFFFF",
+            "cropBackButtonIconColor": "#FFFFFF",
+            "cropBackgroundColor": "#10101F"
+          }
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F7F8FF",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -14,11 +14,11 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 ## Current Position
 
-Current milestone: **M4 — Image Intake and Preparation**
+Current milestone: **M5 — On-Device OCR and Editable Review**
 
-Current outcome: the M2 local task experience and M3 internal calendar/reminder milestone are complete. The offline workflow now includes local-timezone boundary coverage, a 200% Android font-scale acceptance pass, adaptive primary navigation labels, accessible form-error recovery, explicit recovery from unreadable local task data, and privacy-minimizing source-image/provenance metadata for future scan review.
+Current outcome: M4 image intake and preparation is complete. The Android flow now supports one Camera or Gallery image, contextual permission and settings recovery, native crop/rotation, oversized-image preparation, readable-quality guidance, private temporary-file cleanup, and an editable-image handoff boundary without uploading the image. The flow was verified in a development build with real emulator camera and Android photo-picker paths, cancellation/retry behavior, and 200% font scaling.
 
-Next recommended task: begin M4 with the Camera/Gallery choice screen and contextual permission/recovery states, using the local DuelyPages references.
+Next recommended task: begin M5 by selecting an Expo-compatible ML Kit integration, then add cancellable on-device OCR behind the confirmed-image handoff while preserving the fully offline path.
 
 ## Locked Product Decisions
 
@@ -44,9 +44,9 @@ Next recommended task: begin M4 with the Camera/Gallery choice screen and contex
 | --- | --- | --- | --- |
 | M0 | Planning and product foundation | Complete | — |
 | M1 | Expo and engineering foundation | Complete | M0 |
-| M2 | Local task experience | In progress | M1 |
+| M2 | Local task experience | Complete | M1 |
 | M3 | Internal calendar and reminders | Complete | M2 |
-| M4 | Image intake and preparation | Not started | M1 |
+| M4 | Image intake and preparation | Complete | M1 |
 | M5 | On-device OCR and review | Not started | M4 |
 | M6 | Supabase backend and authentication | Not started | M2 |
 | M7 | Cloud synchronization | Not started | M6 |
@@ -201,24 +201,24 @@ Status: `[x] Complete`
 
 ## M4 — Image Intake and Preparation
 
-Status: `[ ] Not started`
+Status: `[x] Complete`
 
-- [ ] Add Camera and Gallery choices.
-- [ ] Add contextual camera permission flow.
-- [ ] Add contextual gallery permission flow.
-- [ ] Handle denial and settings recovery.
-- [ ] Accept exactly one image per scan attempt.
-- [ ] Add crop and rotation.
-- [ ] Compress oversized images while preserving readable text.
-- [ ] Detect or guide users through blurry, dark, obstructed, or unsupported images.
-- [ ] Keep temporary images private and remove abandoned captures.
-- [ ] Confirm Expo Go versus development-build requirements for selected libraries.
+- [x] Add Camera and Gallery choices.
+- [x] Add contextual camera permission flow.
+- [x] Add contextual gallery permission flow.
+- [x] Handle denial and settings recovery.
+- [x] Accept exactly one image per scan attempt.
+- [x] Add crop and rotation.
+- [x] Compress oversized images while preserving readable text.
+- [x] Detect or guide users through blurry, dark, obstructed, or unsupported images.
+- [x] Keep temporary images private and remove abandoned captures.
+- [x] Confirm Expo Go versus development-build requirements for selected libraries.
 
 ### Acceptance criteria
 
-- [ ] A user can capture or select, review, crop, rotate, cancel, and retry one image.
-- [ ] Permission denial never traps the user.
-- [ ] No image is uploaded before the relevant cloud action and consent conditions.
+- [x] A user can capture or select, review, crop, rotate, cancel, and retry one image.
+- [x] Permission denial never traps the user.
+- [x] No image is uploaded before the relevant cloud action and consent conditions.
 
 ---
 
