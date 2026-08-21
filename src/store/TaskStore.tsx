@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react';
 
-import type { Task, TaskDraft } from '../domain/task';
+import { normalizeTask, type Task, type TaskDraft } from '../domain/task';
 
 const STORAGE_KEY = 'duely.tasks.v1';
 
@@ -39,12 +39,7 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
       .then((value) => {
         if (active && value) {
           const saved = JSON.parse(value) as Task[];
-          setTasks(
-            saved.map((task) => ({
-              ...task,
-              reminderMinutesBefore: task.reminderMinutesBefore ?? null,
-            })),
-          );
+          setTasks(saved.map(normalizeTask));
         }
       })
       .catch(() => {

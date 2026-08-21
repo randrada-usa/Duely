@@ -14,6 +14,8 @@ export default function NewTaskScreen() {
     subject: '',
     notes: '',
     dueAt: typeof dueDate === 'string' ? dueAtForLocalDate(dueDate) : null,
+    taskType: 'assignment',
+    estimatedEffortMinutes: null,
     priority: 'medium',
     reminderMinutesBefore:
       typeof dueDate === 'string' ? defaultReminder : null,

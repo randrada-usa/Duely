@@ -1,6 +1,29 @@
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type TaskStatus = 'open' | 'completed';
 export type ReminderMinutes = 0 | 15 | 60 | 1440;
+export type TaskType = 'assignment' | 'quiz' | 'exam' | 'project' | 'reading' | 'other';
+export type EstimatedEffortMinutes = 30 | 60 | 120 | 180 | 240;
+
+export const TASK_TYPE_OPTIONS: ReadonlyArray<{ label: string; value: TaskType }> = [
+  { label: 'Assignment', value: 'assignment' },
+  { label: 'Quiz', value: 'quiz' },
+  { label: 'Exam', value: 'exam' },
+  { label: 'Project', value: 'project' },
+  { label: 'Reading', value: 'reading' },
+  { label: 'Other', value: 'other' },
+];
+
+export const EFFORT_OPTIONS: ReadonlyArray<{
+  label: string;
+  value: EstimatedEffortMinutes | null;
+}> = [
+  { label: 'Not estimated', value: null },
+  { label: '30 min', value: 30 },
+  { label: '1 hour', value: 60 },
+  { label: '2 hours', value: 120 },
+  { label: '3 hours', value: 180 },
+  { label: '4+ hours', value: 240 },
+];
 
 export type Task = {
   id: string;
@@ -8,6 +31,8 @@ export type Task = {
   subject: string;
   notes: string;
   dueAt: string | null;
+  taskType: TaskType;
+  estimatedEffortMinutes: EstimatedEffortMinutes | null;
   priority: TaskPriority;
   reminderMinutesBefore: ReminderMinutes | null;
   status: TaskStatus;
@@ -17,8 +42,41 @@ export type Task = {
 
 export type TaskDraft = Pick<
   Task,
-  'title' | 'subject' | 'notes' | 'dueAt' | 'priority' | 'reminderMinutesBefore'
+  | 'title'
+  | 'subject'
+  | 'notes'
+  | 'dueAt'
+  | 'taskType'
+  | 'estimatedEffortMinutes'
+  | 'priority'
+  | 'reminderMinutesBefore'
 >;
+
+export function taskTypeLabel(value: TaskType) {
+  return TASK_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? 'Other';
+}
+
+export function effortLabel(value: EstimatedEffortMinutes | null) {
+  return EFFORT_OPTIONS.find((option) => option.value === value)?.label ?? 'Not estimated';
+}
+
+export function normalizeTask(task: Task): Task {
+  const taskType = TASK_TYPE_OPTIONS.some((option) => option.value === task.taskType)
+    ? task.taskType
+    : 'assignment';
+  const estimatedEffortMinutes = EFFORT_OPTIONS.some(
+    (option) => option.value === task.estimatedEffortMinutes,
+  )
+    ? (task.estimatedEffortMinutes ?? null)
+    : null;
+
+  return {
+    ...task,
+    taskType,
+    estimatedEffortMinutes,
+    reminderMinutesBefore: task.reminderMinutesBefore ?? null,
+  };
+}
 
 export function isOverdue(task: Task, now = new Date()) {
   return (

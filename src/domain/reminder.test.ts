@@ -10,6 +10,8 @@ function task(overrides: Partial<Task> = {}): Task {
     subject: 'Chemistry',
     notes: '',
     dueAt: '2026-08-22T12:00:00.000Z',
+    taskType: 'assignment',
+    estimatedEffortMinutes: null,
     priority: 'high',
     reminderMinutesBefore: 60,
     status: 'open',

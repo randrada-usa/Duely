@@ -17,6 +17,8 @@ function task(id: string, title: string, dueAt: string | null): Task {
     subject: 'Synthetic course',
     notes: '',
     dueAt,
+    taskType: 'assignment',
+    estimatedEffortMinutes: null,
     priority: 'medium',
     reminderMinutesBefore: null,
     status: 'open',

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { isOverdue, type Task } from '../domain/task';
+import { effortLabel, isOverdue, taskTypeLabel, type Task } from '../domain/task';
 import { useTasks } from '../store/TaskStore';
 import { colors, minimumTouchTarget, radius, spacing } from '../theme/tokens';
 
@@ -47,6 +47,9 @@ export function TaskCard({ task }: { task: Task }) {
         </Text>
         <Text numberOfLines={1} style={styles.metadata}>
           {task.subject || 'Unassigned'} · {formatDueDate(task.dueAt)}
+        </Text>
+        <Text numberOfLines={1} style={styles.metadata}>
+          {taskTypeLabel(task.taskType)} · {effortLabel(task.estimatedEffortMinutes)}
         </Text>
         {(overdue || task.status === 'completed') && (
           <Text style={[styles.status, overdue ? styles.overdue : styles.completed]}>

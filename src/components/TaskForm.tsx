@@ -3,22 +3,61 @@ import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { deadlineParts, parseLocalDeadline, pickerDate } from '../domain/deadline';
 import { REMINDER_OPTIONS } from '../domain/reminder';
-import type { ReminderMinutes, TaskDraft, TaskPriority } from '../domain/task';
+import {
+  EFFORT_OPTIONS,
+  TASK_TYPE_OPTIONS,
+  type EstimatedEffortMinutes,
+  type ReminderMinutes,
+  type TaskDraft,
+  type TaskPriority,
+  type TaskType,
+} from '../domain/task';
 import { colors, minimumTouchTarget, radius, spacing } from '../theme/tokens';
 import { PrimaryButton } from './PrimaryButton';
 
 type TaskFormProps = { initial?: TaskDraft; defaultReminder?: ReminderMinutes | null; submitLabel: string; onSubmit: (draft: TaskDraft) => void };
-const blank: TaskDraft = { title: '', subject: '', notes: '', dueAt: null, priority: 'medium', reminderMinutesBefore: null };
+const blank: TaskDraft = {
+  title: '',
+  subject: '',
+  notes: '',
+  dueAt: null,
+  taskType: 'assignment',
+  estimatedEffortMinutes: null,
+  priority: 'medium',
+  reminderMinutesBefore: null,
+};
 
 export function TaskForm({ initial = blank, defaultReminder = null, submitLabel, onSubmit }: TaskFormProps) {
   const parts = deadlineParts(initial.dueAt);
-  const [title, setTitle] = useState(initial.title); const [subject, setSubject] = useState(initial.subject); const [notes, setNotes] = useState(initial.notes); const [date, setDate] = useState(parts.date); const [time, setTime] = useState(parts.time); const [pickerMode, setPickerMode] = useState<'date' | 'time' | null>(null); const [priority, setPriority] = useState<TaskPriority>(initial.priority); const [reminderMinutesBefore, setReminderMinutesBefore] = useState<ReminderMinutes | null>(initial.reminderMinutesBefore ?? null); const [error, setError] = useState('');
+  const [title, setTitle] = useState(initial.title);
+  const [subject, setSubject] = useState(initial.subject);
+  const [notes, setNotes] = useState(initial.notes);
+  const [date, setDate] = useState(parts.date);
+  const [time, setTime] = useState(parts.time);
+  const [pickerMode, setPickerMode] = useState<'date' | 'time' | null>(null);
+  const [taskType, setTaskType] = useState<TaskType>(initial.taskType);
+  const [estimatedEffortMinutes, setEstimatedEffortMinutes] =
+    useState<EstimatedEffortMinutes | null>(initial.estimatedEffortMinutes);
+  const [priority, setPriority] = useState<TaskPriority>(initial.priority);
+  const [reminderMinutesBefore, setReminderMinutesBefore] =
+    useState<ReminderMinutes | null>(initial.reminderMinutesBefore ?? null);
+  const [error, setError] = useState('');
   function submit() {
     if (!title.trim()) return setError('Enter a task title.');
     const deadline = parseLocalDeadline(date, time);
     if (deadline.error) return setError(deadline.error);
     const dueAt = deadline.dueAt;
-    setError(''); onSubmit({ title: title.trim(), subject: subject.trim(), notes: notes.trim(), dueAt, priority, reminderMinutesBefore });
+    setError('');
+    onSubmit({
+      title: title.trim(),
+      subject: subject.trim(),
+      notes: notes.trim(),
+      dueAt,
+      taskType,
+      estimatedEffortMinutes,
+      priority,
+      reminderMinutesBefore,
+    });
   }
   function setNativeDeadline(selected: Date) {
     const selectedParts = deadlineParts(selected.toISOString());
@@ -43,7 +82,12 @@ export function TaskForm({ initial = blank, defaultReminder = null, submitLabel,
       {!!date && <Pressable accessibilityRole="button" onPress={clearDeadline} style={styles.clearDeadline}><Text style={styles.clearDeadlineText}>Clear deadline</Text></Pressable>}
       {pickerMode && <DateTimePicker mode={pickerMode} onDismiss={() => setPickerMode(null)} onValueChange={(_, selected) => setNativeDeadline(selected)} value={pickerDate(date, time)} />}
     </> : <View style={styles.row}><View style={styles.flex}><Field label="Due date" value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" keyboardType="numbers-and-punctuation" /></View><View style={styles.time}><Field label="Time" value={time} onChangeText={setTime} placeholder="23:59" keyboardType="numbers-and-punctuation" /></View></View>}
-    <Text style={styles.label}>Priority</Text><View style={styles.priorityRow}>{(['low', 'medium', 'high'] as const).map((value) => <Pressable accessibilityRole="radio" accessibilityState={{ selected: priority === value }} key={value} onPress={() => setPriority(value)} style={[styles.priority, priority === value && styles.prioritySelected]}><Text style={[styles.priorityText, priority === value && styles.priorityTextSelected]}>{value[0].toUpperCase() + value.slice(1)}</Text></Pressable>)}</View>
+    <Text style={styles.label}>Task type</Text>
+    <SelectionChips options={TASK_TYPE_OPTIONS} value={taskType} onSelect={setTaskType} />
+    <Text style={styles.label}>Priority</Text>
+    <View style={styles.priorityRow}>{(['low', 'medium', 'high'] as const).map((value) => <Pressable accessibilityRole="radio" accessibilityState={{ selected: priority === value }} key={value} onPress={() => setPriority(value)} style={[styles.priority, priority === value && styles.prioritySelected]}><Text style={[styles.priorityText, priority === value && styles.priorityTextSelected]}>{priority === value ? '✓ ' : ''}{value[0].toUpperCase() + value.slice(1)}</Text></Pressable>)}</View>
+    <Text style={styles.label}>Estimated workload</Text>
+    <SelectionChips options={EFFORT_OPTIONS} value={estimatedEffortMinutes} onSelect={setEstimatedEffortMinutes} />
     <Text style={styles.label}>Reminder</Text>
     <View accessibilityRole="radiogroup" style={styles.reminderOptions}>
       {REMINDER_OPTIONS.map((option) => {
@@ -60,4 +104,72 @@ export function TaskForm({ initial = blank, defaultReminder = null, submitLabel,
 
 type FieldProps = React.ComponentProps<typeof TextInput> & { label: string };
 function Field({ label, multiline, style, ...props }: FieldProps) { return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput multiline={multiline} placeholderTextColor={colors.textMuted} style={[styles.input, multiline && styles.multiline, style]} {...props} /></View>; }
-const styles = StyleSheet.create({ form: { padding: spacing.xl, gap: spacing.lg }, field: { gap: spacing.sm }, label: { color: colors.text, fontSize: 14, fontWeight: '700' }, input: { minHeight: minimumTouchTarget, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, color: colors.text, fontSize: 16 }, inputButton: { minHeight: minimumTouchTarget, justifyContent: 'center', marginTop: spacing.sm, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface }, inputButtonText: { color: colors.text, fontSize: 16 }, placeholder: { color: colors.textMuted }, clearDeadline: { minHeight: minimumTouchTarget, alignSelf: 'flex-start', justifyContent: 'center', marginTop: -spacing.md, paddingHorizontal: spacing.sm }, clearDeadlineText: { color: colors.primary, fontSize: 14, fontWeight: '700' }, multiline: { minHeight: 112, paddingTop: spacing.md, textAlignVertical: 'top' }, row: { flexDirection: 'row', gap: spacing.md }, flex: { flex: 1 }, time: { width: 132 }, priorityRow: { flexDirection: 'row', gap: spacing.sm }, priority: { minHeight: minimumTouchTarget, flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, backgroundColor: colors.surface }, prioritySelected: { borderColor: colors.primary, backgroundColor: colors.primary }, priorityText: { color: colors.text, fontWeight: '700' }, priorityTextSelected: { color: colors.surface }, reminderOptions: { gap: spacing.sm }, reminder: { minHeight: minimumTouchTarget, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface }, reminderSelected: { borderColor: colors.primary, backgroundColor: colors.surfaceSubtle }, reminderText: { color: colors.text, fontSize: 16 }, reminderTextSelected: { color: colors.primary, fontWeight: '700' }, radioDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: colors.border }, radioDotSelected: { borderWidth: 5, borderColor: colors.primary }, disabled: { opacity: 0.45 }, helper: { marginTop: -spacing.sm, color: colors.textMuted, fontSize: 14 }, error: { color: colors.danger, fontSize: 14 } });
+
+type SelectionChipsProps<T extends string | number | null> = {
+  options: ReadonlyArray<{ label: string; value: T }>;
+  value: T;
+  onSelect: (value: T) => void;
+};
+
+function SelectionChips<T extends string | number | null>({
+  options,
+  value,
+  onSelect,
+}: SelectionChipsProps<T>) {
+  return (
+    <View accessibilityRole="radiogroup" style={styles.chips}>
+      {options.map((option) => {
+        const selected = value === option.value;
+        return (
+          <Pressable
+            accessibilityRole="radio"
+            accessibilityState={{ selected }}
+            key={option.label}
+            onPress={() => onSelect(option.value)}
+            style={[styles.chip, selected && styles.chipSelected]}
+          >
+            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+              {selected ? '✓ ' : ''}{option.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  form: { padding: spacing.xl, gap: spacing.lg },
+  field: { gap: spacing.sm },
+  label: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  input: { minHeight: minimumTouchTarget, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, color: colors.text, fontSize: 16 },
+  inputButton: { minHeight: minimumTouchTarget, justifyContent: 'center', marginTop: spacing.sm, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
+  inputButtonText: { color: colors.text, fontSize: 16 },
+  placeholder: { color: colors.textMuted },
+  clearDeadline: { minHeight: minimumTouchTarget, alignSelf: 'flex-start', justifyContent: 'center', marginTop: -spacing.md, paddingHorizontal: spacing.sm },
+  clearDeadlineText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  multiline: { minHeight: 112, paddingTop: spacing.md, textAlignVertical: 'top' },
+  row: { flexDirection: 'row', gap: spacing.md },
+  flex: { flex: 1 },
+  time: { width: 132 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: { minHeight: minimumTouchTarget, justifyContent: 'center', paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, backgroundColor: colors.surface },
+  chipSelected: { borderColor: colors.primary, backgroundColor: colors.primary },
+  chipText: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  chipTextSelected: { color: colors.surface },
+  priorityRow: { flexDirection: 'row', gap: spacing.sm },
+  priority: { minHeight: minimumTouchTarget, flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, backgroundColor: colors.surface },
+  prioritySelected: { borderColor: colors.primary, backgroundColor: colors.primary },
+  priorityText: { color: colors.text, fontWeight: '700' },
+  priorityTextSelected: { color: colors.surface },
+  reminderOptions: { gap: spacing.sm },
+  reminder: { minHeight: minimumTouchTarget, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
+  reminderSelected: { borderColor: colors.primary, backgroundColor: colors.surfaceSubtle },
+  reminderText: { color: colors.text, fontSize: 16 },
+  reminderTextSelected: { color: colors.primary, fontWeight: '700' },
+  radioDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: colors.border },
+  radioDotSelected: { borderWidth: 5, borderColor: colors.primary },
+  disabled: { opacity: 0.45 },
+  helper: { marginTop: -spacing.sm, color: colors.textMuted, fontSize: 14 },
+  error: { color: colors.danger, fontSize: 14 },
+});
