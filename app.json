@@ -30,7 +30,8 @@
           "color": "#5B6FE8",
           "defaultChannel": "task-reminders"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {

@@ -21,6 +21,7 @@ export default function NewTaskScreen() {
 
   return (
     <TaskForm
+      defaultReminder={defaultReminder}
       initial={initial}
       submitLabel="Save task"
       onSubmit={(draft) => {

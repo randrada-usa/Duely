@@ -16,9 +16,9 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 Current milestone: **M2 — Local task experience**
 
-Current outcome: the core offline task workflow now includes the internal month calendar and local Android reminders. Students can choose fixed task reminders, configure a default, recover from denied notification permission, and keep saving tasks when scheduling is unavailable. Reminder reconciliation is deterministic across edits, completion, deletion, and restarts.
+Current outcome: the core offline task workflow now includes the internal month calendar, local Android reminders, and native Android date/time dialogs. Students can choose or clear deadlines without typing formatted strings, choose fixed reminders, configure a default, recover from denied notification permission, and keep saving tasks when scheduling is unavailable.
 
-Next recommended task: replace typed deadline strings with an accessible Android date/time picker.
+Next recommended task: add task type and estimated effort to the local task model and forms.
 
 ## Locked Product Decisions
 
@@ -140,7 +140,7 @@ Status: `[~] In progress`
 
 ### Remaining
 
-- [ ] Replace typed deadline strings with an accessible date/time picker.
+- [x] Replace typed deadline strings with an accessible date/time picker.
 - [ ] Add task type.
 - [ ] Add estimated effort.
 - [ ] Add source-image reference and extraction provenance fields.
