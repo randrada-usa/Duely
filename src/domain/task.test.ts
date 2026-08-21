@@ -69,4 +69,22 @@ describe('task model', () => {
       'later',
     ]);
   });
+
+  it('sorts multiple completed tasks without producing an invalid comparison', () => {
+    const later = task({
+      id: 'later-complete',
+      status: 'completed',
+      createdAt: '2026-08-21T02:00:00.000Z',
+    });
+    const earlier = task({
+      id: 'earlier-complete',
+      status: 'completed',
+      createdAt: '2026-08-21T01:00:00.000Z',
+    });
+
+    expect(sortBySmartPriority([later, earlier]).map((item) => item.id)).toEqual([
+      'earlier-complete',
+      'later-complete',
+    ]);
+  });
 });

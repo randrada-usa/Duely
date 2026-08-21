@@ -108,9 +108,13 @@ export function smartPriorityScore(task: Task, now = new Date()) {
 
 export function sortBySmartPriority(tasks: Task[], now = new Date()) {
   return [...tasks].sort((a, b) => {
-    const scoreDifference =
-      smartPriorityScore(b, now) - smartPriorityScore(a, now);
-    if (scoreDifference !== 0) return scoreDifference;
-    return a.createdAt.localeCompare(b.createdAt);
+    const firstScore = smartPriorityScore(a, now);
+    const secondScore = smartPriorityScore(b, now);
+    if (firstScore !== secondScore) return firstScore > secondScore ? -1 : 1;
+    return (
+      a.createdAt.localeCompare(b.createdAt) ||
+      a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }) ||
+      a.id.localeCompare(b.id)
+    );
   });
 }

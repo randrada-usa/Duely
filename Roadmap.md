@@ -16,9 +16,9 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 Current milestone: **M2 — Local task experience**
 
-Current outcome: the core offline task workflow now includes the internal month calendar, local Android reminders, native Android date/time dialogs, task types, workload estimates, and locally managed subjects. Existing subject strings migrate to stable subject IDs, while deletion safely moves affected tasks to `Unassigned`.
+Current outcome: the core offline task workflow now includes the internal month calendar, local Android reminders, native Android date/time dialogs, task types, workload estimates, locally managed subjects, and the complete Tasks browse controls. Students can combine status, deadline, subject, type, priority, and search filters, then sort or group the result without changing stored task data.
 
-Next recommended task: add the remaining task filters and the grouping/sorting controls, starting with Open, Completed, Overdue, and No deadline.
+Next recommended task: add completion undo, followed by unsaved-change protection on task forms.
 
 ## Locked Product Decisions
 
@@ -145,9 +145,9 @@ Status: `[~] In progress`
 
 - [x] Replace typed deadline strings with an accessible date/time picker.
 - [ ] Add source-image reference and extraction provenance fields.
-- [~] Add filter chips: Subject is complete; Open, Completed, Overdue, No deadline, Task type, and Priority remain.
-- [ ] Add grouping: deadline, subject, status, or none.
-- [ ] Add sorting: smart priority, due date, date created, and title.
+- [x] Add filters for Open, Completed, Overdue, No deadline, Subject, Task type, and Priority.
+- [x] Add grouping: deadline, subject, status, or none.
+- [x] Add sorting: smart priority, due date, date created, and title.
 - [ ] Add completion undo.
 - [ ] Add unsaved-change confirmation when leaving task forms.
 - [ ] Add safe handling for corrupted local storage data.
@@ -158,7 +158,7 @@ Status: `[~] In progress`
 - [ ] A guest can create, edit, search, complete, reopen, and delete a task offline.
 - [ ] Restarting the app preserves all valid task data.
 - [ ] Overdue state is correct around local timezone boundaries.
-- [ ] Smart-priority ordering is deterministic and documented.
+- [x] Smart-priority ordering is deterministic and covered by regression tests.
 - [ ] Large text does not hide task actions or form errors.
 - [ ] Destructive actions require confirmation.
 
