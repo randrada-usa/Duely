@@ -22,6 +22,11 @@ import {
   type TaskPriority,
   type TaskType,
 } from '../domain/task';
+import {
+  hasUnsavedTaskFormChanges,
+  taskFormSnapshotFromDraft,
+  type TaskFormSnapshot,
+} from '../domain/taskForm';
 import { useTasks } from '../store/TaskStore';
 import { colors, minimumTouchTarget, radius, spacing } from '../theme/tokens';
 import { PrimaryButton } from './PrimaryButton';
@@ -31,6 +36,7 @@ type TaskFormProps = {
   defaultReminder?: ReminderMinutes | null;
   submitLabel: string;
   onSubmit: (draft: TaskDraft) => void;
+  onDirtyChange?: (hasUnsavedChanges: boolean) => void;
 };
 
 const blank: TaskDraft = {
@@ -49,6 +55,7 @@ export function TaskForm({
   defaultReminder = null,
   submitLabel,
   onSubmit,
+  onDirtyChange,
 }: TaskFormProps) {
   const { addSubject, subjects } = useTasks();
   const parts = deadlineParts(initial.dueAt);
@@ -69,11 +76,32 @@ export function TaskForm({
   const [subjectError, setSubjectError] = useState('');
   const [error, setError] = useState('');
 
+  const currentSnapshot: TaskFormSnapshot = {
+    title,
+    subjectId,
+    notes,
+    dueDate: date,
+    dueTime: time,
+    taskType,
+    estimatedEffortMinutes,
+    priority,
+    reminderMinutesBefore,
+    pendingSubjectName: showSubjectInput ? newSubjectName : '',
+  };
+  const hasUnsavedChanges = hasUnsavedTaskFormChanges(
+    taskFormSnapshotFromDraft(initial),
+    currentSnapshot,
+  );
+
   useEffect(() => {
     if (subjectId && !subjects.some((subject) => subject.id === subjectId)) {
       setSubjectId(null);
     }
   }, [subjectId, subjects]);
+
+  useEffect(() => {
+    onDirtyChange?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onDirtyChange]);
 
   function submit() {
     if (!title.trim()) {
@@ -155,7 +183,8 @@ export function TaskForm({
         <Pressable
           accessibilityRole="button"
           onPress={() => {
-            setShowSubjectInput((current) => !current);
+            if (showSubjectInput) setNewSubjectName('');
+            setShowSubjectInput(!showSubjectInput);
             setSubjectError('');
           }}
           style={({ pressed }) => [
