@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { Linking } from 'react-native';
 
+import { parseSavedReminder } from '../domain/reminder';
 import type { ReminderMinutes } from '../domain/task';
 import {
   getNotificationPermission,
@@ -26,14 +27,6 @@ const initialPermission: NotificationPermission = {
   canAskAgain: true,
   status: 'undetermined',
 };
-
-function savedReminder(value: string | null): ReminderMinutes | null | undefined {
-  if (value === null) return undefined;
-  const parsed: unknown = JSON.parse(value);
-  return parsed === null || parsed === 0 || parsed === 15 || parsed === 60 || parsed === 1440
-    ? parsed
-    : undefined;
-}
 
 type ReminderStoreValue = {
   defaultReminder: ReminderMinutes | null;
@@ -65,7 +58,7 @@ export function ReminderStoreProvider({ children }: PropsWithChildren) {
       .then(([, currentPermission, savedDefault]) => {
         if (!active) return;
         setPermission(currentPermission);
-        const parsed = savedReminder(savedDefault);
+        const parsed = parseSavedReminder(savedDefault);
         if (parsed !== undefined) setDefaultReminderState(parsed);
       })
       .catch(() => {

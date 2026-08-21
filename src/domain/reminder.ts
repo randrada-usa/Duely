@@ -29,6 +29,25 @@ export type ReminderPlan = {
   schedule: DesiredReminder[];
 };
 
+export function parseSavedReminder(
+  value: string | null,
+): ReminderMinutes | null | undefined {
+  if (value === null) return undefined;
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed === null ||
+      parsed === 0 ||
+      parsed === 15 ||
+      parsed === 60 ||
+      parsed === 1440
+      ? parsed
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function reminderIdentifier(taskId: string) {
   return `duely-reminder-${taskId}`;
 }
@@ -74,25 +93,27 @@ export function buildReminderPlan(
     .map((task) => desiredReminderForTask(task, now))
     .filter((reminder): reminder is DesiredReminder => reminder !== null);
   const desiredByTask = new Map(desired.map((reminder) => [reminder.taskId, reminder]));
-  const currentFingerprints = new Set<string>();
+  const currentReminderKeys = new Set<string>();
   const cancelIdentifiers: string[] = [];
 
   for (const existing of scheduled) {
     const wanted = desiredByTask.get(existing.taskId);
+    const reminderKey = `${existing.taskId}|${existing.fingerprint}`;
     const isExact =
       wanted &&
       existing.identifier === wanted.identifier &&
       existing.fingerprint === wanted.fingerprint &&
-      !currentFingerprints.has(existing.fingerprint);
+      !currentReminderKeys.has(reminderKey);
 
-    if (isExact) currentFingerprints.add(existing.fingerprint);
+    if (isExact) currentReminderKeys.add(reminderKey);
     else cancelIdentifiers.push(existing.identifier);
   }
 
   return {
     cancelIdentifiers,
     schedule: desired.filter(
-      (reminder) => !currentFingerprints.has(reminder.fingerprint),
+      (reminder) =>
+        !currentReminderKeys.has(`${reminder.taskId}|${reminder.fingerprint}`),
     ),
   };
 }
