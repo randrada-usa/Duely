@@ -18,6 +18,7 @@ export default function ProfileScreen() {
     authActionError,
     magicLinkSentTo,
     retry,
+    startGoogleSignIn,
     sendMagicLink,
     clearAuthAction,
     signOut,
@@ -150,10 +151,31 @@ export default function ProfileScreen() {
                 ? 'You are signed in. Cloud task synchronization is not enabled yet, so local tasks remain unchanged.'
                 : status === 'error'
                   ? authError
-                  : 'Sign in with a one-time email link. Google sign-in will appear after its provider is configured.'}
+                  : 'Choose Google or use a one-time school-email link. Signing in keeps your local tasks on this device.'}
         </Text>
         {status === 'guest' && !magicLinkSentTo && (
           <View style={styles.emailForm}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isAuthActionPending }}
+              disabled={isAuthActionPending}
+              onPress={() => void startGoogleSignIn()}
+              style={({ pressed }) => [
+                styles.googleAction,
+                pressed && styles.secondaryActionPressed,
+                isAuthActionPending && styles.actionDisabled,
+              ]}
+            >
+              <Ionicons name="logo-google" size={22} color={colors.text} />
+              <Text style={styles.googleActionText}>
+                {isAuthActionPending ? 'Please wait…' : 'Continue with Google'}
+              </Text>
+            </Pressable>
+            <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or use school email</Text>
+              <View style={styles.dividerLine} />
+            </View>
             <Text style={styles.fieldLabel}>School email</Text>
             <TextInput
               accessibilityLabel="School email address"
@@ -189,7 +211,7 @@ export default function ProfileScreen() {
               ]}
             >
               <Text style={styles.actionText}>
-                {isAuthActionPending ? 'Sending link…' : 'Email me a sign-in link'}
+                {isAuthActionPending ? 'Please wait…' : 'Email me a sign-in link'}
               </Text>
             </Pressable>
           </View>
@@ -265,6 +287,11 @@ const styles = StyleSheet.create({
   secondaryAction: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
   secondaryActionPressed: { backgroundColor: colors.surfaceSubtle },
   secondaryActionText: { color: colors.primary, fontSize: 16, fontWeight: '800' },
+  googleAction: { minHeight: minimumTouchTarget, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
+  googleActionText: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText: { color: colors.textMuted, fontSize: 14 },
   emailForm: { gap: spacing.sm },
   fieldLabel: { color: colors.text, fontSize: 16, fontWeight: '700' },
   input: { minHeight: minimumTouchTarget, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, color: colors.text, fontSize: 16 },

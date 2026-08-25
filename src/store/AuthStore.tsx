@@ -1,5 +1,6 @@
 import type { Session, User } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import {
   createContext,
   type PropsWithChildren,
@@ -7,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -38,6 +40,7 @@ type AuthStoreValue = {
   authActionError: string | null;
   magicLinkSentTo: string | null;
   retry: () => void;
+  startGoogleSignIn: () => Promise<boolean>;
   sendMagicLink: (email: string) => Promise<boolean>;
   clearAuthAction: () => void;
   signOut: () => Promise<boolean>;
@@ -49,6 +52,10 @@ const SIGN_OUT_ERROR =
   'Duely could not sign out. Check your connection and try again.';
 const MAGIC_LINK_ERROR =
   'Duely could not send the sign-in link. Check your connection and try again.';
+const GOOGLE_SIGN_IN_ERROR =
+  'Duely could not start Google sign-in. Check your connection and try again.';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const AuthStoreContext = createContext<AuthStoreValue | null>(null);
 
@@ -61,6 +68,15 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
   const [isAuthActionPending, setIsAuthActionPending] = useState(false);
   const [authActionError, setAuthActionError] = useState<string | null>(null);
   const [magicLinkSentTo, setMagicLinkSentTo] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+  const authRedirectHandledRef = useRef(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -112,53 +128,65 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
     };
   }, [retryCount]);
 
+  const applyAuthRedirect = useCallback(async (url: string) => {
+    const redirect = parseAuthRedirect(url);
+    if (redirect.status === 'ignored') return false;
+    if (authRedirectHandledRef.current) {
+      return redirect.status === 'session';
+    }
+    authRedirectHandledRef.current = true;
+
+    if (redirect.status === 'error') {
+      if (isMountedRef.current) {
+        setAuthActionError(redirect.message);
+        setIsAuthActionPending(false);
+      }
+      return false;
+    }
+
+    if (isMountedRef.current) {
+      setIsAuthActionPending(true);
+    }
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) throw new Error('Supabase is not configured.');
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: redirect.accessToken,
+        refresh_token: redirect.refreshToken,
+      });
+      if (sessionError) throw sessionError;
+      if (isMountedRef.current) {
+        setAuthActionError(null);
+        setMagicLinkSentTo(null);
+      }
+      return true;
+    } catch {
+      if (isMountedRef.current) {
+        setAuthActionError(
+          'Duely could not finish signing in. Request a new link and try again.',
+        );
+      }
+      return false;
+    } finally {
+      if (isMountedRef.current) setIsAuthActionPending(false);
+    }
+  }, []);
+
   useEffect(() => {
     let active = true;
 
-    const applyRedirect = async (url: string) => {
-      const redirect = parseAuthRedirect(url);
-      if (redirect.status === 'ignored') return;
-      if (redirect.status === 'error') {
-        if (active) setAuthActionError(redirect.message);
-        return;
-      }
-
-      setIsAuthActionPending(true);
-      try {
-        const supabase = getSupabaseClient();
-        if (!supabase) throw new Error('Supabase is not configured.');
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: redirect.accessToken,
-          refresh_token: redirect.refreshToken,
-        });
-        if (sessionError) throw sessionError;
-        if (active) {
-          setAuthActionError(null);
-          setMagicLinkSentTo(null);
-        }
-      } catch {
-        if (active) {
-          setAuthActionError(
-            'Duely could not finish signing in. Request a new link and try again.',
-          );
-        }
-      } finally {
-        if (active) setIsAuthActionPending(false);
-      }
-    };
-
     void Linking.getInitialURL().then((url) => {
-      if (active && url) void applyRedirect(url);
+      if (active && url) void applyAuthRedirect(url);
     });
     const subscription = Linking.addEventListener('url', ({ url }) => {
-      void applyRedirect(url);
+      void applyAuthRedirect(url);
     });
 
     return () => {
       active = false;
       subscription.remove();
     };
-  }, []);
+  }, [applyAuthRedirect]);
 
   const retry = useCallback(() => setRetryCount((count) => count + 1), []);
 
@@ -166,6 +194,47 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
     setAuthActionError(null);
     setMagicLinkSentTo(null);
   }, []);
+
+  const startGoogleSignIn = useCallback(async () => {
+    if (isAuthActionPending) return false;
+
+    setIsAuthActionPending(true);
+    setAuthActionError(null);
+    setMagicLinkSentTo(null);
+    authRedirectHandledRef.current = false;
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) throw new Error('Supabase is not configured.');
+      const { data, error: requestError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: AUTH_REDIRECT_URL,
+          skipBrowserRedirect: true,
+        },
+      });
+      if (requestError || !data.url) {
+        setAuthActionError(GOOGLE_SIGN_IN_ERROR);
+        return false;
+      }
+
+      const result = await WebBrowser.openAuthSessionAsync(
+        data.url,
+        AUTH_REDIRECT_URL,
+      );
+      if (result.type === 'success') {
+        return applyAuthRedirect(result.url);
+      }
+      if (result.type !== 'cancel' && result.type !== 'dismiss') {
+        setAuthActionError(GOOGLE_SIGN_IN_ERROR);
+      }
+      return false;
+    } catch {
+      setAuthActionError(GOOGLE_SIGN_IN_ERROR);
+      return false;
+    } finally {
+      if (isMountedRef.current) setIsAuthActionPending(false);
+    }
+  }, [applyAuthRedirect, isAuthActionPending]);
 
   const sendMagicLink = useCallback(
     async (value: string) => {
@@ -178,6 +247,7 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
 
       setIsAuthActionPending(true);
       setAuthActionError(null);
+      authRedirectHandledRef.current = false;
       try {
         const supabase = getSupabaseClient();
         if (!supabase) throw new Error('Supabase is not configured.');
@@ -243,6 +313,7 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
       authActionError,
       magicLinkSentTo,
       retry,
+      startGoogleSignIn,
       sendMagicLink,
       clearAuthAction,
       signOut,
@@ -258,6 +329,7 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
       sendMagicLink,
       session,
       signOut,
+      startGoogleSignIn,
       status,
     ],
   );
