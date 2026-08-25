@@ -16,9 +16,9 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 Current milestone: **M5 — On-Device OCR and Editable Review**
 
-Current outcome: M5 implementation is complete and its end-to-end accuracy gates remain open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness now covers 24 synthetic English, Filipino, and mixed-language cases; its preliminary parser-only gates pass, but these results do not certify native image recognition or beta-scan accuracy.
+Current outcome: M5 implementation is complete and its end-to-end accuracy gates remain open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. A separate 12-image synthetic Android run on the Pixel 7 completed all images at 99.5% aggregate token accuracy and produced 11/12 parser-ready results; one explicit deadline did not match, so the controlled deadline gate remains open. These small synthetic results validate the harness but do not certify beta-scan accuracy.
 
-Next recommended task: create synthetic rendered image fixtures from the controlled cases, run them through bundled ML Kit on Android, and record native recognition plus structured-field results before starting M6.
+Next recommended task: begin M6 Supabase project and environment preparation while keeping the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
 
 ## Locked Product Decisions
 
@@ -242,7 +242,7 @@ Status: `[~] In progress — implementation complete; controlled accuracy gates 
 - [x] Add a consent-safe controlled post-OCR parser fixture set and metric runner.
 - [x] Cover English, Filipino, and mixed-language labels in parser evaluation.
 - [x] Expose preliminary parser metrics with `npm run evaluate:ocr-parser`.
-- [ ] Run synthetic rendered image fixtures through ML Kit on Android.
+- [x] Run an initial 12-fixture synthetic rendered-image pack through ML Kit on Android.
 
 ### Accuracy gates
 

@@ -26,6 +26,10 @@ export default function RootLayout() {
               options={{ title: 'Add task', presentation: 'modal' }}
             />
             <Stack.Screen name="task/[id]" options={{ title: 'Task details' }} />
+            <Stack.Screen
+              name="ocr-evaluation"
+              options={{ title: 'OCR evaluation' }}
+            />
           </Stack>
         </ReminderStoreProvider>
       </CompletionUndoProvider>

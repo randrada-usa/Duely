@@ -1,0 +1,140 @@
+[
+  {
+    "id": "en-full-month-first",
+    "filename": "en-full-month-first.png",
+    "lines": [
+      "Assignment Title: Cellular Respiration Lab",
+      "Subject: BIO 201",
+      "Deadline: August 28, 2026 5:00 PM",
+      "Task type: Assignment",
+      "Priority: High",
+      "Estimated workload: 2 hours",
+      "Instructions: Explain the results using the supplied table."
+    ],
+    "style": { "fontSize": 34, "background": "#FFFFFF", "foreground": "#171927", "rotationDegrees": 0 }
+  },
+  {
+    "id": "en-day-first-multiline",
+    "filename": "en-day-first-multiline.png",
+    "lines": [
+      "Title",
+      "Modern Philippine Literature Essay",
+      "Course",
+      "LIT 204",
+      "Deadline",
+      "3 September 2026",
+      "2:30 PM",
+      "Instructions",
+      "Compare two works discussed in class."
+    ],
+    "style": { "fontSize": 32, "background": "#F6F3E9", "foreground": "#262832", "rotationDegrees": -1 }
+  },
+  {
+    "id": "fil-full-month-first",
+    "filename": "fil-full-month-first.png",
+    "lines": [
+      "Pamagat: Repleksyon sa Kasaysayan",
+      "Asignatura: KAS 101",
+      "Takdang petsa: Agosto 30, 2026 4:00 PM",
+      "Uri ng gawain: Takdang-aralin",
+      "Prayoridad: Mataas",
+      "Tinatayang oras: Dalawang oras",
+      "Panuto: Sumulat ng limang talata tungkol sa aralin."
+    ],
+    "style": { "fontSize": 33, "background": "#FFFFFF", "foreground": "#20232D", "rotationDegrees": 1 }
+  },
+  {
+    "id": "fil-day-first",
+    "filename": "fil-day-first.png",
+    "lines": [
+      "Pamagat ng gawain: Ulat sa Agham",
+      "Kurso: AGH 102",
+      "Petsa ng pagpasa: 5 Setyembre 2026 1:30 PM"
+    ],
+    "style": { "fontSize": 36, "background": "#EEF2F7", "foreground": "#353A45", "rotationDegrees": 0 }
+  },
+  {
+    "id": "mixed-labels",
+    "filename": "mixed-labels.png",
+    "lines": [
+      "Assignment Title: Community Interview Summary",
+      "Asignatura: SOC 130",
+      "Petsa ng pagpasa: Oktubre 18, 2026 6:45 PM",
+      "Instructions: Ibuod ang tatlong pangunahing sagot."
+    ],
+    "style": { "fontSize": 32, "background": "#FFFFFF", "foreground": "#171927", "rotationDegrees": -1.5 }
+  },
+  {
+    "id": "mixed-filipino-title-english-date",
+    "filename": "mixed-filipino-title-english-date.png",
+    "lines": [
+      "Pamagat: Database Design Exercise",
+      "Course: CS 240",
+      "Deadline: November 19, 2026 20:15",
+      "Panuto: Gumawa ng normalized schema."
+    ],
+    "style": { "fontSize": 34, "background": "#F6F3E9", "foreground": "#262832", "rotationDegrees": 1.5 }
+  },
+  {
+    "id": "missing-en-basic",
+    "filename": "missing-en-basic.png",
+    "lines": [
+      "Title: Photosynthesis Diagram",
+      "Subject: BIO 105",
+      "Instructions: Label every part clearly."
+    ],
+    "style": { "fontSize": 36, "background": "#FFFFFF", "foreground": "#171927", "rotationDegrees": 0 }
+  },
+  {
+    "id": "missing-fil-basic",
+    "filename": "missing-fil-basic.png",
+    "lines": [
+      "Pamagat: Sanaysay tungkol sa Wika",
+      "Asignatura: FIL 101",
+      "Panuto: Gumamit ng tatlong sanggunian."
+    ],
+    "style": { "fontSize": 34, "background": "#EEF2F7", "foreground": "#353A45", "rotationDegrees": -1 }
+  },
+  {
+    "id": "missing-mixed-deadline-policy",
+    "filename": "missing-mixed-deadline-policy.png",
+    "lines": [
+      "Title: Course Handbook Notes",
+      "Subject: EDU 100",
+      "Description: Basahin ang deadline policy before class."
+    ],
+    "style": { "fontSize": 33, "background": "#FFFFFF", "foreground": "#20232D", "rotationDegrees": 1 }
+  },
+  {
+    "id": "ambiguous-en-slash",
+    "filename": "ambiguous-en-slash.png",
+    "lines": [
+      "Title: Economics Exercise",
+      "Subject: ECON 101",
+      "Deadline: 08/09/2026"
+    ],
+    "style": { "fontSize": 36, "background": "#F6F3E9", "foreground": "#262832", "rotationDegrees": 0 }
+  },
+  {
+    "id": "ambiguous-fil-inline",
+    "filename": "ambiguous-fil-inline.png",
+    "lines": [
+      "Pamagat: Pagsasanay sa Balarila",
+      "Asignatura: FIL 105",
+      "Takdang petsa: 09/10/2026"
+    ],
+    "style": { "fontSize": 34, "background": "#FFFFFF", "foreground": "#171927", "rotationDegrees": -1.5 }
+  },
+  {
+    "id": "ambiguous-fil-multiline",
+    "filename": "ambiguous-fil-multiline.png",
+    "lines": [
+      "Pamagat: Maikling Ulat",
+      "Kurso: KOM 101",
+      "Petsa ng pagpasa",
+      "11/12/2026",
+      "3:00 PM"
+    ],
+    "style": { "fontSize": 35, "background": "#EEF2F7", "foreground": "#353A45", "rotationDegrees": 1.5 }
+  }
+]
