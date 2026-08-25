@@ -16,9 +16,9 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 Current milestone: **M5 — On-Device OCR and Editable Review**
 
-Current outcome: M4 image intake and preparation is complete. The Android flow now supports one Camera or Gallery image, contextual permission and settings recovery, native crop/rotation, oversized-image preparation, readable-quality guidance, private temporary-file cleanup, and an editable-image handoff boundary without uploading the image. The flow was verified in a development build with real emulator camera and Android photo-picker paths, cancellation/retry behavior, and 200% font scaling.
+Current outcome: M5 implementation is complete and its accuracy gates remain open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. The flow was verified end to end with the Android photo picker, repeated re-scan preparation, 200% font scaling, synthetic task save/delete, and private cache cleanup.
 
-Next recommended task: begin M5 by selecting an Expo-compatible ML Kit integration, then add cancellable on-device OCR behind the confirmed-image handoff while preserving the fully offline path.
+Next recommended task: build the consent-safe controlled OCR evaluation set, including mixed English/Filipino examples, then measure and iterate against every M5 accuracy gate before starting M6.
 
 ## Locked Product Decisions
 
@@ -47,7 +47,7 @@ Next recommended task: begin M5 by selecting an Expo-compatible ML Kit integrati
 | M2 | Local task experience | Complete | M1 |
 | M3 | Internal calendar and reminders | Complete | M2 |
 | M4 | Image intake and preparation | Complete | M1 |
-| M5 | On-device OCR and review | Not started | M4 |
+| M5 | On-device OCR and review | In progress | M4 |
 | M6 | Supabase backend and authentication | Not started | M2 |
 | M7 | Cloud synchronization | Not started | M6 |
 | M8 | Gemini-assisted extraction | Not started | M5, M6 |
@@ -224,21 +224,21 @@ Status: `[x] Complete`
 
 ## M5 — On-Device OCR and Editable Review
 
-Status: `[ ] Not started`
+Status: `[~] In progress — implementation complete; controlled accuracy gates pending`
 
-- [ ] Select an Expo-compatible ML Kit integration.
-- [ ] Run OCR on device.
-- [ ] Parse title, subject, deadline/time, task type, effort, and notes.
-- [ ] Preserve raw OCR separately from structured fields.
-- [ ] Track provenance and confidence per field.
-- [ ] Show cancellable scan progress.
-- [ ] Build extraction-review form.
-- [ ] Highlight ambiguous and missing fields individually.
-- [ ] Handle no text detected.
-- [ ] Handle ambiguous or missing deadlines.
-- [ ] Handle multiple assignments by requesting crop or selection.
-- [ ] Save only after explicit student confirmation.
-- [ ] Support a fully offline OCR path.
+- [x] Select an Expo-compatible ML Kit integration.
+- [x] Run OCR on device.
+- [x] Parse title, subject, deadline/time, task type, effort, and notes.
+- [x] Preserve raw OCR separately from structured fields.
+- [x] Track provenance and confidence per field.
+- [x] Show cancellable scan progress.
+- [x] Build extraction-review form.
+- [x] Highlight ambiguous and missing fields individually.
+- [x] Handle no text detected.
+- [x] Handle ambiguous or missing deadlines.
+- [x] Handle multiple assignments by requesting crop or selection.
+- [x] Save only after explicit student confirmation.
+- [x] Support a fully offline OCR path.
 
 ### Accuracy gates
 
@@ -438,7 +438,7 @@ These apply to every milestone rather than being postponed until release:
 | --- | --- | --- | --- |
 | Nunito/Inter package dependency conflict | Avoid forced install; bundle compatible local font files later | Rey / Gio | Before UI polish completion |
 | Expo dependency audit reports transitive findings | Review deliberately; do not use breaking `audit fix --force` | Rey | Before beta build |
-| ML Kit library compatibility with managed Expo | Evaluate development-build/native-module options | Rey | M5 |
+| ML Kit library compatibility with managed Expo | Use `expo-mlkit-ocr` with its bundled Android model in the Expo development build; keep native rebuild verification in release checks | Rey | M5/M10 |
 | Guest-to-account data migration behavior | Preserve local tasks; specify conflict rules before auth work | Rey | M6 |
 | School-domain verification | Use maintained allowlist, not literal `.edu` check | Rey | M6 |
 | AI allowance reset and premium price | Keep configurable; finalize with usage and student feedback | Rey | M8/M11 |

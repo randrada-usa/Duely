@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,17 +16,33 @@ import {
 
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { ScreenShell } from '../../src/components/ScreenShell';
+import { TaskForm } from '../../src/components/TaskForm';
+import {
+  buildMlKitProvenance,
+  extractTaskFromOcr,
+  scanReviewValues,
+  type ScanExtraction,
+} from '../../src/domain/scanExtraction';
 import {
   pickedImageError,
   type PreparedScanImage,
   type ScanImageSource,
 } from '../../src/domain/scanImage';
+import { subjectNameKey } from '../../src/domain/subject';
+import type { TaskDraft } from '../../src/domain/task';
+import {
+  OcrCancelledError,
+  startOnDeviceOcr,
+  type OcrRun,
+} from '../../src/services/ocr';
 import {
   cleanupAbandonedScanImages,
   deleteTemporaryScanImage,
   prepareScanImage,
   rotateScanImage,
 } from '../../src/services/scanImage';
+import { useReminders } from '../../src/store/ReminderStore';
+import { useTasks } from '../../src/store/TaskStore';
 import {
   colors,
   minimumTouchTarget,
@@ -35,6 +52,15 @@ import {
 
 type IntakeSource = 'camera' | 'gallery';
 type PermissionIssue = { source: IntakeSource; canAskAgain: boolean };
+type ScanStage =
+  | 'image'
+  | 'processing'
+  | 'review'
+  | 'no-text'
+  | 'multiple'
+  | 'ocr-error'
+  | 'saved';
+type OcrProgressStep = 'reading' | 'organizing';
 
 const pickerOptions: ImagePicker.ImagePickerOptions = {
   allowsEditing: true,
@@ -48,13 +74,20 @@ const pickerOptions: ImagePicker.ImagePickerOptions = {
 };
 
 export default function ScanScreen() {
+  const { addTask, canEditTasks, subjects } = useTasks();
+  const { defaultReminder } = useReminders();
   const [image, setImage] = useState<PreparedScanImage | null>(null);
-  const [isConfirmed, setIsConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [permissionIssue, setPermissionIssue] =
     useState<PermissionIssue | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [scanStage, setScanStage] = useState<ScanStage>('image');
+  const [ocrProgressStep, setOcrProgressStep] =
+    useState<OcrProgressStep>('reading');
+  const [extraction, setExtraction] = useState<ScanExtraction | null>(null);
+  const [savedTaskId, setSavedTaskId] = useState<string | null>(null);
   const activeImageUri = useRef<string | null>(null);
+  const activeOcrRun = useRef<OcrRun | null>(null);
   const isMounted = useRef(true);
 
   const acceptPickerResult = useCallback(
@@ -84,7 +117,9 @@ export default function ScanScreen() {
         deleteTemporaryScanImage(activeImageUri.current);
         activeImageUri.current = prepared.uri;
         setImage(prepared);
-        setIsConfirmed(false);
+        setScanStage('image');
+        setExtraction(null);
+        setSavedTaskId(null);
         setPermissionIssue(null);
         setError(null);
       } catch (caughtError) {
@@ -99,6 +134,8 @@ export default function ScanScreen() {
   );
 
   useEffect(() => {
+    isMounted.current = true;
+
     async function recoverInterruptedSelection() {
       try {
         const pendingResult = await ImagePicker.getPendingResultAsync();
@@ -115,6 +152,7 @@ export default function ScanScreen() {
     void recoverInterruptedSelection();
     return () => {
       isMounted.current = false;
+      activeOcrRun.current?.cancel();
       deleteTemporaryScanImage(activeImageUri.current);
     };
   }, [acceptPickerResult]);
@@ -239,7 +277,8 @@ export default function ScanScreen() {
       const rotated = await rotateScanImage(image);
       activeImageUri.current = rotated.uri;
       setImage(rotated);
-      setIsConfirmed(false);
+      setScanStage('image');
+      setExtraction(null);
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
@@ -252,11 +291,162 @@ export default function ScanScreen() {
   }
 
   function removeImage() {
+    activeOcrRun.current?.cancel();
+    activeOcrRun.current = null;
     deleteTemporaryScanImage(activeImageUri.current);
     activeImageUri.current = null;
     setImage(null);
-    setIsConfirmed(false);
+    setScanStage('image');
+    setExtraction(null);
+    setSavedTaskId(null);
     setError(null);
+  }
+
+  async function startExtraction() {
+    if (!image) return;
+    const run = startOnDeviceOcr(image.uri);
+    activeOcrRun.current?.cancel();
+    activeOcrRun.current = run;
+    setError(null);
+    setExtraction(null);
+    setOcrProgressStep('reading');
+    setScanStage('processing');
+
+    try {
+      const recognition = await run.result;
+      if (!isMounted.current || activeOcrRun.current !== run) return;
+
+      setOcrProgressStep('organizing');
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      if (!isMounted.current || activeOcrRun.current !== run) return;
+
+      const parsed = extractTaskFromOcr(recognition.text);
+      if (parsed.rawText.length < 3) {
+        setScanStage('no-text');
+        return;
+      }
+      if (parsed.hasMultipleAssignments) {
+        setScanStage('multiple');
+        return;
+      }
+
+      setExtraction(parsed);
+      setScanStage('review');
+    } catch (caughtError) {
+      if (caughtError instanceof OcrCancelledError) {
+        if (activeOcrRun.current === run) setScanStage('image');
+        return;
+      }
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Duely could not read this image. Please try again.',
+      );
+      setScanStage('ocr-error');
+    } finally {
+      if (activeOcrRun.current === run) activeOcrRun.current = null;
+    }
+  }
+
+  function cancelExtraction() {
+    const run = activeOcrRun.current;
+    activeOcrRun.current = null;
+    run?.cancel();
+    setOcrProgressStep('reading');
+    setScanStage('image');
+  }
+
+  function retryWith(source: IntakeSource) {
+    setError(null);
+    setExtraction(null);
+    setScanStage('image');
+    void beginSource(source);
+  }
+
+  function confirmRescan(source: IntakeSource) {
+    Alert.alert(
+      'Discard this extraction review?',
+      'Your edits and extracted fields have not been saved.',
+      [
+        { text: 'Keep reviewing', style: 'cancel' },
+        {
+          text: source === 'camera' ? 'Retake' : 'Choose image',
+          style: 'destructive',
+          onPress: () => retryWith(source),
+        },
+      ],
+    );
+  }
+
+  function saveExtractedTask(draft: TaskDraft, subjectName: string) {
+    if (!extraction || !canEditTasks) {
+      setError(
+        'Task storage is unavailable. Keep this review open and try again after storage recovers.',
+      );
+      return;
+    }
+
+    const provenance = buildMlKitProvenance(extraction, {
+      title: draft.title,
+      subject: subjectName,
+      dueAt: draft.dueAt,
+      taskType: draft.taskType,
+      priority: draft.priority,
+      estimatedEffortMinutes: draft.estimatedEffortMinutes,
+      notes: draft.notes,
+    });
+    const saved = addTask({
+      ...draft,
+      sourceImageRef: null,
+      extractionProvenance: provenance,
+    });
+    if (!saved) {
+      setError('Duely could not save this task. Your review is still here; try again.');
+      return;
+    }
+
+    deleteTemporaryScanImage(activeImageUri.current);
+    activeImageUri.current = null;
+    setImage(null);
+    setExtraction(null);
+    setError(null);
+    setSavedTaskId(saved.id);
+    setScanStage('saved');
+  }
+
+  if (scanStage === 'saved' && savedTaskId) {
+    return (
+      <ScreenShell scroll>
+        <View style={styles.successState}>
+          <View style={styles.successIcon}>
+            <Ionicons
+              accessibilityElementsHidden
+              color={colors.success}
+              name="checkmark-circle"
+              size={54}
+            />
+          </View>
+          <Text accessibilityRole="header" style={styles.title}>
+            Task saved
+          </Text>
+          <Text style={styles.successBody}>
+            Duely saved the details you reviewed and cleared the temporary scan image.
+          </Text>
+        </View>
+        <PrimaryButton
+          label="Open task"
+          onPress={() => router.push(`/task/${savedTaskId}`)}
+        />
+        <SecondaryButton
+          label="Scan another assignment"
+          onPress={() => {
+            setSavedTaskId(null);
+            setScanStage('image');
+          }}
+        />
+        <TextButton label="Return Home" onPress={() => router.replace('/')} />
+      </ScreenShell>
+    );
   }
 
   if (permissionIssue) {
@@ -319,6 +509,165 @@ export default function ScanScreen() {
     );
   }
 
+  if (image && scanStage === 'processing') {
+    const organizing = ocrProgressStep === 'organizing';
+    return (
+      <ScreenShell scroll>
+        <View accessibilityLiveRegion="polite" style={styles.progressState}>
+          <View style={styles.progressRings}>
+            <View style={styles.progressRingOuter} />
+            <View style={styles.progressRingInner} />
+            <Ionicons
+              accessibilityElementsHidden
+              color={colors.primary}
+              name="scan-outline"
+              size={52}
+            />
+          </View>
+          <Text accessibilityRole="header" style={styles.progressTitle}>
+            Duely is reading your assignment…
+          </Text>
+          <Text style={styles.progressBody}>
+            Text recognition stays on this device. This usually finishes in a few seconds.
+          </Text>
+        </View>
+
+        <View style={styles.progressSteps}>
+          <ProgressStep active={!organizing} complete={organizing} label="Detecting text in image" />
+          <ProgressStep active={organizing} complete={false} label="Organizing editable fields" />
+          <ProgressStep active={false} complete={false} label="Waiting for your review" />
+        </View>
+        <TextButton label="Cancel scan" onPress={cancelExtraction} />
+      </ScreenShell>
+    );
+  }
+
+  if (
+    image &&
+    (scanStage === 'no-text' ||
+      scanStage === 'multiple' ||
+      scanStage === 'ocr-error')
+  ) {
+    const title =
+      scanStage === 'no-text'
+        ? 'No text found'
+        : scanStage === 'multiple'
+          ? 'More than one assignment found'
+          : 'Text extraction did not finish';
+    const message =
+      scanStage === 'no-text'
+        ? 'Try a sharper, closer image with the assignment text fully visible.'
+        : scanStage === 'multiple'
+          ? 'Crop or choose an image containing only one assignment before continuing.'
+          : error ?? 'Check the image and try again.';
+
+    return (
+      <ScreenShell scroll>
+        <View style={styles.recoveryState}>
+          <Ionicons
+            accessibilityElementsHidden
+            color={colors.warning}
+            name="alert-circle-outline"
+            size={48}
+          />
+          <Text accessibilityRole="header" style={styles.title}>
+            {title}
+          </Text>
+          <Text style={styles.recoveryBody}>{message}</Text>
+        </View>
+        {scanStage === 'ocr-error' && (
+          <PrimaryButton label="Try text extraction again" onPress={() => void startExtraction()} />
+        )}
+        <SecondaryButton
+          icon="camera-outline"
+          label="Retake / crop"
+          onPress={() => retryWith('camera')}
+        />
+        <SecondaryButton
+          icon="images-outline"
+          label="Choose / crop again"
+          onPress={() => retryWith('gallery')}
+        />
+        <SecondaryButton
+          label="Enter task manually"
+          onPress={() => {
+            removeImage();
+            router.push('/task/new');
+          }}
+        />
+        <TextButton label="Back to image review" onPress={() => setScanStage('image')} />
+      </ScreenShell>
+    );
+  }
+
+  if (image && scanStage === 'review' && extraction) {
+    const values = scanReviewValues(extraction);
+    const matchingSubject = subjects.find(
+      (subject) =>
+        subjectNameKey(subject.name) === subjectNameKey(values.subject),
+    );
+    const initial: TaskDraft = {
+      title: values.title,
+      subjectId: matchingSubject?.id ?? null,
+      notes: values.notes,
+      dueAt: values.dueAt,
+      taskType: values.taskType,
+      estimatedEffortMinutes: values.estimatedEffortMinutes,
+      priority: values.priority,
+      reminderMinutesBefore: values.dueAt ? defaultReminder : null,
+    };
+
+    return (
+      <TaskForm
+        defaultReminder={defaultReminder}
+        fieldNotices={extraction.issues}
+        footer={
+          <TextButton
+            danger
+            label="Re-scan"
+            onPress={() =>
+              confirmRescan(image.source === 'camera' ? 'camera' : 'gallery')
+            }
+          />
+        }
+        header={
+          <View style={styles.reviewHeader}>
+            <View>
+              <Text accessibilityRole="header" style={styles.title}>
+                Review extraction
+              </Text>
+              <Text style={styles.subtitle}>
+                Check every detail. Fields needing attention are marked individually.
+              </Text>
+            </View>
+            <View style={styles.reviewPreviewRow}>
+              <Image
+                accessibilityLabel="Source assignment image preview"
+                resizeMode="cover"
+                source={{ uri: image.uri }}
+                style={styles.reviewPreview}
+              />
+              <View style={styles.reviewPrivacyCopy}>
+                <Text style={styles.reviewPrivacyTitle}>On-device extraction</Text>
+                <Text style={styles.reviewPrivacyBody}>
+                  Raw recognized text and the temporary image are cleared after you save or re-scan.
+                </Text>
+              </View>
+            </View>
+            {error && <ErrorMessage message={error} />}
+          </View>
+        }
+        initial={initial}
+        initialSubjectName={matchingSubject ? '' : values.subject}
+        key={`${image.uri}-${extraction.rawText.length}`}
+        onSubmit={(draft, context) =>
+          saveExtractedTask(draft, context.subjectName)
+        }
+        submitLabel="Confirm & Save"
+      />
+    );
+  }
+
   if (image) {
     const retrySource: IntakeSource = image.source === 'camera' ? 'camera' : 'gallery';
     const sourceLabel = image.source === 'camera' ? 'Camera' : 'Gallery';
@@ -327,12 +676,10 @@ export default function ScanScreen() {
       <ScreenShell scroll>
         <View style={styles.header}>
           <Text accessibilityRole="header" style={styles.title}>
-            {isConfirmed ? 'Image ready' : 'Check your image'}
+            Check your image
           </Text>
           <Text style={styles.subtitle}>
-            {isConfirmed
-              ? 'Your assignment image is prepared locally for text extraction.'
-              : 'Make sure every instruction and deadline is clear before continuing.'}
+            Make sure every instruction and deadline is clear before continuing.
           </Text>
         </View>
 
@@ -372,28 +719,11 @@ export default function ScanScreen() {
 
         {error && <ErrorMessage message={error} />}
 
-        {isConfirmed ? (
-          <View style={styles.readyCard}>
-            <Ionicons
-              accessibilityElementsHidden
-              color={colors.success}
-              name="checkmark-circle"
-              size={30}
-            />
-            <View style={styles.readyCopy}>
-              <Text style={styles.readyTitle}>Ready for extraction</Text>
-              <Text style={styles.cardBody}>
-                OCR and editable extracted fields arrive in the next scanning step.
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <PrimaryButton
-            disabled={isProcessing}
-            label="Use this image"
-            onPress={() => setIsConfirmed(true)}
-          />
-        )}
+        <PrimaryButton
+          disabled={isProcessing}
+          label="Extract text on this device"
+          onPress={() => void startExtraction()}
+        />
 
         {isProcessing && (
           <View accessibilityLabel="Preparing image" style={styles.processingRow}>
@@ -552,6 +882,49 @@ function SecondaryButton({
       )}
       <Text style={styles.secondaryButtonText}>{label}</Text>
     </Pressable>
+  );
+}
+
+function ProgressStep({
+  active,
+  complete,
+  label,
+}: {
+  active: boolean;
+  complete: boolean;
+  label: string;
+}) {
+  const state = complete ? 'complete' : active ? 'in progress' : 'waiting';
+  return (
+    <View accessibilityLabel={`${label}, ${state}`} style={styles.progressStep}>
+      <View
+        style={[
+          styles.progressStepIcon,
+          (active || complete) && styles.progressStepIconActive,
+        ]}
+      >
+        {complete ? (
+          <Ionicons
+            accessibilityElementsHidden
+            color={colors.surface}
+            name="checkmark"
+            size={17}
+          />
+        ) : active ? (
+          <ActivityIndicator color={colors.surface} size="small" />
+        ) : (
+          <View style={styles.progressStepDot} />
+        )}
+      </View>
+      <Text
+        style={[
+          styles.progressStepText,
+          (active || complete) && styles.progressStepTextActive,
+        ]}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }
 
@@ -728,16 +1101,131 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF0F0',
   },
   errorText: { flex: 1, color: colors.danger, fontSize: 15, lineHeight: 22 },
-  readyCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+  successState: {
+    alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.lg,
-    borderRadius: radius.lg,
+    paddingVertical: spacing.xxl,
+  },
+  successIcon: {
+    width: 88,
+    height: 88,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 44,
     backgroundColor: '#EAF9F0',
   },
-  readyCopy: { flex: 1 },
-  readyTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  successBody: {
+    maxWidth: 420,
+    color: colors.textMuted,
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  progressState: {
+    alignItems: 'center',
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.lg,
+  },
+  progressRings: {
+    width: 156,
+    height: 156,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressRingOuter: {
+    position: 'absolute',
+    width: 156,
+    height: 156,
+    borderWidth: 2,
+    borderColor: '#C8CEFF',
+    borderRadius: 78,
+  },
+  progressRingInner: {
+    position: 'absolute',
+    width: 112,
+    height: 112,
+    borderWidth: 2,
+    borderColor: '#AAB5FF',
+    borderRadius: 56,
+    backgroundColor: colors.surfaceSubtle,
+  },
+  progressTitle: {
+    marginTop: spacing.xl,
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  progressBody: {
+    marginTop: spacing.sm,
+    color: colors.textMuted,
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  progressSteps: {
+    gap: spacing.md,
+    padding: spacing.xl,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+  },
+  progressStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  progressStepIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 17,
+    backgroundColor: colors.surfaceSubtle,
+  },
+  progressStepIconActive: { backgroundColor: colors.primary },
+  progressStepDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.border,
+  },
+  progressStepText: { flex: 1, color: colors.textMuted, fontSize: 16 },
+  progressStepTextActive: { color: colors.text, fontWeight: '700' },
+  recoveryState: {
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.xl,
+  },
+  recoveryBody: {
+    maxWidth: 440,
+    color: colors.textMuted,
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  reviewHeader: { gap: spacing.lg },
+  reviewPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceSubtle,
+  },
+  reviewPreview: {
+    width: 88,
+    height: 88,
+    borderRadius: radius.md,
+    backgroundColor: '#10101F',
+  },
+  reviewPrivacyCopy: { flex: 1 },
+  reviewPrivacyTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  reviewPrivacyBody: {
+    marginTop: spacing.xs,
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
   helperText: { flexShrink: 1, color: colors.textMuted, fontSize: 14, lineHeight: 21 },
   processingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   reviewActions: { gap: spacing.sm },

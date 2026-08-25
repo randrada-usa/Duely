@@ -55,7 +55,8 @@
           "imageWidth": 200,
           "resizeMode": "contain"
         }
-      ]
+      ],
+      "expo-mlkit-ocr"
     ],
     "extra": {
       "eas": {

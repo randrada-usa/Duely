@@ -1,5 +1,10 @@
 import { Directory, File, Paths } from 'expo-file-system';
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import {
+  ImageManipulator,
+  SaveFormat,
+  type ImageManipulatorContext,
+  type ImageRef,
+} from 'expo-image-manipulator';
 import type { ImagePickerAsset } from 'expo-image-picker';
 
 import {
@@ -11,6 +16,22 @@ import {
 } from '../domain/scanImage';
 
 const MANAGED_SCAN_PREFIX = 'duely-scan-';
+
+function releaseManipulation(
+  context: ImageManipulatorContext | null,
+  image: ImageRef | null,
+) {
+  try {
+    image?.release();
+  } catch {
+    // A completed native image may already have been released by the platform.
+  }
+  try {
+    context?.release();
+  } catch {
+    // Native cleanup is best-effort and must not replace the user-facing result.
+  }
+}
 
 function deleteCacheFile(uri: string) {
   if (!uri.startsWith(Paths.cache.uri)) return;
@@ -57,12 +78,14 @@ export async function prepareScanImage(
   if (validationError) throw new Error(validationError);
 
   let savedUri: string | null = null;
+  let context: ImageManipulatorContext | null = null;
+  let rendered: ImageRef | null = null;
   try {
-    const context = ImageManipulator.manipulate(asset.uri);
+    context = ImageManipulator.manipulate(asset.uri);
     const resize = scanImageResize(asset.width, asset.height);
     if (resize) context.resize(resize);
 
-    const rendered = await context.renderAsync();
+    rendered = await context.renderAsync();
     const saved = await rendered.saveAsync({
       base64: false,
       compress: 0.9,
@@ -93,6 +116,8 @@ export async function prepareScanImage(
     throw new Error(
       'Duely could not prepare this image. Try again or choose another image.',
     );
+  } finally {
+    releaseManipulation(context, rendered);
   }
 }
 
@@ -100,10 +125,12 @@ export async function rotateScanImage(
   image: PreparedScanImage,
 ): Promise<PreparedScanImage> {
   let savedUri: string | null = null;
+  let context: ImageManipulatorContext | null = null;
+  let rendered: ImageRef | null = null;
   try {
-    const context = ImageManipulator.manipulate(image.uri);
+    context = ImageManipulator.manipulate(image.uri);
     context.rotate(90);
-    const rendered = await context.renderAsync();
+    rendered = await context.renderAsync();
     const saved = await rendered.saveAsync({
       base64: false,
       compress: 0.96,
@@ -124,6 +151,8 @@ export async function rotateScanImage(
   } catch {
     if (savedUri) deleteCacheFile(savedUri);
     throw new Error('Duely could not rotate this image. Try again.');
+  } finally {
+    releaseManipulation(context, rendered);
   }
 }
 

@@ -1,5 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Platform,
   Pressable,
@@ -12,11 +12,12 @@ import {
 
 import { deadlineParts, parseLocalDeadline, pickerDate } from '../domain/deadline';
 import { REMINDER_OPTIONS } from '../domain/reminder';
-import { UNASSIGNED_SUBJECT_NAME } from '../domain/subject';
+import { subjectNameKey, UNASSIGNED_SUBJECT_NAME } from '../domain/subject';
 import {
   EFFORT_OPTIONS,
   TASK_TYPE_OPTIONS,
   type EstimatedEffortMinutes,
+  type ExtractedTaskField,
   type ReminderMinutes,
   type TaskDraft,
   type TaskPriority,
@@ -35,9 +36,15 @@ type TaskFormProps = {
   initial?: TaskDraft;
   defaultReminder?: ReminderMinutes | null;
   submitLabel: string;
-  onSubmit: (draft: TaskDraft) => void;
+  onSubmit: (draft: TaskDraft, context: TaskFormSubmitContext) => void;
   onDirtyChange?: (hasUnsavedChanges: boolean) => void;
+  fieldNotices?: Partial<Record<ExtractedTaskField, string>>;
+  footer?: ReactNode;
+  header?: ReactNode;
+  initialSubjectName?: string;
 };
+
+export type TaskFormSubmitContext = { subjectName: string };
 
 const blank: TaskDraft = {
   title: '',
@@ -56,6 +63,10 @@ export function TaskForm({
   submitLabel,
   onSubmit,
   onDirtyChange,
+  fieldNotices = {},
+  footer,
+  header,
+  initialSubjectName = '',
 }: TaskFormProps) {
   const formRef = useRef<ScrollView>(null);
   const { addSubject, subjects } = useTasks();
@@ -72,10 +83,15 @@ export function TaskForm({
   const [priority, setPriority] = useState<TaskPriority>(initial.priority);
   const [reminderMinutesBefore, setReminderMinutesBefore] =
     useState<ReminderMinutes | null>(initial.reminderMinutesBefore ?? null);
-  const [showSubjectInput, setShowSubjectInput] = useState(false);
-  const [newSubjectName, setNewSubjectName] = useState('');
+  const [showSubjectInput, setShowSubjectInput] = useState(
+    Boolean(initialSubjectName.trim()),
+  );
+  const [newSubjectName, setNewSubjectName] = useState(initialSubjectName.trim());
   const [subjectError, setSubjectError] = useState('');
   const [error, setError] = useState('');
+  const [reviewedNotices, setReviewedNotices] = useState<
+    Partial<Record<ExtractedTaskField, true>>
+  >({});
 
   const currentSnapshot: TaskFormSnapshot = {
     title,
@@ -112,6 +128,17 @@ export function TaskForm({
     return () => cancelAnimationFrame(frame);
   }, [error]);
 
+  function acknowledgeNotice(field: ExtractedTaskField) {
+    if (!fieldNotices[field]) return;
+    setReviewedNotices((current) =>
+      current[field] ? current : { ...current, [field]: true },
+    );
+  }
+
+  function noticeFor(field: ExtractedTaskField) {
+    return reviewedNotices[field] ? undefined : fieldNotices[field];
+  }
+
   function submit() {
     if (!title.trim()) {
       setError('Enter a task title.');
@@ -124,17 +151,46 @@ export function TaskForm({
       return;
     }
 
+    let resolvedSubjectId = subjectId;
+    let resolvedSubjectName =
+      subjects.find((subject) => subject.id === subjectId)?.name ?? '';
+    if (!resolvedSubjectId && showSubjectInput && newSubjectName.trim()) {
+      const matchingSubject = subjects.find(
+        (subject) =>
+          subjectNameKey(subject.name) === subjectNameKey(newSubjectName),
+      );
+      if (matchingSubject) {
+        resolvedSubjectId = matchingSubject.id;
+        resolvedSubjectName = matchingSubject.name;
+      } else {
+        const result = addSubject(newSubjectName);
+        if (!result.subject) {
+          setSubjectError(result.error);
+          return;
+        }
+        resolvedSubjectId = result.subject.id;
+        resolvedSubjectName = result.subject.name;
+      }
+      setSubjectId(resolvedSubjectId);
+    }
+
     setError('');
-    onSubmit({
-      title: title.trim(),
-      subjectId,
-      notes: notes.trim(),
-      dueAt: deadline.dueAt,
-      taskType,
-      estimatedEffortMinutes,
-      priority,
-      reminderMinutesBefore,
-    });
+    setSubjectError('');
+    onSubmit(
+      {
+        title: title.trim(),
+        subjectId: resolvedSubjectId,
+        notes: notes.trim(),
+        dueAt: deadline.dueAt,
+        taskType,
+        estimatedEffortMinutes,
+        priority,
+        reminderMinutesBefore,
+        sourceImageRef: initial.sourceImageRef,
+        extractionProvenance: initial.extractionProvenance,
+      },
+      { subjectName: resolvedSubjectName },
+    );
   }
 
   function createSubject() {
@@ -148,6 +204,7 @@ export function TaskForm({
     setNewSubjectName('');
     setSubjectError('');
     setShowSubjectInput(false);
+    acknowledgeNotice('subject');
   }
 
   function setNativeDeadline(selected: Date) {
@@ -160,6 +217,7 @@ export function TaskForm({
     } else {
       setTime(selectedParts.time);
     }
+    acknowledgeNotice('dueAt');
     setPickerMode(null);
   }
 
@@ -168,6 +226,7 @@ export function TaskForm({
     setTime('');
     setReminderMinutesBefore(null);
     setPickerMode(null);
+    acknowledgeNotice('dueAt');
   }
 
   const subjectOptions = [
@@ -181,12 +240,17 @@ export function TaskForm({
       keyboardShouldPersistTaps="handled"
       ref={formRef}
     >
+      {header}
       <Field
         label="Title *"
-        onChangeText={setTitle}
+        onChangeText={(value) => {
+          setTitle(value);
+          acknowledgeNotice('title');
+        }}
         placeholder="Research paper draft"
         value={title}
       />
+      <FieldNotice message={noticeFor('title')} />
 
       <View style={styles.sectionHeader}>
         <Text style={styles.label}>Subject</Text>
@@ -196,6 +260,7 @@ export function TaskForm({
             if (showSubjectInput) setNewSubjectName('');
             setShowSubjectInput(!showSubjectInput);
             setSubjectError('');
+            acknowledgeNotice('subject');
           }}
           style={({ pressed }) => [
             styles.addSubjectButton,
@@ -208,7 +273,10 @@ export function TaskForm({
         </Pressable>
       </View>
       <SelectionChips
-        onSelect={setSubjectId}
+        onSelect={(value) => {
+          setSubjectId(value);
+          acknowledgeNotice('subject');
+        }}
         options={subjectOptions}
         value={subjectId}
       />
@@ -220,6 +288,7 @@ export function TaskForm({
             onChangeText={(value) => {
               setNewSubjectName(value);
               setSubjectError('');
+              acknowledgeNotice('subject');
             }}
             onSubmitEditing={createSubject}
             placeholder="e.g. CS 301 · Algorithms"
@@ -245,6 +314,7 @@ export function TaskForm({
           {subjectError}
         </Text>
       )}
+      <FieldNotice message={noticeFor('subject')} />
 
       {Platform.OS === 'android' ? (
         <>
@@ -326,7 +396,10 @@ export function TaskForm({
             <Field
               keyboardType="numbers-and-punctuation"
               label="Due date"
-              onChangeText={setDate}
+              onChangeText={(value) => {
+                setDate(value);
+                acknowledgeNotice('dueAt');
+              }}
               placeholder="YYYY-MM-DD"
               value={date}
             />
@@ -335,20 +408,28 @@ export function TaskForm({
             <Field
               keyboardType="numbers-and-punctuation"
               label="Time"
-              onChangeText={setTime}
+              onChangeText={(value) => {
+                setTime(value);
+                acknowledgeNotice('dueAt');
+              }}
               placeholder="23:59"
               value={time}
             />
           </View>
         </View>
       )}
+      <FieldNotice message={noticeFor('dueAt')} />
 
       <Text style={styles.label}>Task type</Text>
       <SelectionChips
-        onSelect={setTaskType}
+        onSelect={(value) => {
+          setTaskType(value);
+          acknowledgeNotice('taskType');
+        }}
         options={TASK_TYPE_OPTIONS}
         value={taskType}
       />
+      <FieldNotice message={noticeFor('taskType')} />
 
       <Text style={styles.label}>Priority</Text>
       <View accessibilityRole="radiogroup" style={styles.priorityRow}>
@@ -359,7 +440,10 @@ export function TaskForm({
               accessibilityRole="radio"
               accessibilityState={{ selected }}
               key={value}
-              onPress={() => setPriority(value)}
+              onPress={() => {
+                setPriority(value);
+                acknowledgeNotice('priority');
+              }}
               style={[styles.priority, selected && styles.prioritySelected]}
             >
               <Text
@@ -375,13 +459,18 @@ export function TaskForm({
           );
         })}
       </View>
+      <FieldNotice message={noticeFor('priority')} />
 
       <Text style={styles.label}>Estimated workload</Text>
       <SelectionChips
-        onSelect={setEstimatedEffortMinutes}
+        onSelect={(value) => {
+          setEstimatedEffortMinutes(value);
+          acknowledgeNotice('estimatedEffortMinutes');
+        }}
         options={EFFORT_OPTIONS}
         value={estimatedEffortMinutes}
       />
+      <FieldNotice message={noticeFor('estimatedEffortMinutes')} />
 
       <Text style={styles.label}>Reminder</Text>
       <View accessibilityRole="radiogroup" style={styles.reminderOptions}>
@@ -423,17 +512,36 @@ export function TaskForm({
       <Field
         label="Notes"
         multiline
-        onChangeText={setNotes}
+        onChangeText={(value) => {
+          setNotes(value);
+          acknowledgeNotice('notes');
+        }}
         placeholder="Instructions or details"
         value={notes}
       />
+      <FieldNotice message={noticeFor('notes')} />
       {!!error && (
         <Text accessibilityRole="alert" style={styles.error}>
           {error}
         </Text>
       )}
       <PrimaryButton label={submitLabel} onPress={submit} />
+      {footer}
     </ScrollView>
+  );
+}
+
+function FieldNotice({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <View
+      accessible
+      accessibilityLabel={`Needs attention. ${message}`}
+      style={styles.fieldNotice}
+    >
+      <Text style={styles.fieldNoticeMark}>!</Text>
+      <Text style={styles.fieldNoticeText}>{message}</Text>
+    </View>
   );
 }
 
@@ -607,6 +715,33 @@ const styles = StyleSheet.create({
   radioDotSelected: { borderWidth: 5, borderColor: colors.primary },
   disabled: { opacity: 0.45 },
   helper: { marginTop: -spacing.sm, color: colors.textMuted, fontSize: 14 },
+  fieldNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginTop: -spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: '#FFF7E8',
+  },
+  fieldNoticeMark: {
+    width: 22,
+    height: 22,
+    overflow: 'hidden',
+    borderRadius: radius.full,
+    backgroundColor: '#F4C98B',
+    color: colors.warning,
+    fontSize: 14,
+    fontWeight: '900',
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  fieldNoticeText: {
+    flex: 1,
+    color: colors.warning,
+    fontSize: 16,
+    lineHeight: 24,
+  },
   error: { color: colors.danger, fontSize: 14, lineHeight: 20 },
   pressed: { opacity: 0.65 },
 });
