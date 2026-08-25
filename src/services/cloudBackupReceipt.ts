@@ -7,6 +7,7 @@ export type CloudBackupReceipt = {
   taskIds: string[];
   subjectIds: string[];
   confirmedAt: string;
+  dataFingerprint?: string;
 };
 
 export type CloudBackupReceiptStorage = {
@@ -38,7 +39,9 @@ export function decodeCloudBackupReceipt(
       !isStringArray(parsed.taskIds) ||
       !isStringArray(parsed.subjectIds) ||
       typeof parsed.confirmedAt !== 'string' ||
-      Number.isNaN(new Date(parsed.confirmedAt).getTime())
+      Number.isNaN(new Date(parsed.confirmedAt).getTime()) ||
+      (parsed.dataFingerprint !== undefined &&
+        typeof parsed.dataFingerprint !== 'string')
     ) {
       return null;
     }
@@ -46,6 +49,17 @@ export function decodeCloudBackupReceipt(
   } catch {
     return null;
   }
+}
+
+export function cloudTaskDataFingerprint(data: LocalTaskData) {
+  return JSON.stringify({
+    subjects: [...data.subjects]
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map(({ id, name, createdAt }) => ({ id, name, createdAt })),
+    tasks: [...data.tasks]
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map(({ sourceImageRef: _deviceOnly, ...task }) => task),
+  });
 }
 
 export async function loadCloudBackupReceipt(
@@ -67,6 +81,7 @@ export async function saveCloudBackupReceipt(
     taskIds: data.tasks.map((task) => task.id),
     subjectIds: data.subjects.map((subject) => subject.id),
     confirmedAt,
+    dataFingerprint: cloudTaskDataFingerprint(data),
   };
   await storage.setItem(cloudBackupReceiptKey(userId), JSON.stringify(receipt));
   return receipt;

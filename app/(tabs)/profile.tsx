@@ -35,14 +35,22 @@ export default function ProfileScreen() {
   } = useReminders();
   const {
     isBackingUp,
+    isSyncing,
+    isRestoring,
     pendingTaskCount,
     pendingSubjectCount,
     shouldOfferBackup,
+    shouldOfferRestore,
+    restoreTaskCount,
     backupError,
+    syncError,
+    lastSyncedAt,
     lastBackupResult,
     backUpLocalData,
     dismissBackupPrompt,
     clearBackupResult,
+    retrySync,
+    restoreFromCloud,
   } = useCloudBackup();
 
   const permissionLabel = permission.granted
@@ -160,7 +168,7 @@ export default function ProfileScreen() {
             : status === 'loading'
               ? 'Checking your account session…'
               : status === 'authenticated'
-                ? 'You are signed in. Cloud task synchronization is not enabled yet, so local tasks remain unchanged.'
+                ? 'You are signed in. After your first backup, this phone remains the source of truth and confirmed changes are mirrored to your account.'
                 : status === 'error'
                   ? authError
                   : 'Choose Google or use a one-time school-email link. Signing in keeps your local tasks on this device.'}
@@ -304,6 +312,36 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
         )}
+        {status === 'authenticated' && shouldOfferRestore && (
+          <View style={styles.backupPanel}>
+            <View style={styles.cardHeading}>
+              <Ionicons name="cloud-download-outline" size={24} color={colors.primary} />
+              <View style={styles.headingCopy}>
+                <Text style={styles.successTitle}>Restore cloud backup?</Text>
+                <Text style={styles.cardBody}>
+                  This phone has no local tasks. Restore {restoreTaskCount}{' '}
+                  {restoreTaskCount === 1 ? 'task' : 'tasks'} from your Duely account?
+                  Nothing is restored without your confirmation.
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isRestoring }}
+              disabled={isRestoring}
+              onPress={() => void restoreFromCloud()}
+              style={({ pressed }) => [
+                styles.action,
+                pressed && styles.actionPressed,
+                isRestoring && styles.actionDisabled,
+              ]}
+            >
+              <Text style={styles.actionText}>
+                {isRestoring ? 'Restoring…' : 'Restore to this phone'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
         {status === 'authenticated' && !!backupError && (
           <Text accessibilityRole="alert" style={styles.error}>
             {backupError}
@@ -327,6 +365,31 @@ export default function ProfileScreen() {
             >
               <Text style={styles.secondaryActionText}>Done</Text>
             </Pressable>
+          </View>
+        )}
+        {status === 'authenticated' && !!lastSyncedAt && !lastBackupResult && (
+          <View accessibilityLiveRegion="polite" style={styles.successPanel}>
+            <Text style={styles.successTitle}>
+              {isSyncing ? 'Updating cloud backup…' : 'Cloud backup active'}
+            </Text>
+            <Text style={styles.cardBody}>
+              This phone is the source of truth. Cloud changes never replace local tasks silently.
+            </Text>
+            {!!syncError && (
+              <>
+                <Text accessibilityRole="alert" style={styles.error}>{syncError}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={retrySync}
+                  style={({ pressed }) => [
+                    styles.secondaryAction,
+                    pressed && styles.secondaryActionPressed,
+                  ]}
+                >
+                  <Text style={styles.secondaryActionText}>Retry cloud backup</Text>
+                </Pressable>
+              </>
+            )}
           </View>
         )}
         {status === 'authenticated' && (

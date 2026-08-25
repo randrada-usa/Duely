@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { LocalTaskData } from '../domain/subject';
 import {
   cloudBackupReceiptKey,
+  cloudTaskDataFingerprint,
   decodeCloudBackupReceipt,
   loadCloudBackupReceipt,
   pendingCloudBackupCounts,
@@ -62,5 +63,17 @@ describe('cloud backup receipts', () => {
         confirmedAt: '2026-08-25T00:00:00.000Z',
       }),
     ).toEqual({ tasks: 1, subjects: 1 });
+  });
+
+  it('does not include device-only image references in the mirror fingerprint', () => {
+    const first = {
+      ...data,
+      tasks: [{ ...data.tasks[0], sourceImageRef: 'file:///first.jpg' }],
+    } as LocalTaskData;
+    const second = {
+      ...data,
+      tasks: [{ ...data.tasks[0], sourceImageRef: 'file:///second.jpg' }],
+    } as LocalTaskData;
+    expect(cloudTaskDataFingerprint(first)).toBe(cloudTaskDataFingerprint(second));
   });
 });

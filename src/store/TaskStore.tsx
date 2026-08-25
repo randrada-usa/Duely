@@ -27,6 +27,7 @@ import {
 import {
   createTaskPersistenceQueue,
   loadLocalTaskData,
+  persistLocalTaskData,
   resetLocalTaskData as clearLocalTaskData,
 } from '../services/taskStorage';
 
@@ -54,6 +55,7 @@ type TaskStoreValue = LocalTaskData & {
   canResetLocalData: boolean;
   isResettingLocalData: boolean;
   resetLocalData: () => Promise<boolean>;
+  restoreLocalData: (data: LocalTaskData) => Promise<boolean>;
   addTask: (draft: TaskDraft) => Task | null;
   updateTask: (id: string, draft: TaskDraft) => void;
   completeTask: (id: string, completedAt: string) => void;
@@ -152,6 +154,24 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
       setIsResettingLocalData(false);
     }
   }, [isResettingLocalData, storageIssue]);
+
+  const restoreLocalData = useCallback(
+    async (restored: LocalTaskData) => {
+      if (!canPersist || data.tasks.length > 0 || data.subjects.length > 0) {
+        return false;
+      }
+      try {
+        await persistLocalTaskData(AsyncStorage, restored);
+        setData(restored);
+        return true;
+      } catch {
+        setStorageIssue('write');
+        setStorageError(WRITE_ERROR);
+        return false;
+      }
+    },
+    [canPersist, data.subjects.length, data.tasks.length],
+  );
 
   const addTask = useCallback(
     (draft: TaskDraft) => {
@@ -319,6 +339,7 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
       canResetLocalData: storageIssue === 'corrupt',
       isResettingLocalData,
       resetLocalData,
+      restoreLocalData,
       addTask,
       updateTask,
       completeTask,
@@ -345,6 +366,7 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
       renameSubject,
       reopenTask,
       resetLocalData,
+      restoreLocalData,
       storageError,
       storageIssue,
       undoTaskCompletion,
