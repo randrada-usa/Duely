@@ -18,7 +18,7 @@ Current milestones: **M5 — On-Device OCR and Editable Review**, **M6 — Supab
 
 Current outcome: M5 implementation is complete and its end-to-end accuracy gates remain open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. A separate 12-image synthetic Android run on the Pixel 7 completed all images at 99.5% aggregate token accuracy and produced 11/12 parser-ready results; one explicit deadline did not match, so the controlled deadline gate remains open. These small synthetic results validate the harness but do not certify beta-scan accuracy.
 
-Next recommended task: run the new explicit guest-to-account backup once from the authenticated Android build, confirm the resulting subjects, tasks, and reminders remotely, and then test account isolation with a second user. Keep the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
+Next recommended task: test account isolation with a second authenticated user, then define conflict handling and the queued retry model for ongoing create/update/delete synchronization. Keep the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
 
 ## Locked Product Decisions
 
@@ -271,7 +271,7 @@ Status: `[~] In progress`
 - [x] Add Supabase client with secure session persistence.
 - [x] Add Google sign-in.
 - [ ] Add passwordless school-email link or one-time-code flow.
-- [~] Add guest-to-account upgrade behavior. An explicit, retry-safe first-backup prompt is implemented; live confirmation and later edit/delete behavior remain open.
+- [x] Add explicit, retry-safe guest-to-account first-backup behavior.
 - [x] Create profiles, subjects, tasks, reminders, consent, and allowance schema migration.
 - [x] Enable RLS on every exposed table in the migration.
 - [x] Add ownership policies using `auth.uid()` predicates.
@@ -282,7 +282,7 @@ Status: `[~] In progress`
 ### Acceptance criteria
 
 - [ ] One user cannot read, modify, or delete another user's records.
-- [~] Guest tasks remain local during the opt-in backup and are removed from neither device nor storage; live cloud confirmation remains open.
+- [x] Guest tasks remain local during the opt-in backup, and the first live cloud backup is confirmed.
 - [x] Sign-in failure never deletes local data.
 - [x] Authenticated features clearly explain why an account is needed.
 
@@ -293,7 +293,7 @@ Status: `[~] In progress`
 Status: `[~] In progress`
 
 - [~] Define local/remote identifiers and synchronization metadata. Stable client IDs and per-account backup receipts are implemented; full sync metadata remains open.
-- [~] Upload local guest tasks after authorized account upgrade. The explicit opt-in path is implemented and awaits a user-triggered live verification.
+- [x] Upload local guest tasks after explicit authorization and confirm the first live backup without removing the local copy.
 - [ ] Make create/update/delete synchronization idempotent.
 - [ ] Define conflict resolution and surface meaningful conflicts.
 - [ ] Queue changes while offline and retry with backoff.
