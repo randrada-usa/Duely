@@ -259,9 +259,9 @@ Status: `[~] In progress`
 
 ### Preparation required from Rey
 
-- [ ] Create or confirm the Supabase project.
-- [ ] Provide the project URL and publishable client key through local environment configuration.
-- [ ] Never provide or embed the service-role key in the mobile client.
+- [x] Create or confirm the Supabase project.
+- [x] Provide the project URL and publishable client key through local environment configuration.
+- [x] Never provide or embed the service-role key in the mobile client.
 - [ ] Configure Google OAuth credentials.
 - [ ] Configure passwordless school-email redirect URLs.
 - [ ] Confirm allowed beta school domains for the verified-school badge.
@@ -276,15 +276,15 @@ Status: `[~] In progress`
 - [x] Enable RLS on every exposed table in the migration.
 - [x] Add ownership policies using `auth.uid()` predicates.
 - [x] Add both `USING` and `WITH CHECK` for updates.
-- [ ] Verify anonymous users cannot access authenticated data.
-- [ ] Add account and session error recovery.
+- [x] Verify anonymous users cannot access authenticated data.
+- [x] Add account and session error recovery.
 
 ### Acceptance criteria
 
 - [ ] One user cannot read, modify, or delete another user's records.
 - [ ] Guest tasks survive or migrate according to the approved upgrade behavior.
-- [ ] Sign-in failure never deletes local data.
-- [ ] Authenticated features clearly explain why an account is needed.
+- [x] Sign-in failure never deletes local data.
+- [x] Authenticated features clearly explain why an account is needed.
 
 ---
 
@@ -360,7 +360,7 @@ Status: `[ ] Not started`
 - [ ] Test Android 13 emulator and physical phone.
 - [ ] Test TalkBack, large text, display scaling, high contrast, and color-vision accessibility.
 - [ ] Test slow network, offline mode, interruption, cancellation, and process restart.
-- [ ] Run Supabase security and performance advisors.
+- [x] Run Supabase security and performance advisors.
 - [ ] Review dependency audit findings without forcing breaking upgrades.
 
 ### Beta operations

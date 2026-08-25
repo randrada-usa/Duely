@@ -44,6 +44,13 @@ export function resolveSupabaseConfig(
     };
   }
 
+  if (parsedUrl.username || parsedUrl.password || parsedUrl.search || parsedUrl.hash) {
+    return {
+      status: 'invalid',
+      reason: 'The Supabase URL must not include credentials, query parameters, or a fragment.',
+    };
+  }
+
   if (!publishableKey.startsWith('sb_publishable_')) {
     return {
       status: 'invalid',
@@ -53,7 +60,7 @@ export function resolveSupabaseConfig(
 
   return {
     status: 'configured',
-    config: { url: parsedUrl.toString().replace(/\/$/, ''), publishableKey },
+    config: { url: parsedUrl.origin, publishableKey },
   };
 }
 

@@ -23,6 +23,7 @@ export default function RootLayout() {
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
               <Stack.Screen
                 name="task/new"
                 options={{ title: 'Add task', presentation: 'modal' }}

@@ -31,6 +31,36 @@ describe('resolveSupabaseConfig', () => {
     ).toBe('invalid');
   });
 
+  it('normalizes copied REST endpoints to the project origin', () => {
+    expect(
+      resolveSupabaseConfig(
+        'https://example.supabase.co/rest/v1/',
+        'sb_publishable_example',
+      ),
+    ).toEqual({
+      status: 'configured',
+      config: {
+        url: 'https://example.supabase.co',
+        publishableKey: 'sb_publishable_example',
+      },
+    });
+  });
+
+  it('rejects URLs containing credentials, query parameters, or fragments', () => {
+    expect(
+      resolveSupabaseConfig(
+        'https://user@example.supabase.co',
+        'sb_publishable_example',
+      ).status,
+    ).toBe('invalid');
+    expect(
+      resolveSupabaseConfig(
+        'https://example.supabase.co?secret=value',
+        'sb_publishable_example',
+      ).status,
+    ).toBe('invalid');
+  });
+
   it('rejects incomplete configuration and non-publishable keys', () => {
     expect(resolveSupabaseConfig('https://example.supabase.co', '').status).toBe(
       'invalid',

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { REMINDER_OPTIONS } from '../../src/domain/reminder';
@@ -8,7 +9,20 @@ import { useReminders } from '../../src/store/ReminderStore';
 import { colors, minimumTouchTarget, radius, spacing } from '../../src/theme/tokens';
 
 export default function ProfileScreen() {
-  const { status, user, error: authError, isSigningOut, retry, signOut } = useAuth();
+  const {
+    status,
+    user,
+    error: authError,
+    isSigningOut,
+    isAuthActionPending,
+    authActionError,
+    magicLinkSentTo,
+    retry,
+    sendMagicLink,
+    clearAuthAction,
+    signOut,
+  } = useAuth();
+  const [email, setEmail] = useState('');
   const {
     defaultReminder,
     permission,
@@ -136,8 +150,73 @@ export default function ProfileScreen() {
                 ? 'You are signed in. Cloud task synchronization is not enabled yet, so local tasks remain unchanged.'
                 : status === 'error'
                   ? authError
-                  : 'Account services are ready. Google and verified school-email sign-in are the next step.'}
+                  : 'Sign in with a one-time email link. Google sign-in will appear after its provider is configured.'}
         </Text>
+        {status === 'guest' && !magicLinkSentTo && (
+          <View style={styles.emailForm}>
+            <Text style={styles.fieldLabel}>School email</Text>
+            <TextInput
+              accessibilityLabel="School email address"
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+              editable={!isAuthActionPending}
+              keyboardType="email-address"
+              onChangeText={(value) => {
+                setEmail(value);
+                if (authActionError) clearAuthAction();
+              }}
+              onSubmitEditing={() => void sendMagicLink(email)}
+              placeholder="you@school.edu.ph"
+              placeholderTextColor={colors.textMuted}
+              returnKeyType="send"
+              style={styles.input}
+              textContentType="emailAddress"
+              value={email}
+            />
+            <Text style={styles.helperText}>
+              Duely will email a one-time sign-in link. Signing in never removes local tasks.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isAuthActionPending }}
+              disabled={isAuthActionPending}
+              onPress={() => void sendMagicLink(email)}
+              style={({ pressed }) => [
+                styles.action,
+                pressed && styles.actionPressed,
+                isAuthActionPending && styles.actionDisabled,
+              ]}
+            >
+              <Text style={styles.actionText}>
+                {isAuthActionPending ? 'Sending link…' : 'Email me a sign-in link'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+        {status === 'guest' && !!magicLinkSentTo && (
+          <View accessibilityLiveRegion="polite" style={styles.successPanel}>
+            <Text style={styles.successTitle}>Check your email</Text>
+            <Text style={styles.cardBody}>
+              A one-time sign-in link was sent to {magicLinkSentTo}. Open it before it expires.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={clearAuthAction}
+              style={({ pressed }) => [
+                styles.secondaryAction,
+                pressed && styles.secondaryActionPressed,
+              ]}
+            >
+              <Text style={styles.secondaryActionText}>Use a different email</Text>
+            </Pressable>
+          </View>
+        )}
+        {!!authActionError && (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {authActionError}
+          </Text>
+        )}
         {status === 'error' && (
           <Pressable
             accessibilityRole="button"
@@ -181,10 +260,17 @@ const styles = StyleSheet.create({
   cardBody: { color: colors.textMuted, fontSize: 16, lineHeight: 23 },
   action: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radius.md, backgroundColor: colors.primary },
   actionPressed: { backgroundColor: colors.primaryPressed },
+  actionDisabled: { opacity: 0.6 },
   actionText: { color: colors.surface, fontSize: 16, fontWeight: '800' },
   secondaryAction: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
   secondaryActionPressed: { backgroundColor: colors.surfaceSubtle },
   secondaryActionText: { color: colors.primary, fontSize: 16, fontWeight: '800' },
+  emailForm: { gap: spacing.sm },
+  fieldLabel: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  input: { minHeight: minimumTouchTarget, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, color: colors.text, fontSize: 16 },
+  helperText: { color: colors.textMuted, fontSize: 14, lineHeight: 20 },
+  successPanel: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
+  successTitle: { color: colors.text, fontSize: 17, fontWeight: '800' },
   recovery: { color: colors.warning, fontSize: 14, lineHeight: 20 },
   error: { color: colors.danger, fontSize: 14, lineHeight: 20 },
   options: { gap: spacing.sm },
