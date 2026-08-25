@@ -6,6 +6,7 @@
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.1.0",
+    "@supabase/supabase-js": "2.112.4",
     "expo": "~57.0.15",
     "expo-constants": "~57.0.13",
     "expo-dev-client": "~57.0.14",
@@ -17,6 +18,7 @@
     "expo-mlkit-ocr": "^0.2.7",
     "expo-notifications": "~57.0.13",
     "expo-router": "~57.0.15",
+    "expo-secure-store": "~57.0.1",
     "expo-splash-screen": "~57.0.7",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.2",
@@ -25,10 +27,12 @@
     "react-native": "0.86.2",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
+    "react-native-url-polyfill": "4.0.0",
     "react-native-web": "~0.21.0"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "supabase": "2.115.0",
     "typescript": "~6.0.3",
     "vitest": "^4.1.11"
   },
@@ -40,7 +44,8 @@
     "evaluate:ocr-images:android": "powershell -ExecutionPolicy Bypass -File scripts/run-android-ocr-evaluation.ps1",
     "evaluate:ocr-parser": "vitest run src/domain/scanEvaluation.test.ts --reporter=verbose",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:supabase-migration": "node scripts/verify-supabase-migration.mjs"
   },
   "private": true
 }

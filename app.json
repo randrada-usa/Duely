@@ -56,7 +56,8 @@
           "resizeMode": "contain"
         }
       ],
-      "expo-mlkit-ocr"
+      "expo-mlkit-ocr",
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

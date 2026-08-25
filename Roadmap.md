@@ -18,7 +18,7 @@ Current milestone: **M5 — On-Device OCR and Editable Review**
 
 Current outcome: M5 implementation is complete and its end-to-end accuracy gates remain open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. A separate 12-image synthetic Android run on the Pixel 7 completed all images at 99.5% aggregate token accuracy and produced 11/12 parser-ready results; one explicit deadline did not match, so the controlled deadline gate remains open. These small synthetic results validate the harness but do not certify beta-scan accuracy.
 
-Next recommended task: begin M6 Supabase project and environment preparation while keeping the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
+Next recommended task: connect the reviewed M6 migration to Rey's Supabase project, verify RLS with two test users, and then implement authentication recovery and guest-to-account upgrade behavior. Keep the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
 
 ## Locked Product Decisions
 
@@ -48,7 +48,7 @@ Next recommended task: begin M6 Supabase project and environment preparation whi
 | M3 | Internal calendar and reminders | Complete | M2 |
 | M4 | Image intake and preparation | Complete | M1 |
 | M5 | On-device OCR and review | In progress | M4 |
-| M6 | Supabase backend and authentication | Not started | M2 |
+| M6 | Supabase backend and authentication | In progress | M2 |
 | M7 | Cloud synchronization | Not started | M6 |
 | M8 | Gemini-assisted extraction | Not started | M5, M6 |
 | M9 | Consent, privacy, export, and deletion | Not started | M6–M8 |
@@ -255,7 +255,7 @@ Status: `[~] In progress — implementation complete; controlled accuracy gates 
 
 ## M6 — Supabase Backend and Authentication
 
-Status: `[ ] Not started`
+Status: `[~] In progress`
 
 ### Preparation required from Rey
 
@@ -268,14 +268,14 @@ Status: `[ ] Not started`
 
 ### Implementation
 
-- [ ] Add Supabase client with secure session persistence.
+- [x] Add Supabase client with secure session persistence.
 - [ ] Add Google sign-in.
 - [ ] Add passwordless school-email link or one-time-code flow.
 - [ ] Add guest-to-account upgrade behavior.
-- [ ] Create profiles, subjects, tasks, reminders, consent, and allowance schema.
-- [ ] Enable RLS on every exposed table.
-- [ ] Add ownership policies using `auth.uid()` predicates.
-- [ ] Add both `USING` and `WITH CHECK` for updates.
+- [x] Create profiles, subjects, tasks, reminders, consent, and allowance schema migration.
+- [x] Enable RLS on every exposed table in the migration.
+- [x] Add ownership policies using `auth.uid()` predicates.
+- [x] Add both `USING` and `WITH CHECK` for updates.
 - [ ] Verify anonymous users cannot access authenticated data.
 - [ ] Add account and session error recovery.
 
