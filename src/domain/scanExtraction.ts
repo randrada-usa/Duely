@@ -40,21 +40,47 @@ export type ScanReviewValues = {
   notes: string;
 };
 
-const metadataLabelPattern = /^(?:assignment\s+title|title|subject(?:\s*&\s*course)?|course|due(?:\s+date)?|deadline|task\s+type|type|priority|estimated\s+(?:time|effort|workload)|workload|instructions?|notes?|description)\b/i;
-const monthPattern = '(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)';
+const titleLabels = 'assignment\\s+title|title|task|pamagat(?:\\s+ng\\s+gawain)?';
+const subjectLabels =
+  'subject(?:\\s*&\\s*course)?|course|asignatura(?:\\s*&\\s*kurso)?|kurso';
+const deadlineLabels =
+  'due(?:\\s+date)?|deadline|takdang\\s+petsa|petsa\\s+ng\\s+pagpasa';
+const taskTypeLabels = 'task\\s+type|type|uri\\s+ng\\s+gawain|uri';
+const priorityLabels = 'priority|prayoridad';
+const effortLabels =
+  'estimated\\s+(?:time|effort|workload)|workload|tinatayang\\s+(?:oras|tagal)';
+const notesLabels =
+  'instructions?|notes?|description|panuto|mga\\s+panuto|tala|paglalarawan';
+const metadataLabelPattern = new RegExp(
+  `^(?:${titleLabels}|${subjectLabels}|${deadlineLabels}|${taskTypeLabels}|${priorityLabels}|${effortLabels}|${notesLabels})\\b`,
+  'i',
+);
+const deadlineLabelPattern = new RegExp(`\\b(?:${deadlineLabels})\\b`, 'i');
+const monthPattern =
+  '(?:jan(?:uary)?|enero|feb(?:ruary)?|pebrero|mar(?:ch)?|marso|apr(?:il)?|abril|may|mayo|jun(?:e)?|hunyo|jul(?:y)?|hulyo|aug(?:ust)?|agosto|sep(?:tember)?|setyembre|oct(?:ober)?|oktubre|nov(?:ember)?|nobyembre|dec(?:ember)?|disyembre)';
 const monthNumbers: Record<string, number> = {
   jan: 1,
+  ene: 1,
   feb: 2,
+  peb: 2,
   mar: 3,
   apr: 4,
+  abr: 4,
   may: 5,
   jun: 6,
+  hun: 6,
   jul: 7,
+  hul: 7,
   aug: 8,
+  ago: 8,
   sep: 9,
+  set: 9,
   oct: 10,
+  okt: 10,
   nov: 11,
+  nob: 11,
   dec: 12,
+  dis: 12,
 };
 
 function cleanLines(text: string) {
@@ -105,7 +131,7 @@ function labeledWindow(lines: string[], labels: string, maxFollowing = 6) {
 }
 
 function titleCandidate(lines: string[]) {
-  const labeled = labeledValue(lines, 'assignment\\s+title|title|task');
+  const labeled = labeledValue(lines, titleLabels);
   if (labeled) {
     return {
       field: { value: labeled.value, confidence: 'high' } satisfies ExtractedValue<string>,
@@ -129,7 +155,7 @@ function titleCandidate(lines: string[]) {
 }
 
 function subjectCandidate(lines: string[]) {
-  const labeled = labeledValue(lines, 'subject(?:\\s*&\\s*course)?|course');
+  const labeled = labeledValue(lines, subjectLabels);
   if (labeled) {
     return {
       field: { value: labeled.value, confidence: 'high' } satisfies ExtractedValue<string>,
@@ -176,7 +202,7 @@ function dateKeyFromText(value: string, now: Date) {
   }
 
   const named = new RegExp(
-    `\\b${monthPattern}\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(20\\d{2}))?\\b`,
+    `\\b(${monthPattern})\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(20\\d{2}))?\\b`,
     'i',
   ).exec(value);
   if (named) {
@@ -190,7 +216,7 @@ function dateKeyFromText(value: string, now: Date) {
   }
 
   const namedDayFirst = new RegExp(
-    `\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+${monthPattern}(?:,?\\s+(20\\d{2}))?\\b`,
+    `\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${monthPattern})(?:,?\\s+(20\\d{2}))?\\b`,
     'i',
   ).exec(value);
   if (namedDayFirst) {
@@ -223,7 +249,7 @@ function dateKeyFromText(value: string, now: Date) {
 function deadlineCandidate(lines: string[], now: Date) {
   const dueLines = lines
     .map((line, index) => ({ line, index }))
-    .filter(({ line }) => /\b(?:due(?:\s+date)?|deadline)\b/i.test(line));
+    .filter(({ line }) => deadlineLabelPattern.test(line));
   let issue: string | null = null;
 
   for (const { line, index } of dueLines) {
@@ -271,13 +297,16 @@ function deadlineCandidate(lines: string[], now: Date) {
 }
 
 function taskTypeCandidate(lines: string[], title: string | null) {
-  const labeled = labeledWindow(lines, 'task\\s+type|type');
+  const labeled = labeledWindow(lines, taskTypeLabels);
   const matches: Array<[RegExp, TaskType]> = [
-    [/\bquiz\b/i, 'quiz'],
-    [/\bexam(?:ination)?\b/i, 'exam'],
-    [/\bproject\b/i, 'project'],
-    [/\b(?:reading|read)\b/i, 'reading'],
-    [/\b(?:assignment|problem\s+set|worksheet|activity)\b/i, 'assignment'],
+    [/\b(?:quiz|maikling\s+pagsusulit)\b/i, 'quiz'],
+    [/\b(?:exam(?:ination)?|eksamen)\b/i, 'exam'],
+    [/\b(?:project|proyekto)\b/i, 'project'],
+    [/\b(?:reading|read|pagbasa|basahin)\b/i, 'reading'],
+    [
+      /\b(?:assignment|problem\s+set|worksheet|activity|takdang[-\s]?aralin|gawain)\b/i,
+      'assignment',
+    ],
   ];
   const labeledMatches = labeled
     ? matches.filter(([pattern]) => pattern.test(labeled))
@@ -294,12 +323,12 @@ function taskTypeCandidate(lines: string[], title: string | null) {
 }
 
 function priorityCandidate(lines: string[]) {
-  const labeled = labeledWindow(lines, 'priority');
+  const labeled = labeledWindow(lines, priorityLabels);
   if (!labeled) return null;
   const candidates: Array<[RegExp, TaskPriority]> = [
-    [/\blow\b/i, 'low'],
-    [/\bmedium\b/i, 'medium'],
-    [/\bhigh\b/i, 'high'],
+    [/\b(?:low|mababa)\b/i, 'low'],
+    [/\b(?:medium|katamtaman)\b/i, 'medium'],
+    [/\b(?:high|mataas)\b/i, 'high'],
   ];
   const matches = candidates.filter(([pattern]) => pattern.test(labeled));
   return matches.length === 1
@@ -313,17 +342,26 @@ function priorityCandidate(lines: string[]) {
 function effortCandidate(lines: string[]) {
   const text = labeledWindow(
     lines,
-    'estimated\\s+(?:time|effort|workload)|workload',
+    effortLabels,
   )?.toLowerCase();
   if (!text) return null;
   const candidates = [
-    { value: 30 as const, pattern: /\b30\s*min(?:ute)?s?\b/ },
-    { value: 60 as const, pattern: /\b(?:1|one)\s*(?:h(?:r|rs)?|hours?)\b/ },
-    { value: 120 as const, pattern: /\b(?:2|two)\s*(?:h(?:r|rs)?|hours?)\b/ },
-    { value: 180 as const, pattern: /\b(?:3|three)\s*(?:h(?:r|rs)?|hours?)\b/ },
+    { value: 30 as const, pattern: /\b30\s*(?:min(?:ute)?s?|minuto)\b/ },
+    {
+      value: 60 as const,
+      pattern: /\b(?:1|one|isa(?:ng)?)\s*(?:h(?:r|rs)?|hours?|oras)\b/,
+    },
+    {
+      value: 120 as const,
+      pattern: /\b(?:2|two|dalawa(?:ng)?)\s*(?:h(?:r|rs)?|hours?|oras)\b/,
+    },
+    {
+      value: 180 as const,
+      pattern: /\b(?:3|three|tatlo(?:ng)?)\s*(?:h(?:r|rs)?|hours?|oras)\b/,
+    },
     {
       value: 240 as const,
-      pattern: /\b(?:4|four)\s*\+?\s*(?:h(?:r|rs)?|hours?)\b/,
+      pattern: /\b(?:4|four|apat(?: na)?)\s*\+?\s*(?:h(?:r|rs)?|hours?|oras)\b/,
     },
   ].filter((candidate) => candidate.pattern.test(text));
 
@@ -339,7 +377,10 @@ function effortCandidate(lines: string[]) {
 }
 
 function notesCandidate(lines: string[], excludedIndexes: Set<number>) {
-  const labelPattern = /^(?:instructions?|notes?|description)\s*[:\-–—]?\s*(.*)$/i;
+  const labelPattern = new RegExp(
+    `^(?:${notesLabels})\\s*[:\\-–—]?\\s*(.*)$`,
+    'i',
+  );
   const labelIndex = lines.findIndex((line) => labelPattern.test(line));
   if (labelIndex >= 0) {
     const first = labelPattern.exec(lines[labelIndex])?.[1]?.trim() ?? '';
@@ -370,7 +411,12 @@ function notesCandidate(lines: string[], excludedIndexes: Set<number>) {
 
 export function detectsMultipleAssignments(lines: readonly string[]) {
   const numberedHeadings = lines
-    .map((line) => /^assignment\s*(?:#|no\.?\s*)?(\d+)\b/i.exec(line)?.[1])
+    .map(
+      (line) =>
+        /^(?:assignment|gawain|takdang[-\s]?aralin)\s*(?:#|no\.?\s*)?(\d+)\b/i.exec(
+          line,
+        )?.[1],
+    )
     .filter((value): value is string => Boolean(value));
   return new Set(numberedHeadings).size > 1;
 }

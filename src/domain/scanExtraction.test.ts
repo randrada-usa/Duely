@@ -145,6 +145,42 @@ describe('scan extraction', () => {
     expect(extraction.fields.dueAt?.confidence).toBe('high');
   });
 
+  it('reads conservative Filipino field labels and month names', () => {
+    const extraction = extractTaskFromOcr(
+      [
+        'Pamagat: Repleksyon sa Kasaysayan',
+        'Asignatura: KAS 101',
+        'Takdang petsa: Agosto 30, 2026 4:00 PM',
+        'Uri ng gawain: Takdang-aralin',
+        'Prayoridad: Mataas',
+        'Tinatayang oras: Dalawang oras',
+        'Panuto: Sumulat ng limang talata.',
+      ].join('\n'),
+      now,
+    );
+
+    expect(extraction.fields.title?.value).toBe('Repleksyon sa Kasaysayan');
+    expect(extraction.fields.subject?.value).toBe('KAS 101');
+    expect(deadlineParts(extraction.fields.dueAt?.value ?? null)).toEqual({
+      date: '2026-08-30',
+      time: '16:00',
+    });
+    expect(extraction.fields.taskType?.value).toBe('assignment');
+    expect(extraction.fields.priority?.value).toBe('high');
+    expect(extraction.fields.estimatedEffortMinutes?.value).toBe(120);
+    expect(extraction.fields.notes?.value).toBe('Sumulat ng limang talata.');
+  });
+
+  it('does not force a generic Filipino pagsusulit into quiz or exam', () => {
+    const extraction = extractTaskFromOcr(
+      'Pamagat: Pagsusulit sa Aralin 4\nUri ng gawain: Pagsusulit',
+      now,
+    );
+
+    expect(extraction.fields.taskType).toBeNull();
+    expect(extraction.issues.taskType).toContain('not stated');
+  });
+
   it('detects multiple numbered assignments conservatively', () => {
     expect(detectsMultipleAssignments(['Assignment 1', 'Assignment 2'])).toBe(true);
     expect(detectsMultipleAssignments(['Assignment Title', 'Assignment 1'])).toBe(false);
@@ -152,6 +188,7 @@ describe('scan extraction', () => {
       extractTaskFromOcr('Assignment 1\nRead chapter 2\nAssignment 2\nSolve quiz', now)
         .hasMultipleAssignments,
     ).toBe(true);
+    expect(detectsMultipleAssignments(['Gawain 1', 'Gawain 2'])).toBe(true);
   });
 
   it('keeps raw OCR in the transient extraction result only', () => {

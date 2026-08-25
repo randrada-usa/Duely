@@ -37,6 +37,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "evaluate:ocr-parser": "vitest run src/domain/scanEvaluation.test.ts --reporter=verbose",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
