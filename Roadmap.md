@@ -18,7 +18,7 @@ Current milestones: **M5 — On-Device OCR and Editable Review**, **M6 — Supab
 
 Current outcome: M5 implementation is complete and its end-to-end accuracy gates remain open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. A separate 12-image synthetic Android run on the Pixel 7 completed all images at 99.5% aggregate token accuracy and produced 11/12 parser-ready results; one explicit deadline did not match, so the controlled deadline gate remains open. These small synthetic results validate the harness but do not certify beta-scan accuracy.
 
-Next recommended task: test account isolation with a second authenticated user, then define conflict handling and the queued retry model for ongoing create/update/delete synchronization. Keep the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
+Next recommended task: define conflict handling and the queued retry model for ongoing create/update/delete synchronization. Keep the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
 
 ## Locked Product Decisions
 
@@ -281,7 +281,7 @@ Status: `[~] In progress`
 
 ### Acceptance criteria
 
-- [ ] One user cannot read, modify, or delete another user's records.
+- [x] Transactional two-user RLS verification confirms one user cannot read, modify, or delete another user's records across protected tables.
 - [x] Guest tasks remain local during the opt-in backup, and the first live cloud backup is confirmed.
 - [x] Sign-in failure never deletes local data.
 - [x] Authenticated features clearly explain why an account is needed.
