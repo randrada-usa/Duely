@@ -13,7 +13,7 @@
     "android": {
       "package": "com.duely.app",
       "adaptiveIcon": {
-        "backgroundColor": "#F7F8FF",
+        "backgroundColor": "#0F43EC",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
