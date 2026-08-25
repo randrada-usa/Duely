@@ -18,7 +18,7 @@ Current milestones: **M5 — On-Device OCR and Editable Review**, **M6 — Supab
 
 Current outcome: M5 implementation is complete and its end-to-end accuracy gates remain open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. A separate 12-image synthetic Android run on the Pixel 7 completed all images at 99.5% aggregate token accuracy and produced 11/12 parser-ready results; one explicit deadline did not match, so the controlled deadline gate remains open. These small synthetic results validate the harness but do not certify beta-scan accuracy.
 
-Next recommended task: live-test phone-authoritative task edits and deletions, then verify explicit restore on a disposable emulator state. Keep the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
+Next recommended task: verify explicit restore and queued offline retry on a disposable emulator state. Keep the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
 
 ## Locked Product Decisions
 
@@ -294,10 +294,10 @@ Status: `[~] In progress`
 
 - [~] Define local/remote identifiers and synchronization metadata. Stable client IDs and per-account backup receipts are implemented; full sync metadata remains open.
 - [x] Upload local guest tasks after explicit authorization and confirm the first live backup without removing the local copy.
-- [~] Make create/update/delete synchronization idempotent. Phone-authoritative mirror operations and confirmation are implemented; live edit/delete verification remains open.
+- [x] Make create/update/delete synchronization idempotent and confirm all three paths live from the Pixel 7 to Supabase.
 - [x] Define the beta conflict rule: this phone is authoritative, and cloud data never silently overwrites local tasks.
 - [~] Queue changes while offline and retry with bounded backoff. Receipt fingerprints preserve unconfirmed work across restarts; live offline verification remains open.
-- [~] Avoid duplicate tasks after interrupted requests. First-backup writes use unique client IDs, idempotent upserts, and post-write confirmation; edit/delete retries remain open.
+- [x] Avoid duplicate tasks after interrupted requests using unique client IDs, idempotent writes, and post-write confirmation.
 - [~] Synchronize subjects and reminders. First-backup support is implemented; ongoing synchronization remains open.
 - [x] Add active-backup, progress, failure, and manual-retry UI.
 - [~] Test reinstall, sign-out, account switch, and stale-session behavior. Explicit empty-device restore is implemented and unit-tested; Android recovery verification remains open.
