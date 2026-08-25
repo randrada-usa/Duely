@@ -378,6 +378,25 @@ export default function ScanScreen() {
     );
   }
 
+  function confirmReturnToImage() {
+    Alert.alert(
+      'Return to image review?',
+      'Your extraction edits have not been saved.',
+      [
+        { text: 'Keep reviewing', style: 'cancel' },
+        {
+          text: 'Return to image',
+          style: 'destructive',
+          onPress: () => {
+            setExtraction(null);
+            setError(null);
+            setScanStage('image');
+          },
+        },
+      ],
+    );
+  }
+
   function saveExtractedTask(draft: TaskDraft, subjectName: string) {
     if (!extraction || !canEditTasks) {
       setError(
@@ -516,12 +535,14 @@ export default function ScanScreen() {
         <View accessibilityLiveRegion="polite" style={styles.progressState}>
           <View style={styles.progressRings}>
             <View style={styles.progressRingOuter} />
+            <View style={styles.progressRingMiddle} />
             <View style={styles.progressRingInner} />
-            <Ionicons
-              accessibilityElementsHidden
-              color={colors.primary}
-              name="scan-outline"
-              size={52}
+            <Image
+              accessibilityIgnoresInvertColors
+              accessibilityLabel="Duely mascot"
+              resizeMode="contain"
+              source={require('../../assets/mascot.png')}
+              style={styles.progressMascot}
             />
           </View>
           <Text accessibilityRole="header" style={styles.progressTitle}>
@@ -534,8 +555,9 @@ export default function ScanScreen() {
 
         <View style={styles.progressSteps}>
           <ProgressStep active={!organizing} complete={organizing} label="Detecting text in image" />
-          <ProgressStep active={organizing} complete={false} label="Organizing editable fields" />
-          <ProgressStep active={false} complete={false} label="Waiting for your review" />
+          <ProgressStep active={false} complete={organizing} label="Extracting assignment details" />
+          <ProgressStep active={organizing} complete={false} label="Organizing task and deadline" />
+          <ProgressStep active={false} complete={false} label="Preparing workload for review" />
         </View>
         <TextButton label="Cancel scan" onPress={cancelExtraction} />
       </ScreenShell>
@@ -632,13 +654,35 @@ export default function ScanScreen() {
         }
         header={
           <View style={styles.reviewHeader}>
-            <View>
-              <Text accessibilityRole="header" style={styles.title}>
-                Review extraction
-              </Text>
-              <Text style={styles.subtitle}>
-                Check every detail. Fields needing attention are marked individually.
-              </Text>
+            <View style={styles.reviewTitleRow}>
+              <Pressable
+                accessibilityHint="Discard extraction edits and return to the selected image"
+                accessibilityLabel="Back to image review"
+                accessibilityRole="button"
+                onPress={confirmReturnToImage}
+                style={({ pressed }) => [
+                  styles.reviewBackButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons
+                  accessibilityElementsHidden
+                  color={colors.text}
+                  name="chevron-back"
+                  size={23}
+                />
+              </Pressable>
+              <View style={styles.reviewTitleCopy}>
+                <Text
+                  accessibilityRole="header"
+                  style={[styles.title, styles.reviewTitle]}
+                >
+                  Review extraction
+                </Text>
+                <Text style={styles.subtitle}>
+                  Fields marked with a warning need your attention.
+                </Text>
+              </View>
             </View>
             <View style={styles.reviewPreviewRow}>
               <Image
@@ -771,6 +815,7 @@ export default function ScanScreen() {
           name="scan-outline"
           size={62}
         />
+        <View style={styles.scanLine} />
         <Text style={styles.viewfinderTitle}>Keep the whole assignment in frame</Text>
         <Text style={styles.viewfinderBody}>
           Use bright, even light and avoid shadows over the text.
@@ -977,13 +1022,15 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   viewfinder: {
-    minHeight: 250,
+    minHeight: 310,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
     overflow: 'hidden',
     borderRadius: radius.xl,
-    backgroundColor: '#1A1A2E',
+    borderWidth: 1,
+    borderColor: '#2C3154',
+    backgroundColor: '#111322',
   },
   viewfinderTitle: {
     marginTop: spacing.md,
@@ -1009,6 +1056,14 @@ const styles = StyleSheet.create({
   cornerTopRight: { top: 20, right: 20, borderTopWidth: 3, borderRightWidth: 3 },
   cornerBottomLeft: { bottom: 20, left: 20, borderBottomWidth: 3, borderLeftWidth: 3 },
   cornerBottomRight: { right: 20, bottom: 20, borderRightWidth: 3, borderBottomWidth: 3 },
+  scanLine: {
+    width: '76%',
+    height: 2,
+    marginTop: spacing.lg,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    opacity: 0.78,
+  },
   choiceRow: { flexDirection: 'row', gap: spacing.md },
   sourceCard: {
     minHeight: 154,
@@ -1123,32 +1178,41 @@ const styles = StyleSheet.create({
   },
   progressState: {
     alignItems: 'center',
-    paddingTop: spacing.xxl,
+    paddingTop: 56,
     paddingBottom: spacing.lg,
   },
   progressRings: {
-    width: 156,
-    height: 156,
+    width: 184,
+    height: 184,
     alignItems: 'center',
     justifyContent: 'center',
   },
   progressRingOuter: {
     position: 'absolute',
-    width: 156,
-    height: 156,
+    width: 184,
+    height: 184,
     borderWidth: 2,
     borderColor: '#C8CEFF',
-    borderRadius: 78,
+    borderRadius: 92,
+  },
+  progressRingMiddle: {
+    position: 'absolute',
+    width: 142,
+    height: 142,
+    borderWidth: 2,
+    borderColor: '#B5BEFF',
+    borderRadius: 71,
   },
   progressRingInner: {
     position: 'absolute',
-    width: 112,
-    height: 112,
+    width: 102,
+    height: 102,
     borderWidth: 2,
     borderColor: '#AAB5FF',
-    borderRadius: 56,
-    backgroundColor: colors.surfaceSubtle,
+    borderRadius: 51,
+    backgroundColor: '#DDE2FF',
   },
+  progressMascot: { width: 86, height: 86, zIndex: 1 },
   progressTitle: {
     marginTop: spacing.xl,
     color: colors.text,
@@ -1166,8 +1230,10 @@ const styles = StyleSheet.create({
   progressSteps: {
     gap: spacing.md,
     padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radius.xl,
-    backgroundColor: colors.surface,
+    backgroundColor: '#F1F3FF',
   },
   progressStep: {
     flexDirection: 'row',
@@ -1203,7 +1269,22 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: 'center',
   },
-  reviewHeader: { gap: spacing.lg },
+  reviewHeader: { gap: spacing.lg, paddingBottom: spacing.xs },
+  reviewTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  reviewBackButton: {
+    width: minimumTouchTarget,
+    height: minimumTouchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceSubtle,
+  },
+  reviewTitleCopy: { flex: 1 },
+  reviewTitle: { fontSize: 24, lineHeight: 31 },
   reviewPreviewRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1213,8 +1294,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
   },
   reviewPreview: {
-    width: 88,
-    height: 88,
+    width: 72,
+    height: 72,
     borderRadius: radius.md,
     backgroundColor: '#10101F',
   },
