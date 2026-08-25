@@ -262,14 +262,14 @@ Status: `[~] In progress`
 - [x] Create or confirm the Supabase project.
 - [x] Provide the project URL and publishable client key through local environment configuration.
 - [x] Never provide or embed the service-role key in the mobile client.
-- [ ] Configure Google OAuth credentials.
+- [x] Configure Google OAuth credentials.
 - [ ] Configure passwordless school-email redirect URLs.
 - [ ] Confirm allowed beta school domains for the verified-school badge.
 
 ### Implementation
 
 - [x] Add Supabase client with secure session persistence.
-- [ ] Add Google sign-in.
+- [x] Add Google sign-in.
 - [ ] Add passwordless school-email link or one-time-code flow.
 - [ ] Add guest-to-account upgrade behavior.
 - [x] Create profiles, subjects, tasks, reminders, consent, and allowance schema migration.
