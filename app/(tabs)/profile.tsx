@@ -3,10 +3,12 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { REMINDER_OPTIONS } from '../../src/domain/reminder';
+import { useAuth } from '../../src/store/AuthStore';
 import { useReminders } from '../../src/store/ReminderStore';
 import { colors, minimumTouchTarget, radius, spacing } from '../../src/theme/tokens';
 
 export default function ProfileScreen() {
+  const { status, user, error: authError, isSigningOut, retry, signOut } = useAuth();
   const {
     defaultReminder,
     permission,
@@ -23,6 +25,10 @@ export default function ProfileScreen() {
         ? 'Notifications not enabled'
         : 'Notifications blocked'
       : 'Notifications not enabled';
+  const profileSubtitle =
+    status === 'authenticated'
+      ? user?.email ?? 'Signed in'
+      : 'Guest · tasks stay on this device';
 
   function enableNotifications() {
     Alert.alert(
@@ -35,6 +41,23 @@ export default function ProfileScreen() {
     );
   }
 
+  function confirmSignOut() {
+    Alert.alert(
+      'Sign out of Duely?',
+      'Your local tasks will stay on this device. Cloud synchronization is not enabled yet.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign out',
+          onPress: () =>
+            void signOut().then((signedOut) => {
+              if (!signedOut) Alert.alert('Could not sign out', authError ?? 'Try again.');
+            }),
+        },
+      ],
+    );
+  }
+
   return (
     <ScreenShell scroll>
       <View style={styles.header}>
@@ -43,7 +66,7 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.headerCopy}>
           <Text style={styles.title}>Your profile</Text>
-          <Text style={styles.subtitle}>Guest · tasks stay on this device</Text>
+          <Text style={styles.subtitle}>{profileSubtitle}</Text>
         </View>
       </View>
 
@@ -105,8 +128,41 @@ export default function ProfileScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Account</Text>
         <Text style={styles.cardBody}>
-          Google and verified school-email sign-in will arrive with the Supabase milestone.
+          {status === 'unconfigured'
+            ? 'Cloud accounts are not configured in this build. Manual tasks and on-device scanning remain available.'
+            : status === 'loading'
+              ? 'Checking your account session…'
+              : status === 'authenticated'
+                ? 'You are signed in. Cloud task synchronization is not enabled yet, so local tasks remain unchanged.'
+                : status === 'error'
+                  ? authError
+                  : 'Account services are ready. Google and verified school-email sign-in are the next step.'}
         </Text>
+        {status === 'error' && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={retry}
+            style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
+          >
+            <Text style={styles.actionText}>Retry account check</Text>
+          </Pressable>
+        )}
+        {status === 'authenticated' && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isSigningOut }}
+            disabled={isSigningOut}
+            onPress={confirmSignOut}
+            style={({ pressed }) => [
+              styles.secondaryAction,
+              pressed && styles.secondaryActionPressed,
+            ]}
+          >
+            <Text style={styles.secondaryActionText}>
+              {isSigningOut ? 'Signing out…' : 'Sign out'}
+            </Text>
+          </Pressable>
+        )}
       </View>
     </ScreenShell>
   );
@@ -126,6 +182,9 @@ const styles = StyleSheet.create({
   action: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radius.md, backgroundColor: colors.primary },
   actionPressed: { backgroundColor: colors.primaryPressed },
   actionText: { color: colors.surface, fontSize: 16, fontWeight: '800' },
+  secondaryAction: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
+  secondaryActionPressed: { backgroundColor: colors.surfaceSubtle },
+  secondaryActionText: { color: colors.primary, fontSize: 16, fontWeight: '800' },
   recovery: { color: colors.warning, fontSize: 14, lineHeight: 20 },
   error: { color: colors.danger, fontSize: 14, lineHeight: 20 },
   options: { gap: spacing.sm },
