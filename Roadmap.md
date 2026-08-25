@@ -1,6 +1,6 @@
 # Duely Development Roadmap
 
-Last updated: 2026-08-21
+Last updated: 2026-08-25
 
 This is the living execution plan for the Duely Android beta. Update it whenever a milestone begins, finishes, changes scope, or becomes blocked. Product behavior remains governed by `ui-ux-plan.md`; ownership and required reviews remain governed by `roles.md` and `AGENTS.md`.
 
@@ -14,11 +14,11 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 ## Current Position
 
-Current milestone: **M5 — On-Device OCR and Editable Review**
+Current milestones: **M5 — On-Device OCR and Editable Review**, **M6 — Supabase Backend and Authentication**, and **M7 — Cloud Synchronization**
 
 Current outcome: M5 implementation is complete and its end-to-end accuracy gates remain open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. A separate 12-image synthetic Android run on the Pixel 7 completed all images at 99.5% aggregate token accuracy and produced 11/12 parser-ready results; one explicit deadline did not match, so the controlled deadline gate remains open. These small synthetic results validate the harness but do not certify beta-scan accuracy.
 
-Next recommended task: connect the reviewed M6 migration to Rey's Supabase project, verify RLS with two test users, and then implement authentication recovery and guest-to-account upgrade behavior. Keep the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
+Next recommended task: run the new explicit guest-to-account backup once from the authenticated Android build, confirm the resulting subjects, tasks, and reminders remotely, and then test account isolation with a second user. Keep the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
 
 ## Locked Product Decisions
 
@@ -49,7 +49,7 @@ Next recommended task: connect the reviewed M6 migration to Rey's Supabase proje
 | M4 | Image intake and preparation | Complete | M1 |
 | M5 | On-device OCR and review | In progress | M4 |
 | M6 | Supabase backend and authentication | In progress | M2 |
-| M7 | Cloud synchronization | Not started | M6 |
+| M7 | Cloud synchronization | In progress | M6 |
 | M8 | Gemini-assisted extraction | Not started | M5, M6 |
 | M9 | Consent, privacy, export, and deletion | Not started | M6–M8 |
 | M10 | Quality, analytics, and beta release | Not started | M2–M9 |
@@ -271,7 +271,7 @@ Status: `[~] In progress`
 - [x] Add Supabase client with secure session persistence.
 - [x] Add Google sign-in.
 - [ ] Add passwordless school-email link or one-time-code flow.
-- [ ] Add guest-to-account upgrade behavior.
+- [~] Add guest-to-account upgrade behavior. An explicit, retry-safe first-backup prompt is implemented; live confirmation and later edit/delete behavior remain open.
 - [x] Create profiles, subjects, tasks, reminders, consent, and allowance schema migration.
 - [x] Enable RLS on every exposed table in the migration.
 - [x] Add ownership policies using `auth.uid()` predicates.
@@ -282,7 +282,7 @@ Status: `[~] In progress`
 ### Acceptance criteria
 
 - [ ] One user cannot read, modify, or delete another user's records.
-- [ ] Guest tasks survive or migrate according to the approved upgrade behavior.
+- [~] Guest tasks remain local during the opt-in backup and are removed from neither device nor storage; live cloud confirmation remains open.
 - [x] Sign-in failure never deletes local data.
 - [x] Authenticated features clearly explain why an account is needed.
 
@@ -290,15 +290,15 @@ Status: `[~] In progress`
 
 ## M7 — Cloud Synchronization
 
-Status: `[ ] Not started`
+Status: `[~] In progress`
 
-- [ ] Define local/remote identifiers and synchronization metadata.
-- [ ] Upload local guest tasks after authorized account upgrade.
+- [~] Define local/remote identifiers and synchronization metadata. Stable client IDs and per-account backup receipts are implemented; full sync metadata remains open.
+- [~] Upload local guest tasks after authorized account upgrade. The explicit opt-in path is implemented and awaits a user-triggered live verification.
 - [ ] Make create/update/delete synchronization idempotent.
 - [ ] Define conflict resolution and surface meaningful conflicts.
 - [ ] Queue changes while offline and retry with backoff.
-- [ ] Avoid duplicate tasks after interrupted requests.
-- [ ] Synchronize subjects and reminders.
+- [~] Avoid duplicate tasks after interrupted requests. First-backup writes use unique client IDs, idempotent upserts, and post-write confirmation; edit/delete retries remain open.
+- [~] Synchronize subjects and reminders. First-backup support is implemented; ongoing synchronization remains open.
 - [ ] Add last-synced and retry UI where useful.
 - [ ] Test reinstall, sign-out, account switch, and stale-session behavior.
 

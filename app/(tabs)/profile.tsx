@@ -5,6 +5,7 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { REMINDER_OPTIONS } from '../../src/domain/reminder';
 import { useAuth } from '../../src/store/AuthStore';
+import { useCloudBackup } from '../../src/store/CloudBackupStore';
 import { useReminders } from '../../src/store/ReminderStore';
 import { colors, minimumTouchTarget, radius, spacing } from '../../src/theme/tokens';
 
@@ -32,6 +33,17 @@ export default function ProfileScreen() {
     requestPermission,
     openSettings,
   } = useReminders();
+  const {
+    isBackingUp,
+    pendingTaskCount,
+    pendingSubjectCount,
+    shouldOfferBackup,
+    backupError,
+    lastBackupResult,
+    backUpLocalData,
+    dismissBackupPrompt,
+    clearBackupResult,
+  } = useCloudBackup();
 
   const permissionLabel = permission.granted
     ? 'Notifications enabled'
@@ -248,6 +260,75 @@ export default function ProfileScreen() {
             <Text style={styles.actionText}>Retry account check</Text>
           </Pressable>
         )}
+        {status === 'authenticated' && shouldOfferBackup && (
+          <View style={styles.backupPanel}>
+            <View style={styles.cardHeading}>
+              <Ionicons name="cloud-upload-outline" size={24} color={colors.primary} />
+              <View style={styles.headingCopy}>
+                <Text style={styles.successTitle}>Back up local tasks?</Text>
+                <Text style={styles.cardBody}>
+                  {pendingTaskCount > 0
+                    ? `${pendingTaskCount} ${pendingTaskCount === 1 ? 'task' : 'tasks'} will be copied to your Duely account.`
+                    : `${pendingSubjectCount} ${pendingSubjectCount === 1 ? 'subject' : 'subjects'} will be copied to your Duely account.`}
+                  {' '}Your copies stay on this device until the cloud confirms every record.
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isBackingUp }}
+              disabled={isBackingUp}
+              onPress={() => void backUpLocalData()}
+              style={({ pressed }) => [
+                styles.action,
+                pressed && styles.actionPressed,
+                isBackingUp && styles.actionDisabled,
+              ]}
+            >
+              <Text style={styles.actionText}>
+                {isBackingUp ? 'Confirming backup…' : 'Back up to my account'}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isBackingUp }}
+              disabled={isBackingUp}
+              onPress={dismissBackupPrompt}
+              style={({ pressed }) => [
+                styles.secondaryAction,
+                pressed && styles.secondaryActionPressed,
+                isBackingUp && styles.actionDisabled,
+              ]}
+            >
+              <Text style={styles.secondaryActionText}>Not now</Text>
+            </Pressable>
+          </View>
+        )}
+        {status === 'authenticated' && !!backupError && (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {backupError}
+          </Text>
+        )}
+        {status === 'authenticated' && !!lastBackupResult && (
+          <View accessibilityLiveRegion="polite" style={styles.successPanel}>
+            <Text style={styles.successTitle}>Backup confirmed</Text>
+            <Text style={styles.cardBody}>
+              {lastBackupResult.tasksConfirmed}{' '}
+              {lastBackupResult.tasksConfirmed === 1 ? 'task is' : 'tasks are'} backed up.{' '}
+              Your local copies are still available on this device.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={clearBackupResult}
+              style={({ pressed }) => [
+                styles.secondaryAction,
+                pressed && styles.secondaryActionPressed,
+              ]}
+            >
+              <Text style={styles.secondaryActionText}>Done</Text>
+            </Pressable>
+          </View>
+        )}
         {status === 'authenticated' && (
           <Pressable
             accessibilityRole="button"
@@ -297,6 +378,7 @@ const styles = StyleSheet.create({
   input: { minHeight: minimumTouchTarget, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, color: colors.text, fontSize: 16 },
   helperText: { color: colors.textMuted, fontSize: 14, lineHeight: 20 },
   successPanel: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
+  backupPanel: { gap: spacing.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
   successTitle: { color: colors.text, fontSize: 17, fontWeight: '800' },
   recovery: { color: colors.warning, fontSize: 14, lineHeight: 20 },
   error: { color: colors.danger, fontSize: 14, lineHeight: 20 },

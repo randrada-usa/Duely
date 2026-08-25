@@ -5,6 +5,12 @@ const migrationPath = resolve(
   'supabase/migrations/20260825104755_initial_duely_schema.sql',
 );
 const sql = readFileSync(migrationPath, 'utf8').toLowerCase();
+const clientTimestampGrantSql = readFileSync(
+  resolve(
+    'supabase/migrations/20260825130831_allow_client_created_at.sql',
+  ),
+  'utf8',
+).toLowerCase();
 const tables = [
   'profiles',
   'subjects',
@@ -73,5 +79,19 @@ assert(!sql.includes('sb_secret_') && !sql.includes('service_role_key'),
   'a secret-like credential was found in the migration');
 assert(!sql.includes('grant select, insert, update, delete on table public.'),
   'broad authenticated grants would expose protected audit or ownership columns');
+assert(
+  clientTimestampGrantSql.includes(
+    'grant insert (created_at) on table public.subjects to authenticated',
+  ) &&
+    clientTimestampGrantSql.includes(
+      'grant insert (created_at) on table public.tasks to authenticated',
+    ),
+  'guest backup must preserve original creation timestamps',
+);
+assert(
+  !clientTimestampGrantSql.includes('grant update') &&
+    !clientTimestampGrantSql.includes('user_id'),
+  'guest backup timestamp grants must not permit ownership or timestamp rewrites',
+);
 
 console.log(`Verified secure migration structure for ${tables.length} tables.`);
