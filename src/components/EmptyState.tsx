@@ -13,7 +13,7 @@ export function EmptyState({ title, description }: EmptyStateProps) {
       <Image
         accessibilityIgnoresInvertColors
         accessibilityLabel="Duely mascot"
-        source={require('../../assets/splash-icon.png')}
+        source={require('../../assets/mascot.png')}
         style={styles.mascot}
       />
       <Text style={styles.title}>{title}</Text>
