@@ -159,16 +159,37 @@ export function createSupabaseCloudMirrorGateway(
         if (error) failure();
         return;
       }
-      const { error } = await supabase.from('reminders').upsert(
-        {
-          user_id: userId,
-          task_id: remoteTaskId,
-          minutes_before: minutesBefore,
-          scheduled_for: scheduledFor,
-        },
-        { onConflict: 'user_id,task_id' },
-      );
-      if (error) failure();
+
+      // Ownership/link columns are insert-only for authenticated clients. An
+      // upsert requires UPDATE privileges on those conflict columns, so update
+      // the mutable fields first and insert only when the row does not exist.
+      const updateExisting = () =>
+        supabase
+          .from('reminders')
+          .update({
+            minutes_before: minutesBefore,
+            scheduled_for: scheduledFor,
+          })
+          .eq('user_id', userId)
+          .eq('task_id', remoteTaskId)
+          .select('task_id');
+      const { data: updated, error: updateError } = await updateExisting();
+      if (updateError) failure();
+      if (updated?.length === 1) return;
+      if ((updated?.length ?? 0) > 1) failure();
+
+      const { error: insertError } = await supabase.from('reminders').insert({
+        user_id: userId,
+        task_id: remoteTaskId,
+        minutes_before: minutesBefore,
+        scheduled_for: scheduledFor,
+      });
+      if (!insertError) return;
+
+      // A concurrent retry may have inserted the unique row first. Confirm by
+      // updating it rather than turning a harmless race into a backup failure.
+      const { data: recovered, error: recoveryError } = await updateExisting();
+      if (recoveryError || recovered?.length !== 1) failure();
     },
     async deleteTasks(userId, remoteIds) {
       if (remoteIds.length === 0) return;

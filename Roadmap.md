@@ -1,6 +1,6 @@
 # Duely Development Roadmap
 
-Last updated: 2026-08-25
+Last updated: 2026-08-27
 
 This is the living execution plan for the Duely Android beta. Update it whenever a milestone begins, finishes, changes scope, or becomes blocked. Product behavior remains governed by `ui-ux-plan.md`; ownership and required reviews remain governed by `roles.md` and `AGENTS.md`.
 
@@ -18,7 +18,7 @@ Current milestones: **M5 — On-Device OCR and Editable Review**, **M6 — Supab
 
 Current outcome: M5 implementation is complete and its end-to-end accuracy gates remain open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. A separate 12-image synthetic Android run on the Pixel 7 completed all images at 99.5% aggregate token accuracy and produced 11/12 parser-ready results; one explicit deadline did not match, so the controlled deadline gate remains open. These small synthetic results validate the harness but do not certify beta-scan accuracy.
 
-Next recommended task: verify ongoing subject and reminder synchronization, then cover the remaining sign-out, account-switch, and stale-session cases. Explicit empty-device restore and queued offline retry are now live-verified on the Pixel 7. Keep the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
+Next recommended task: resolve the sign-out scope decision, then cover sign-out, account-switch, and stale-session behavior. The current client uses Supabase's global sign-out even though the UI does not disclose that it signs out every device; do not live-test or silently change this until local-only versus all-device logout is decided. Account-switch verification also requires a second test account. Explicit empty-device restore, queued offline retry, and ongoing subject/reminder synchronization are now live-verified on the Pixel 7. Keep the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
 
 ## Locked Product Decisions
 
@@ -298,9 +298,9 @@ Status: `[~] In progress`
 - [x] Define the beta conflict rule: this phone is authoritative, and cloud data never silently overwrites local tasks.
 - [x] Queue changes while offline and retry with bounded backoff. Receipt fingerprints preserve unconfirmed work across restarts; the Pixel 7 live check confirmed no premature cloud write while offline, one automatic upload after reconnecting, and mirrored cleanup without duplication.
 - [x] Avoid duplicate tasks after interrupted requests using unique client IDs, idempotent writes, and post-write confirmation.
-- [~] Synchronize subjects and reminders. First-backup support is implemented; ongoing synchronization remains open.
+- [x] Synchronize subjects and reminders. Pixel 7 live verification confirmed subject creation and rename, reminder creation and change, reminder removal, task deletion, and subject deletion in Supabase. The authenticated client keeps ownership/link columns insert-only and updates only mutable reminder fields.
 - [x] Add active-backup, progress, failure, and manual-retry UI.
-- [~] Test reinstall, sign-out, account switch, and stale-session behavior. Explicit empty-device restore is unit-tested and live-verified on the Pixel 7 after clearing only Duely app data, signing back in, confirming the one-task restore offer, and checking that no duplicate cloud row was created.
+- [~] Test reinstall, sign-out, account switch, and stale-session behavior. Explicit empty-device restore is unit-tested and live-verified on the Pixel 7 after clearing only Duely app data, signing back in, confirming the one-task restore offer, and checking that no duplicate cloud row was created. Sign-out is paused on an explicit local-only versus all-device scope decision, and account switching needs a second test account.
 
 ---
 
