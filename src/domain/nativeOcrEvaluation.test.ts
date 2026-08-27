@@ -37,6 +37,24 @@ describe('native OCR evaluation', () => {
     expect(JSON.stringify(report)).not.toContain(fixture.ocrText);
   });
 
+  it('keeps the known Auqust recognition miss parser-ready and reviewable', () => {
+    const report = evaluateNativeOcrObservations(
+      [fixture],
+      [
+        {
+          fixtureId: fixture.id,
+          recognizedText: fixture.ocrText.replace('August', 'Auqust'),
+          durationMs: 450,
+        },
+      ],
+      new Date(2026, 7, 25, 12, 0, 0),
+    );
+
+    expect(report.recognition.tokenAccuracy).toBeLessThan(1);
+    expect(report.parser.failures).toEqual([]);
+    expect(report.parser.metrics.explicitDeadlineAccuracy.passed).toBe(1);
+  });
+
   it('tolerates whitespace changes but detects token substitutions', () => {
     expect(recognizedTokenAccuracy('Title: Sample\nDue: Friday', 'Title:  Sample Due: Friday')).toBe(1);
     expect(recognizedTokenAccuracy('Title: Sample', 'Title: Sarnple')).toBe(0.5);

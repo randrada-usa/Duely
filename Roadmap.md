@@ -16,9 +16,9 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 Current milestones: **M5 — On-Device OCR and Editable Review**, **M6 — Supabase Backend and Authentication**, and **M7 — Cloud Synchronization**
 
-Current outcome: M5 implementation is complete and its end-to-end accuracy gates remain open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. A separate 12-image synthetic Android run on the Pixel 7 completed all images at 99.5% aggregate token accuracy and produced 11/12 parser-ready results; one explicit deadline did not match, so the controlled deadline gate remains open. These small synthetic results validate the harness but do not certify beta-scan accuracy.
+Current outcome: M5 implementation is complete and its beta-scan accuracy gate remains open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. The 12-image synthetic Android pack completed at 99.5% aggregate token accuracy and 12/12 parser-ready results after a targeted, review-visible correction for ML Kit reading `August` as `Auqust`. Clearly printed deadlines passed 6/6, missing-deadline avoidance passed 3/3, and ambiguous-deadline flagging passed 3/3. These small synthetic results validate the harness but do not certify beta-scan accuracy.
 
-Next recommended task: resolve the sign-out scope decision, then cover sign-out, account-switch, and stale-session behavior. The current client uses Supabase's global sign-out even though the UI does not disclose that it signs out every device; do not live-test or silently change this until local-only versus all-device logout is decided. Account-switch verification also requires a second test account. Explicit empty-device restore, queued offline retry, and ongoing subject/reminder synchronization are now live-verified on the Pixel 7. Keep the reproducible M5 explicit-deadline recognition failure tracked for a targeted normalization and regression-test pass.
+Next recommended task: resolve the sign-out scope decision, then cover sign-out, account-switch, and stale-session behavior. The current client uses Supabase's global sign-out even though the UI does not disclose that it signs out every device; do not live-test or silently change this until local-only versus all-device logout is decided. Account-switch verification also requires a second test account. Explicit empty-device restore, queued offline retry, ongoing subject/reminder synchronization, and the corrected 12-image OCR pack are now live-verified on Android.
 
 ## Locked Product Decisions
 
@@ -224,7 +224,7 @@ Status: `[x] Complete`
 
 ## M5 — On-Device OCR and Editable Review
 
-Status: `[~] In progress — implementation complete; controlled accuracy gates pending`
+Status: `[~] In progress — implementation and synthetic gates complete; beta-scan accuracy pending`
 
 - [x] Select an Expo-compatible ML Kit integration.
 - [x] Run OCR on device.
@@ -246,10 +246,10 @@ Status: `[~] In progress — implementation complete; controlled accuracy gates 
 
 ### Accuracy gates
 
-- [ ] Clearly printed deadlines are correct in at least 95% of controlled cases.
-- [ ] The system avoids inventing a missing deadline in at least 99% of controlled cases.
+- [x] Clearly printed deadlines are correct in at least 95% of controlled cases. The Android synthetic pack passed 6/6 explicit deadlines after the review-visible `Auqust` correction.
+- [x] The system avoids inventing a missing deadline in at least 99% of controlled cases. The Android synthetic pack passed 3/3 missing-deadline cases.
 - [ ] At least 80% of beta scans have all essential fields correct without editing.
-- [ ] Every ambiguous deadline is flagged for confirmation.
+- [x] Every ambiguous deadline is flagged for confirmation in the controlled set. The Android synthetic pack passed 3/3 ambiguous cases.
 
 ---
 
@@ -366,7 +366,7 @@ Status: `[ ] Not started`
 ### Beta operations
 
 - [ ] Recruit an initial 20–50 testers; expand toward 100 only after stability.
-- [ ] Prepare synthetic/redacted scan evaluation set.
+- [~] Prepare synthetic/redacted scan evaluation set. The first 12 fully synthetic rendered images are automated and passing; broader consent-safe beta coverage remains open.
 - [ ] Add privacy-safe crash and product analytics.
 - [ ] Define beta feedback and report-a-problem flow.
 - [ ] Prepare store listing, screenshots, privacy notice, and terms.

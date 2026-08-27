@@ -57,7 +57,7 @@ const metadataLabelPattern = new RegExp(
 );
 const deadlineLabelPattern = new RegExp(`\\b(?:${deadlineLabels})\\b`, 'i');
 const monthPattern =
-  '(?:jan(?:uary)?|enero|feb(?:ruary)?|pebrero|mar(?:ch)?|marso|apr(?:il)?|abril|may|mayo|jun(?:e)?|hunyo|jul(?:y)?|hulyo|aug(?:ust)?|agosto|sep(?:tember)?|setyembre|oct(?:ober)?|oktubre|nov(?:ember)?|nobyembre|dec(?:ember)?|disyembre)';
+  '(?:jan(?:uary)?|enero|feb(?:ruary)?|pebrero|mar(?:ch)?|marso|apr(?:il)?|abril|may|mayo|jun(?:e)?|hunyo|jul(?:y)?|hulyo|au(?:g|q)(?:ust)?|agosto|sep(?:tember)?|setyembre|oct(?:ober)?|oktubre|nov(?:ember)?|nobyembre|dec(?:ember)?|disyembre)';
 const monthNumbers: Record<string, number> = {
   jan: 1,
   ene: 1,
@@ -72,6 +72,7 @@ const monthNumbers: Record<string, number> = {
   jul: 7,
   hul: 7,
   aug: 8,
+  auq: 8,
   ago: 8,
   sep: 9,
   set: 9,
@@ -198,6 +199,7 @@ function dateKeyFromText(value: string, now: Date) {
       date: `${iso[1]}-${String(Number(iso[2])).padStart(2, '0')}-${String(Number(iso[3])).padStart(2, '0')}`,
       inferredYear: false,
       ambiguous: false,
+      monthCorrection: null,
     };
   }
 
@@ -206,12 +208,17 @@ function dateKeyFromText(value: string, now: Date) {
     'i',
   ).exec(value);
   if (named) {
-    const month = monthNumbers[named[1].slice(0, 3).toLowerCase()];
+    const monthKey = named[1].slice(0, 3).toLowerCase();
+    const month = monthNumbers[monthKey];
     const year = Number(named[3] ?? now.getFullYear());
     return {
       date: `${year}-${String(month).padStart(2, '0')}-${String(Number(named[2])).padStart(2, '0')}`,
       inferredYear: !named[3],
       ambiguous: false,
+      monthCorrection:
+        monthKey === 'auq'
+          ? 'Duely interpreted “Auqust” as August. Check the deadline.'
+          : null,
     };
   }
 
@@ -220,12 +227,17 @@ function dateKeyFromText(value: string, now: Date) {
     'i',
   ).exec(value);
   if (namedDayFirst) {
-    const month = monthNumbers[namedDayFirst[2].slice(0, 3).toLowerCase()];
+    const monthKey = namedDayFirst[2].slice(0, 3).toLowerCase();
+    const month = monthNumbers[monthKey];
     const year = Number(namedDayFirst[3] ?? now.getFullYear());
     return {
       date: `${year}-${String(month).padStart(2, '0')}-${String(Number(namedDayFirst[1])).padStart(2, '0')}`,
       inferredYear: !namedDayFirst[3],
       ambiguous: false,
+      monthCorrection:
+        monthKey === 'auq'
+          ? 'Duely interpreted “Auqust” as August. Check the deadline.'
+          : null,
     };
   }
 
@@ -234,7 +246,12 @@ function dateKeyFromText(value: string, now: Date) {
   const first = Number(numeric[1]);
   const second = Number(numeric[2]);
   if (first <= 12 && second <= 12) {
-    return { date: '', inferredYear: false, ambiguous: true };
+    return {
+      date: '',
+      inferredYear: false,
+      ambiguous: true,
+      monthCorrection: null,
+    };
   }
 
   const day = first > 12 ? first : second;
@@ -243,6 +260,7 @@ function dateKeyFromText(value: string, now: Date) {
     date: `${numeric[3]}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
     inferredYear: false,
     ambiguous: false,
+    monthCorrection: null,
   };
 }
 
@@ -279,17 +297,22 @@ function deadlineCandidate(lines: string[], now: Date) {
 
     const confidence: ExtractionConfidence = parsedDate.inferredYear
       ? 'low'
-      : time
-        ? 'high'
-        : 'medium';
+      : parsedDate.monthCorrection || !time
+        ? 'medium'
+        : 'high';
+    const deadlineIssues = [
+      parsedDate.inferredYear
+        ? `The year was not shown clearly, so Duely used ${now.getFullYear()}. Check it.`
+        : null,
+      parsedDate.monthCorrection,
+      !time
+        ? 'No deadline time was found. Duely used 11:59 PM; check it.'
+        : null,
+    ].filter((message): message is string => message !== null);
     return {
       field: { value: deadline.dueAt, confidence } satisfies ExtractedValue<string>,
       lineIndex: nearbyLines.length > 1 ? index + 1 : index,
-      issue: parsedDate.inferredYear
-        ? `The year was not shown clearly, so Duely used ${now.getFullYear()}. Check it.`
-        : !time
-          ? 'No deadline time was found. Duely used 11:59 PM; check it.'
-          : null,
+      issue: deadlineIssues.join(' ') || null,
     };
   }
 

@@ -114,6 +114,23 @@ describe('scan extraction', () => {
     });
     expect(extraction.fields.dueAt?.confidence).toBe('low');
     expect(extraction.issues.dueAt).toContain('year was not shown');
+    expect(extraction.issues.dueAt).toContain('11:59 PM');
+  });
+
+  it('flags the observed Auqust OCR substitution while parsing August', () => {
+    const extraction = extractTaskFromOcr(
+      'Title: Lab report\nDeadline: Auqust 28, 2026 5:00 PM',
+      now,
+    );
+
+    expect(deadlineParts(extraction.fields.dueAt?.value ?? null)).toEqual({
+      date: '2026-08-28',
+      time: '17:00',
+    });
+    expect(extraction.fields.dueAt?.confidence).toBe('medium');
+    expect(extraction.issues.dueAt).toContain(
+      'interpreted “Auqust” as August',
+    );
   });
 
   it('does not choose between ambiguous numeric date conventions', () => {
