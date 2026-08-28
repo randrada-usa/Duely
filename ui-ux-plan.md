@@ -143,8 +143,8 @@ Do not show a single overall AI confidence percentage. Show uncertainty beside t
 
 Include:
 
-- Account identity and school-email status.
-- Google or school-email sign-in prompt for guests.
+- Account identity.
+- Google sign-in prompt for guests, with continued guest access available.
 - AI-assisted scan allowance, such as **3 of 5 remaining**.
 - Default reminders.
 - Notification controls.
@@ -159,7 +159,7 @@ Include:
 - Application version.
 - Sign out for authenticated users.
 
-Defer Google Calendar sync, academic-calendar integration, study-hour planning, weekly goals, and general AI coach settings.
+Defer school-email authentication, the verified-school badge, Google Calendar sync, academic-calendar integration, study-hour planning, weekly goals, and general AI coach settings.
 
 ## Onboarding
 
@@ -188,14 +188,13 @@ Every slide includes Skip. The final action is **Get started**.
 Offer:
 
 - Continue with Google
-- Continue with school email
 - Continue without an account
 
 Explain guest access:
 
 > Manual tasks and on-device scanning are available without an account. Sign in to use AI-assisted scans.
 
-School email should use a verification link or one-time code, not a password in v0. Do not restrict valid accounts to a literal `.edu` suffix. A verified-school badge may use a maintained domain allowlist.
+School-email authentication and a verified-school badge are outside the beta. If later approved, school email must use a verification link or one-time code rather than a password, and badge eligibility must use a maintained domain allowlist rather than a literal `.edu` check.
 
 ## Required Empty, Error, and Permission States
 
@@ -204,7 +203,6 @@ Design and implement:
 - First launch and onboarding.
 - Guest-mode explanation.
 - Google sign-in failure.
-- School-email entry, code/link sent, verification success, expired link, and failure.
 - Empty Home with a first-task call to action.
 - Empty Tasks collection.
 - No task results after search/filtering.

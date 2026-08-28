@@ -30,8 +30,12 @@ export const radius = {
 } as const;
 
 export const typography = {
-  heading: 'Nunito',
-  body: 'Inter',
+  heading: 'Nunito_700Bold',
+  headingStrong: 'Nunito_800ExtraBold',
+  body: 'Inter_400Regular',
+  bodyMedium: 'Inter_500Medium',
+  bodySemibold: 'Inter_600SemiBold',
+  bodyBold: 'Inter_700Bold',
 } as const;
 
 export const minimumTouchTarget = 48;

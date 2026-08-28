@@ -5,20 +5,6 @@ export type AuthRedirectResult =
   | { status: 'error'; message: string }
   | { status: 'session'; accessToken: string; refreshToken: string };
 
-export function normalizeEmail(value: string) {
-  return value.trim().toLowerCase();
-}
-
-export function emailAddressError(value: string) {
-  const email = normalizeEmail(value);
-  if (!email) return 'Enter your school email address.';
-  if (email.length > 254) return 'Enter a shorter email address.';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return 'Enter a valid email address.';
-  }
-  return null;
-}
-
 export function parseAuthRedirect(url: string): AuthRedirectResult {
   let parsedUrl: URL;
   try {
@@ -41,7 +27,7 @@ export function parseAuthRedirect(url: string): AuthRedirectResult {
   if (providerError) {
     return {
       status: 'error',
-      message: 'The sign-in link could not be completed. Request a new link and try again.',
+      message: 'Sign-in could not be completed. Try Google sign-in again.',
     };
   }
 
@@ -50,7 +36,7 @@ export function parseAuthRedirect(url: string): AuthRedirectResult {
   if (!accessToken || !refreshToken) {
     return {
       status: 'error',
-      message: 'This sign-in link is incomplete or expired. Request a new link.',
+      message: 'This sign-in response is incomplete or expired. Try again.',
     };
   }
 

@@ -12,12 +12,7 @@ import {
   useState,
 } from 'react';
 
-import {
-  AUTH_REDIRECT_URL,
-  emailAddressError,
-  normalizeEmail,
-  parseAuthRedirect,
-} from '../domain/auth';
+import { AUTH_REDIRECT_URL, parseAuthRedirect } from '../domain/auth';
 import {
   createSessionBootstrapCoordinator,
   CURRENT_SESSION_SIGN_OUT_OPTIONS,
@@ -42,11 +37,8 @@ type AuthStoreValue = {
   isSigningOut: boolean;
   isAuthActionPending: boolean;
   authActionError: string | null;
-  magicLinkSentTo: string | null;
   retry: () => void;
   startGoogleSignIn: () => Promise<boolean>;
-  sendMagicLink: (email: string) => Promise<boolean>;
-  clearAuthAction: () => void;
   signOut: () => Promise<boolean>;
 };
 
@@ -54,8 +46,6 @@ const SESSION_ERROR =
   'Duely could not check your account session. Your local tasks are still available.';
 const SIGN_OUT_ERROR =
   'Duely could not sign out. Check your connection and try again.';
-const MAGIC_LINK_ERROR =
-  'Duely could not send the sign-in link. Check your connection and try again.';
 const GOOGLE_SIGN_IN_ERROR =
   'Duely could not start Google sign-in. Check your connection and try again.';
 
@@ -71,7 +61,6 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isAuthActionPending, setIsAuthActionPending] = useState(false);
   const [authActionError, setAuthActionError] = useState<string | null>(null);
-  const [magicLinkSentTo, setMagicLinkSentTo] = useState<string | null>(null);
   const isMountedRef = useRef(true);
   const isSigningOutRef = useRef(false);
   const authRedirectHandledRef = useRef(false);
@@ -168,13 +157,12 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
       if (sessionError) throw sessionError;
       if (isMountedRef.current) {
         setAuthActionError(null);
-        setMagicLinkSentTo(null);
       }
       return true;
     } catch {
       if (isMountedRef.current) {
         setAuthActionError(
-          'Duely could not finish signing in. Request a new link and try again.',
+          'Duely could not finish signing in. Try Google sign-in again.',
         );
       }
       return false;
@@ -201,17 +189,11 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
 
   const retry = useCallback(() => setRetryCount((count) => count + 1), []);
 
-  const clearAuthAction = useCallback(() => {
-    setAuthActionError(null);
-    setMagicLinkSentTo(null);
-  }, []);
-
   const startGoogleSignIn = useCallback(async () => {
     if (isAuthActionPending) return false;
 
     setIsAuthActionPending(true);
     setAuthActionError(null);
-    setMagicLinkSentTo(null);
     authRedirectHandledRef.current = false;
     try {
       const supabase = getSupabaseClient();
@@ -246,49 +228,6 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
       if (isMountedRef.current) setIsAuthActionPending(false);
     }
   }, [applyAuthRedirect, isAuthActionPending]);
-
-  const sendMagicLink = useCallback(
-    async (value: string) => {
-      const validationError = emailAddressError(value);
-      if (validationError) {
-        setAuthActionError(validationError);
-        return false;
-      }
-      if (isAuthActionPending) return false;
-
-      setIsAuthActionPending(true);
-      setAuthActionError(null);
-      authRedirectHandledRef.current = false;
-      try {
-        const supabase = getSupabaseClient();
-        if (!supabase) throw new Error('Supabase is not configured.');
-        const email = normalizeEmail(value);
-        const { error: requestError } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            emailRedirectTo: AUTH_REDIRECT_URL,
-            shouldCreateUser: true,
-          },
-        });
-        if (requestError) {
-          setAuthActionError(
-            requestError.status === 429
-              ? 'Please wait before requesting another sign-in link.'
-              : MAGIC_LINK_ERROR,
-          );
-          return false;
-        }
-        setMagicLinkSentTo(email);
-        return true;
-      } catch {
-        setAuthActionError(MAGIC_LINK_ERROR);
-        return false;
-      } finally {
-        setIsAuthActionPending(false);
-      }
-    },
-    [isAuthActionPending],
-  );
 
   const signOut = useCallback(async () => {
     try {
@@ -329,22 +268,16 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
       isSigningOut,
       isAuthActionPending,
       authActionError,
-      magicLinkSentTo,
       retry,
       startGoogleSignIn,
-      sendMagicLink,
-      clearAuthAction,
       signOut,
     }),
     [
       authActionError,
-      clearAuthAction,
       error,
       isAuthActionPending,
       isSigningOut,
-      magicLinkSentTo,
       retry,
-      sendMagicLink,
       session,
       signOut,
       startGoogleSignIn,

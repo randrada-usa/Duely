@@ -14,11 +14,11 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 ## Current Position
 
-Current milestones: **M5 — On-Device OCR and Editable Review**, **M6 — Supabase Backend and Authentication**, and **M7 — Cloud Synchronization**
+Current milestone: **M5 — On-Device OCR and Editable Review** remains open only for the broader beta-scan accuracy gate. **M6 — Supabase Backend and Authentication** and **M7 — Cloud Synchronization** are complete for the beta scope.
 
 Current outcome: M5 implementation is complete and its beta-scan accuracy gate remains open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. The 12-image synthetic Android pack completed at 99.5% aggregate token accuracy and 12/12 parser-ready results after a targeted, review-visible correction for ML Kit reading `August` as `Auqust`. Clearly printed deadlines passed 6/6, missing-deadline avoidance passed 3/3, and ambiguous-deadline flagging passed 3/3. These small synthetic results validate the harness but do not certify beta-scan accuracy.
 
-Next recommended task: complete the remaining reinstall/stale-session regression coverage, then implement the passwordless school-email flow while the verified-school badge allowlist remains deferred. Sign-out now explicitly affects only the current phone. Pixel 7 verification confirmed local task retention through sign-out, successful Google sign-in to a second account, separate cloud ownership, and an explicit first-backup prompt for the second account without silently copying phone data. Explicit empty-device restore, queued offline retry, ongoing subject/reminder synchronization, and the corrected 12-image OCR pack are also live-verified on Android.
+Next recommended task: begin the UI/UX revision using the local DuelyPages and DuelyIcons references. Passwordless school-email authentication and the verified-school badge are deliberately deferred. The real Nunito and Inter font families now load before app startup. Pixel 7 verification confirmed local task retention through sign-out, successful Google sign-in to a second account, separate cloud ownership, an explicit first-backup prompt without silent copying, explicit empty-device restore, and a keep-data uninstall/reinstall that retained all 47 app-data files, the local task, and the signed-in Google session. Queued offline retry, ongoing subject/reminder synchronization, and the corrected 12-image OCR pack are also live-verified on Android.
 
 ## Locked Product Decisions
 
@@ -29,7 +29,7 @@ Next recommended task: complete the remaining reinstall/stale-session regression
 - Primary navigation: Home, Tasks, elevated Scan, Calendar, Profile.
 - Supabase is the planned backend and authentication platform.
 - Guest access supports manual tasks and on-device scanning.
-- Google and passwordless school-email sign-in are the beta authentication methods.
+- Google is the beta account authentication method; manual tasks and on-device scanning remain available to guests.
 - Sign-out affects only the current phone; other device sessions remain active.
 - ML Kit performs on-device OCR; Gemini is an optional authenticated fallback/assistant.
 - One image produces one task in the beta. Images only; no PDF ingestion.
@@ -37,7 +37,7 @@ Next recommended task: complete the remaining reinstall/stale-session regression
 - The beta uses an internal Duely calendar only.
 - Dataset participation is optional, separately consented, and off by default.
 - English ships first while code and content remain localization-ready for Filipino.
-- Nunito is the heading font and Inter is the body font. Local font integration remains pending.
+- Nunito is the heading font and Inter is the body font.
 
 ## Milestone Overview
 
@@ -256,7 +256,7 @@ Status: `[~] In progress — implementation and synthetic gates complete; beta-s
 
 ## M6 — Supabase Backend and Authentication
 
-Status: `[~] In progress`
+Status: `[x] Complete`
 
 ### Preparation required from Rey
 
@@ -264,14 +264,14 @@ Status: `[~] In progress`
 - [x] Provide the project URL and publishable client key through local environment configuration.
 - [x] Never provide or embed the service-role key in the mobile client.
 - [x] Configure Google OAuth credentials.
-- [ ] Configure passwordless school-email redirect URLs.
-- [ ] Confirm allowed beta school domains for the verified-school badge.
+- [D] Configure passwordless school-email redirect URLs after the beta.
+- [D] Confirm school-domain rules for a future verified-school badge.
 
 ### Implementation
 
 - [x] Add Supabase client with secure session persistence.
 - [x] Add Google sign-in.
-- [ ] Add passwordless school-email link or one-time-code flow.
+- [D] Add passwordless school-email link or one-time-code flow after the beta.
 - [x] Add explicit, retry-safe guest-to-account first-backup behavior.
 - [x] Create profiles, subjects, tasks, reminders, consent, and allowance schema migration.
 - [x] Enable RLS on every exposed table in the migration.
@@ -291,9 +291,9 @@ Status: `[~] In progress`
 
 ## M7 — Cloud Synchronization
 
-Status: `[~] In progress`
+Status: `[x] Complete`
 
-- [~] Define local/remote identifiers and synchronization metadata. Stable client IDs and per-account backup receipts are implemented; full sync metadata remains open.
+- [x] Define beta local/remote identifiers and synchronization metadata. Stable client IDs, per-account backup receipts, state fingerprints, and confirmed timestamps support the documented phone-authoritative backup model; multi-device merge metadata is deferred.
 - [x] Upload local guest tasks after explicit authorization and confirm the first live backup without removing the local copy.
 - [x] Make create/update/delete synchronization idempotent and confirm all three paths live from the Pixel 7 to Supabase.
 - [x] Define the beta conflict rule: this phone is authoritative, and cloud data never silently overwrites local tasks.
@@ -301,7 +301,7 @@ Status: `[~] In progress`
 - [x] Avoid duplicate tasks after interrupted requests using unique client IDs, idempotent writes, and post-write confirmation.
 - [x] Synchronize subjects and reminders. Pixel 7 live verification confirmed subject creation and rename, reminder creation and change, reminder removal, task deletion, and subject deletion in Supabase. The authenticated client keeps ownership/link columns insert-only and updates only mutable reminder fields.
 - [x] Add active-backup, progress, failure, and manual-retry UI.
-- [~] Test reinstall, sign-out, account switch, and stale-session behavior. Explicit empty-device restore is unit-tested and live-verified on the Pixel 7 after clearing only Duely app data, signing back in, confirming the one-task restore offer, and checking that no duplicate cloud row was created. Local-only sign-out and account switching are live-verified: the phone-local task survived sign-out, the second Google account completed OAuth, account A retained its separate cloud task, account B remained at zero cloud rows, and Duely required an explicit first-backup action instead of silently mirroring the phone task. Session-bootstrap race and guarded-restore regressions are automated; an actual reinstall and a live forced stale-session failure remain open.
+- [x] Test reinstall, sign-out, account switch, and stale-session behavior. Explicit empty-device restore is unit-tested and live-verified on the Pixel 7 after clearing only Duely app data, signing back in, confirming the one-task restore offer, and checking that no duplicate cloud row was created. Local-only sign-out and account switching are live-verified: the phone-local task survived sign-out, the second Google account completed OAuth, account A retained its separate cloud task, account B remained at zero cloud rows, and Duely required an explicit first-backup action instead of silently mirroring the phone task. A keep-data uninstall/reinstall retained all 47 app-data files, the local task, and the signed-in Google session. Rejected session checks, late bootstrap results, and cleanup races are covered by automated tests; a live forced invalid-token test is intentionally omitted because it would require manipulating real credentials.
 
 ---
 
@@ -441,11 +441,11 @@ These apply to every milestone rather than being postponed until release:
 
 | Risk or decision | Current handling | Owner | Needed by |
 | --- | --- | --- | --- |
-| Nunito/Inter package dependency conflict | Avoid forced install; bundle compatible local font files later | Rey / Gio | Before UI polish completion |
+| Multi-device task editing | Deferred; the beta uses the documented phone-authoritative cloud backup model | Rey | After beta |
 | Expo dependency audit reports transitive findings | Review deliberately; do not use breaking `audit fix --force` | Rey | Before beta build |
 | ML Kit library compatibility with managed Expo | Use `expo-mlkit-ocr` with its bundled Android model in the Expo development build; keep native rebuild verification in release checks | Rey | M5/M10 |
 | Guest-to-account data migration behavior | Preserve local tasks; specify conflict rules before auth work | Rey | M6 |
-| School-domain verification | Use maintained allowlist, not literal `.edu` check | Rey | M6 |
+| School-domain verification | Deliberately deferred with school-email authentication; use a maintained allowlist if later approved | Rey | After beta |
 | AI allowance reset and premium price | Keep configurable; finalize with usage and student feedback | Rey | M8/M11 |
 | Dataset retention duration | Not yet finalized | Rey | M9 |
 | Beta tester count | Start with 20–50; expand after stability | Team | M10 |

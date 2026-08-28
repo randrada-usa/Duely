@@ -32,7 +32,7 @@ Build and maintain these primary destinations:
 - Calendar
 - Profile
 
-The beta includes manual task creation, Today and Upcoming views, searchable tasks, an internal calendar, deterministic smart prioritization, fixed/default reminders, camera or gallery image intake, ML Kit OCR, optional Gemini-assisted extraction, editable scan review, and Google or verified school-email authentication. Guest access supports manual tasks and on-device scanning.
+The beta includes manual task creation, Today and Upcoming views, searchable tasks, an internal calendar, deterministic smart prioritization, fixed/default reminders, camera or gallery image intake, ML Kit OCR, optional Gemini-assisted extraction, editable scan review, and Google authentication. Guest access supports manual tasks and on-device scanning.
 
 One image creates one task. Accept images only in v0; do not add PDF or document ingestion. If an image appears to contain multiple assignments, ask the student to crop or select one.
 
@@ -45,12 +45,13 @@ Do not implement these without an explicit scope change:
 - Multi-subject task membership
 - Weekly goals or invented productivity claims
 - Password-based school-email authentication
+- Passwordless school-email authentication or a verified-school badge
 
 ## Technology Direction
 
 - Mobile: React Native with Expo, Android first.
 - Backend: Supabase is the default for database, storage, server-side logic, and row-level authorization.
-- Authentication: Google sign-in and passwordless school-email verification. Do not require a literal `.edu` suffix; use verification plus a maintained school-domain allowlist where needed.
+- Authentication: Google sign-in for the beta, with guest access for manual tasks and on-device scanning. Passwordless school-email verification and the verified-school badge are deferred until an explicit scope change.
 - OCR: on-device ML Kit first. Gemini may assist only when the user is authenticated, has allowance, and the relevant consent/privacy conditions are satisfied.
 - Calendar: internal Duely calendar only for the beta.
 - iOS: planned later. Keep domain logic portable, but do not delay Android beta work for unrequested iOS implementation.

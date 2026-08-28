@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { REMINDER_OPTIONS } from '../../src/domain/reminder';
@@ -17,14 +16,10 @@ export default function ProfileScreen() {
     isSigningOut,
     isAuthActionPending,
     authActionError,
-    magicLinkSentTo,
     retry,
     startGoogleSignIn,
-    sendMagicLink,
-    clearAuthAction,
     signOut,
   } = useAuth();
-  const [email, setEmail] = useState('');
   const {
     defaultReminder,
     permission,
@@ -176,88 +171,25 @@ export default function ProfileScreen() {
                 ? 'You are signed in. After your first backup, this phone remains the source of truth and confirmed changes are mirrored to your account.'
                 : status === 'error'
                   ? authError
-                  : 'Choose Google or use a one-time school-email link. Signing in keeps your local tasks on this device.'}
+                  : 'Continue with Google, or keep using Duely as a guest. Signing in keeps your local tasks on this device.'}
         </Text>
-        {status === 'guest' && !magicLinkSentTo && (
-          <View style={styles.emailForm}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: isAuthActionPending }}
-              disabled={isAuthActionPending}
-              onPress={() => void startGoogleSignIn()}
-              style={({ pressed }) => [
-                styles.googleAction,
-                pressed && styles.secondaryActionPressed,
-                isAuthActionPending && styles.actionDisabled,
-              ]}
-            >
-              <Ionicons name="logo-google" size={22} color={colors.text} />
-              <Text style={styles.googleActionText}>
-                {isAuthActionPending ? 'Please wait…' : 'Continue with Google'}
-              </Text>
-            </Pressable>
-            <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or use school email</Text>
-              <View style={styles.dividerLine} />
-            </View>
-            <Text style={styles.fieldLabel}>School email</Text>
-            <TextInput
-              accessibilityLabel="School email address"
-              autoCapitalize="none"
-              autoComplete="email"
-              autoCorrect={false}
-              editable={!isAuthActionPending}
-              keyboardType="email-address"
-              onChangeText={(value) => {
-                setEmail(value);
-                if (authActionError) clearAuthAction();
-              }}
-              onSubmitEditing={() => void sendMagicLink(email)}
-              placeholder="you@school.edu.ph"
-              placeholderTextColor={colors.textMuted}
-              returnKeyType="send"
-              style={styles.input}
-              textContentType="emailAddress"
-              value={email}
-            />
-            <Text style={styles.helperText}>
-              Duely will email a one-time sign-in link. Signing in never removes local tasks.
+        {status === 'guest' && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isAuthActionPending }}
+            disabled={isAuthActionPending}
+            onPress={() => void startGoogleSignIn()}
+            style={({ pressed }) => [
+              styles.googleAction,
+              pressed && styles.secondaryActionPressed,
+              isAuthActionPending && styles.actionDisabled,
+            ]}
+          >
+            <Ionicons name="logo-google" size={22} color={colors.text} />
+            <Text style={styles.googleActionText}>
+              {isAuthActionPending ? 'Please wait…' : 'Continue with Google'}
             </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: isAuthActionPending }}
-              disabled={isAuthActionPending}
-              onPress={() => void sendMagicLink(email)}
-              style={({ pressed }) => [
-                styles.action,
-                pressed && styles.actionPressed,
-                isAuthActionPending && styles.actionDisabled,
-              ]}
-            >
-              <Text style={styles.actionText}>
-                {isAuthActionPending ? 'Please wait…' : 'Email me a sign-in link'}
-              </Text>
-            </Pressable>
-          </View>
-        )}
-        {status === 'guest' && !!magicLinkSentTo && (
-          <View accessibilityLiveRegion="polite" style={styles.successPanel}>
-            <Text style={styles.successTitle}>Check your email</Text>
-            <Text style={styles.cardBody}>
-              A one-time sign-in link was sent to {magicLinkSentTo}. Open it before it expires.
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={clearAuthAction}
-              style={({ pressed }) => [
-                styles.secondaryAction,
-                pressed && styles.secondaryActionPressed,
-              ]}
-            >
-              <Text style={styles.secondaryActionText}>Use a different email</Text>
-            </Pressable>
-          </View>
+          </Pressable>
         )}
         {!!authActionError && (
           <Text accessibilityRole="alert" style={styles.error}>
@@ -438,13 +370,6 @@ const styles = StyleSheet.create({
   secondaryActionText: { color: colors.primary, fontSize: 16, fontWeight: '800' },
   googleAction: { minHeight: minimumTouchTarget, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
   googleActionText: { color: colors.text, fontSize: 16, fontWeight: '800' },
-  divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  dividerText: { color: colors.textMuted, fontSize: 14 },
-  emailForm: { gap: spacing.sm },
-  fieldLabel: { color: colors.text, fontSize: 16, fontWeight: '700' },
-  input: { minHeight: minimumTouchTarget, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, color: colors.text, fontSize: 16 },
-  helperText: { color: colors.textMuted, fontSize: 14, lineHeight: 20 },
   successPanel: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
   backupPanel: { gap: spacing.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
   successTitle: { color: colors.text, fontSize: 17, fontWeight: '800' },
