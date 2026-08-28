@@ -1,6 +1,6 @@
 # Duely Development Roadmap
 
-Last updated: 2026-08-27
+Last updated: 2026-08-29
 
 This is the living execution plan for the Duely Android beta. Update it whenever a milestone begins, finishes, changes scope, or becomes blocked. Product behavior remains governed by `ui-ux-plan.md`; ownership and required reviews remain governed by `roles.md` and `AGENTS.md`.
 
@@ -18,7 +18,7 @@ Current milestones: **M5 — On-Device OCR and Editable Review**, **M6 — Supab
 
 Current outcome: M5 implementation is complete and its beta-scan accuracy gate remains open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. The 12-image synthetic Android pack completed at 99.5% aggregate token accuracy and 12/12 parser-ready results after a targeted, review-visible correction for ML Kit reading `August` as `Auqust`. Clearly printed deadlines passed 6/6, missing-deadline avoidance passed 3/3, and ambiguous-deadline flagging passed 3/3. These small synthetic results validate the harness but do not certify beta-scan accuracy.
 
-Next recommended task: resolve the sign-out scope decision, then cover sign-out, account-switch, and stale-session behavior. The current client uses Supabase's global sign-out even though the UI does not disclose that it signs out every device; do not live-test or silently change this until local-only versus all-device logout is decided. Account-switch verification also requires a second test account. Explicit empty-device restore, queued offline retry, ongoing subject/reminder synchronization, and the corrected 12-image OCR pack are now live-verified on Android.
+Next recommended task: complete the remaining reinstall/stale-session regression coverage, then implement the passwordless school-email flow while the verified-school badge allowlist remains deferred. Sign-out now explicitly affects only the current phone. Pixel 7 verification confirmed local task retention through sign-out, successful Google sign-in to a second account, separate cloud ownership, and an explicit first-backup prompt for the second account without silently copying phone data. Explicit empty-device restore, queued offline retry, ongoing subject/reminder synchronization, and the corrected 12-image OCR pack are also live-verified on Android.
 
 ## Locked Product Decisions
 
@@ -30,6 +30,7 @@ Next recommended task: resolve the sign-out scope decision, then cover sign-out,
 - Supabase is the planned backend and authentication platform.
 - Guest access supports manual tasks and on-device scanning.
 - Google and passwordless school-email sign-in are the beta authentication methods.
+- Sign-out affects only the current phone; other device sessions remain active.
 - ML Kit performs on-device OCR; Gemini is an optional authenticated fallback/assistant.
 - One image produces one task in the beta. Images only; no PDF ingestion.
 - Five free AI-assisted scans per month is the current product assumption and must remain configurable.
@@ -300,7 +301,7 @@ Status: `[~] In progress`
 - [x] Avoid duplicate tasks after interrupted requests using unique client IDs, idempotent writes, and post-write confirmation.
 - [x] Synchronize subjects and reminders. Pixel 7 live verification confirmed subject creation and rename, reminder creation and change, reminder removal, task deletion, and subject deletion in Supabase. The authenticated client keeps ownership/link columns insert-only and updates only mutable reminder fields.
 - [x] Add active-backup, progress, failure, and manual-retry UI.
-- [~] Test reinstall, sign-out, account switch, and stale-session behavior. Explicit empty-device restore is unit-tested and live-verified on the Pixel 7 after clearing only Duely app data, signing back in, confirming the one-task restore offer, and checking that no duplicate cloud row was created. Sign-out is paused on an explicit local-only versus all-device scope decision, and account switching needs a second test account.
+- [~] Test reinstall, sign-out, account switch, and stale-session behavior. Explicit empty-device restore is unit-tested and live-verified on the Pixel 7 after clearing only Duely app data, signing back in, confirming the one-task restore offer, and checking that no duplicate cloud row was created. Local-only sign-out and account switching are live-verified: the phone-local task survived sign-out, the second Google account completed OAuth, account A retained its separate cloud task, account B remained at zero cloud rows, and Duely required an explicit first-backup action instead of silently mirroring the phone task. Session-bootstrap race and guarded-restore regressions are automated; an actual reinstall and a live forced stale-session failure remain open.
 
 ---
 
