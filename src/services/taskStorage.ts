@@ -171,6 +171,29 @@ export function persistLocalTaskData(
   return storage.setItem(TASK_STORAGE_KEY, serializeLocalTaskData(data));
 }
 
+function hasLocalTaskData(data: LocalTaskData) {
+  return data.tasks.length > 0 || data.subjects.length > 0;
+}
+
+export async function persistGuardedRestore(
+  storage: TaskStorageAdapter,
+  restored: LocalTaskData,
+  currentData: () => LocalTaskData,
+  canApply: () => boolean,
+) {
+  const startingData = currentData();
+  if (!canApply() || hasLocalTaskData(startingData)) return false;
+
+  await persistLocalTaskData(storage, restored);
+  const current = currentData();
+  if (canApply() && current === startingData) return true;
+
+  // The account or local device data changed while storage was pending.
+  // Put the current phone state back instead of applying a stale restore.
+  await persistLocalTaskData(storage, current);
+  return false;
+}
+
 export function createTaskPersistenceQueue(
   storage: TaskStorageAdapter,
   { onWriteSuccess, onWriteError }: TaskPersistenceCallbacks,

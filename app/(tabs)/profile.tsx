@@ -79,14 +79,19 @@ export default function ProfileScreen() {
   function confirmSignOut() {
     Alert.alert(
       'Sign out of Duely?',
-      'Your local tasks will stay on this device. Cloud synchronization is not enabled yet.',
+      'This signs out only this phone. Your local tasks will stay on this device.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Sign out',
           onPress: () =>
             void signOut().then((signedOut) => {
-              if (!signedOut) Alert.alert('Could not sign out', authError ?? 'Try again.');
+              if (!signedOut) {
+                Alert.alert(
+                  'Could not sign out',
+                  'Check your connection and try again.',
+                );
+              }
             }),
         },
       ],

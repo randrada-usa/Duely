@@ -19,6 +19,10 @@ import {
   parseAuthRedirect,
 } from '../domain/auth';
 import {
+  createSessionBootstrapCoordinator,
+  CURRENT_SESSION_SIGN_OUT_OPTIONS,
+} from '../services/authSessionBootstrap';
+import {
   getSupabaseClient,
   startSupabaseSessionRefresh,
 } from '../services/supabaseClient';
@@ -69,6 +73,7 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
   const [authActionError, setAuthActionError] = useState<string | null>(null);
   const [magicLinkSentTo, setMagicLinkSentTo] = useState<string | null>(null);
   const isMountedRef = useRef(true);
+  const isSigningOutRef = useRef(false);
   const authRedirectHandledRef = useRef(false);
 
   useEffect(() => {
@@ -79,9 +84,9 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
-    let active = true;
     let stopRefresh: (() => void) | undefined;
     let unsubscribe: (() => void) | undefined;
+    let stopBootstrap: (() => void) | undefined;
 
     try {
       const supabase = getSupabaseClient();
@@ -95,26 +100,32 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
       setStatus('loading');
       setError(null);
       stopRefresh = startSupabaseSessionRefresh(supabase);
-      const authSubscription = supabase.auth.onAuthStateChange(
-        (_event, nextSession) => {
-          if (!active) return;
+      const bootstrap = createSessionBootstrapCoordinator<Session>({
+        onSession: (nextSession) => {
           setSession(nextSession);
           setStatus(nextSession ? 'authenticated' : 'guest');
           setError(null);
         },
+        onError: () => {
+          setSession(null);
+          setStatus('error');
+          setError(SESSION_ERROR);
+        },
+      });
+      stopBootstrap = bootstrap.stop;
+      const authSubscription = supabase.auth.onAuthStateChange(
+        (_event, nextSession) => {
+          bootstrap.applyAuthEvent(nextSession);
+        },
       );
       unsubscribe = () => authSubscription.data.subscription.unsubscribe();
 
-      void supabase.auth.getSession().then(({ data, error: sessionError }) => {
-        if (!active) return;
-        if (sessionError) {
-          setStatus('error');
-          setError(SESSION_ERROR);
-          return;
-        }
-        setSession(data.session);
-        setStatus(data.session ? 'authenticated' : 'guest');
-      });
+      void supabase.auth.getSession().then(
+        ({ data, error: sessionError }) => {
+          bootstrap.applySessionCheck(data.session, !!sessionError);
+        },
+        () => bootstrap.applySessionCheck(null, true),
+      );
     } catch {
       setStatus('error');
       setSession(null);
@@ -122,7 +133,7 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
     }
 
     return () => {
-      active = false;
+      stopBootstrap?.();
       unsubscribe?.();
       stopRefresh?.();
     };
@@ -282,25 +293,32 @@ export function AuthStoreProvider({ children }: PropsWithChildren) {
   const signOut = useCallback(async () => {
     try {
       const supabase = getSupabaseClient();
-      if (!supabase || isSigningOut) return false;
+      if (!supabase || isSigningOutRef.current) return false;
 
+      isSigningOutRef.current = true;
       setIsSigningOut(true);
-      const { error: signOutError } = await supabase.auth.signOut();
+      setError(null);
+      const { error: signOutError } = await supabase.auth.signOut(
+        CURRENT_SESSION_SIGN_OUT_OPTIONS,
+      );
       if (signOutError) {
-        setError(SIGN_OUT_ERROR);
+        if (isMountedRef.current) setError(SIGN_OUT_ERROR);
         return false;
       }
-      setSession(null);
-      setStatus('guest');
-      setError(null);
+      if (isMountedRef.current) {
+        setSession(null);
+        setStatus('guest');
+        setError(null);
+      }
       return true;
     } catch {
-      setError(SIGN_OUT_ERROR);
+      if (isMountedRef.current) setError(SIGN_OUT_ERROR);
       return false;
     } finally {
-      setIsSigningOut(false);
+      isSigningOutRef.current = false;
+      if (isMountedRef.current) setIsSigningOut(false);
     }
-  }, [isSigningOut]);
+  }, []);
 
   const value = useMemo<AuthStoreValue>(
     () => ({

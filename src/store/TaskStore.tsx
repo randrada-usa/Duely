@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -27,6 +28,7 @@ import {
 import {
   createTaskPersistenceQueue,
   loadLocalTaskData,
+  persistGuardedRestore,
   persistLocalTaskData,
   resetLocalTaskData as clearLocalTaskData,
 } from '../services/taskStorage';
@@ -55,7 +57,10 @@ type TaskStoreValue = LocalTaskData & {
   canResetLocalData: boolean;
   isResettingLocalData: boolean;
   resetLocalData: () => Promise<boolean>;
-  restoreLocalData: (data: LocalTaskData) => Promise<boolean>;
+  restoreLocalData: (
+    data: LocalTaskData,
+    canApply?: () => boolean,
+  ) => Promise<boolean>;
   addTask: (draft: TaskDraft) => Task | null;
   updateTask: (id: string, draft: TaskDraft) => void;
   completeTask: (id: string, completedAt: string) => void;
@@ -77,6 +82,8 @@ function createLocalId(prefix: 'task' | 'subject') {
 
 export function TaskStoreProvider({ children }: PropsWithChildren) {
   const [data, setData] = useState<LocalTaskData>(emptyData);
+  const dataRef = useRef(data);
+  dataRef.current = data;
   const [isHydrated, setIsHydrated] = useState(false);
   const [canPersist, setCanPersist] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
@@ -156,12 +163,21 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
   }, [isResettingLocalData, storageIssue]);
 
   const restoreLocalData = useCallback(
-    async (restored: LocalTaskData) => {
+    async (
+      restored: LocalTaskData,
+      canApply: () => boolean = () => true,
+    ) => {
       if (!canPersist || data.tasks.length > 0 || data.subjects.length > 0) {
         return false;
       }
       try {
-        await persistLocalTaskData(AsyncStorage, restored);
+        const applied = await persistGuardedRestore(
+          AsyncStorage,
+          restored,
+          () => dataRef.current,
+          canApply,
+        );
+        if (!applied) return false;
         setData(restored);
         return true;
       } catch {

@@ -6,6 +6,7 @@ import {
   decodeLocalTaskData,
   LEGACY_TASK_STORAGE_KEY,
   loadLocalTaskData,
+  persistGuardedRestore,
   resetLocalTaskData,
   TASK_STORAGE_KEY,
   TASK_STORAGE_KEYS,
@@ -246,5 +247,109 @@ describe('local task storage', () => {
     expect(adapter.setItem).toHaveBeenCalledTimes(2);
     expect(onWriteError).toHaveBeenCalledOnce();
     expect(onWriteSuccess).toHaveBeenCalledOnce();
+  });
+
+  it('applies a restore only while the account and phone data remain unchanged', async () => {
+    const adapter = storage();
+    const restored = dataWithSubject;
+
+    await expect(
+      persistGuardedRestore(adapter, restored, () => emptyData, () => true),
+    ).resolves.toBe(true);
+    expect(JSON.parse(adapter.setItem.mock.calls[0][1])).toMatchObject(restored);
+  });
+
+  it('does not start a restore after the account becomes inactive', async () => {
+    const adapter = storage();
+
+    await expect(
+      persistGuardedRestore(adapter, dataWithSubject, () => emptyData, () => false),
+    ).resolves.toBe(false);
+    expect(adapter.setItem).not.toHaveBeenCalled();
+  });
+
+  it('restores current phone data when the account changes during a write', async () => {
+    const adapter = storage();
+    let active = true;
+    let releaseWrite = () => {};
+    adapter.setItem.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseWrite = resolve;
+        }),
+    );
+
+    const pending = persistGuardedRestore(
+      adapter,
+      dataWithSubject,
+      () => emptyData,
+      () => active,
+    );
+    await Promise.resolve();
+    active = false;
+    releaseWrite();
+
+    await expect(pending).resolves.toBe(false);
+    expect(adapter.setItem).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(adapter.setItem.mock.calls[1][1])).toMatchObject(emptyData);
+  });
+
+  it('preserves phone edits made while a restore write is pending', async () => {
+    const adapter = storage();
+    let current = emptyData;
+    let releaseWrite = () => {};
+    adapter.setItem.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseWrite = resolve;
+        }),
+    );
+
+    const pending = persistGuardedRestore(
+      adapter,
+      dataWithSubject,
+      () => current,
+      () => true,
+    );
+    await Promise.resolve();
+    current = {
+      tasks: [],
+      subjects: [
+        {
+          id: 'subject-math',
+          name: 'Math',
+          createdAt: '2026-08-21T01:00:00.000Z',
+        },
+      ],
+    };
+    releaseWrite();
+
+    await expect(pending).resolves.toBe(false);
+    expect(JSON.parse(adapter.setItem.mock.calls[1][1])).toMatchObject(current);
+  });
+
+  it('rejects a restore after a phone edit even if the collection is empty again', async () => {
+    const adapter = storage();
+    let current = emptyData;
+    let releaseWrite = () => {};
+    adapter.setItem.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseWrite = resolve;
+        }),
+    );
+
+    const pending = persistGuardedRestore(
+      adapter,
+      dataWithSubject,
+      () => current,
+      () => true,
+    );
+    await Promise.resolve();
+    current = { tasks: [], subjects: [] };
+    releaseWrite();
+
+    await expect(pending).resolves.toBe(false);
+    expect(adapter.setItem).toHaveBeenCalledTimes(2);
   });
 });

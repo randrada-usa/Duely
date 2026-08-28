@@ -77,6 +77,11 @@ export function CloudBackupStoreProvider({ children }: PropsWithChildren) {
   const [syncError, setSyncError] = useState<string | null>(null);
   const attemptedFingerprint = useRef<string | null>(null);
   const retryAttempt = useRef(0);
+  const activeUserIdRef = useRef(user?.id ?? null);
+  const restoreCandidateRef = useRef(restoreCandidate);
+  const restoreRequestPendingRef = useRef(false);
+  activeUserIdRef.current = user?.id ?? null;
+  restoreCandidateRef.current = restoreCandidate;
   const [lastBackupResult, setLastBackupResult] =
     useState<CloudBackupResult | null>(null);
 
@@ -295,20 +300,30 @@ export function CloudBackupStoreProvider({ children }: PropsWithChildren) {
   ]);
 
   const restoreFromCloud = useCallback(async () => {
-    if (!user || !restoreCandidate || isRestoring) return false;
+    if (!user || !restoreCandidate || restoreRequestPendingRef.current) {
+      return false;
+    }
+    const restoreUserId = user.id;
+    const candidate = restoreCandidate;
+    const canApply = () =>
+      activeUserIdRef.current === restoreUserId &&
+      restoreCandidateRef.current === candidate;
+    restoreRequestPendingRef.current = true;
     setIsRestoring(true);
     setBackupError(null);
     try {
-      if (!(await restoreLocalData(restoreCandidate))) {
+      if (!(await restoreLocalData(candidate, canApply))) {
+        if (!canApply()) return false;
         setBackupError(CLOUD_BACKUP_ERROR);
         return false;
       }
       const saved = await saveCloudBackupReceipt(
         AsyncStorage,
-        user.id,
-        restoreCandidate,
+        restoreUserId,
+        candidate,
         new Date().toISOString(),
       );
+      if (!canApply()) return false;
       setReceipt(saved);
       setRestoreCandidate(null);
       return true;
@@ -316,9 +331,10 @@ export function CloudBackupStoreProvider({ children }: PropsWithChildren) {
       setBackupError(CLOUD_BACKUP_ERROR);
       return false;
     } finally {
+      restoreRequestPendingRef.current = false;
       setIsRestoring(false);
     }
-  }, [isRestoring, restoreCandidate, restoreLocalData, user]);
+  }, [restoreCandidate, restoreLocalData, user]);
 
   const value = useMemo<CloudBackupStoreValue>(
     () => ({
