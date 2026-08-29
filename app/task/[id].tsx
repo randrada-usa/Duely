@@ -1,16 +1,34 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useCompletionUndo } from '../../src/components/CompletionUndoProvider';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
+import { ScreenShell } from '../../src/components/ScreenShell';
 import { TaskForm } from '../../src/components/TaskForm';
+import { effortLabel, taskTypeLabel } from '../../src/domain/task';
 import { useUnsavedChangesGuard } from '../../src/hooks/useUnsavedChangesGuard';
 import { useTasks } from '../../src/store/TaskStore';
-import { colors, spacing } from '../../src/theme/tokens';
+import { colors, minimumTouchTarget, radius, spacing, typography } from '../../src/theme/tokens';
+
+function formatDeadline(value: string | null) {
+  if (!value) return 'No deadline';
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+}
+
+function reminderLabel(value: number | null) {
+  if (value === null) return 'No reminder';
+  if (value === 0) return 'At due time';
+  if (value === 1440) return '1 day before';
+  return `${value} minutes before`;
+}
 
 export default function TaskDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { deleteTask, getTask, updateTask } = useTasks();
+  const { deleteTask, getSubjectName, getTask, updateTask } = useTasks();
+  const { toggleTaskCompletion } = useCompletionUndo();
+  const [isEditing, setIsEditing] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const allowNavigation = useUnsavedChangesGuard(hasUnsavedChanges);
   const task = getTask(id);
@@ -18,7 +36,7 @@ export default function TaskDetailsScreen() {
   if (!task) {
     return (
       <View style={styles.missing}>
-        <Text style={styles.title}>Task not found</Text>
+        <Text accessibilityRole="header" style={styles.missingTitle}>Task not found</Text>
         <PrimaryButton label="Go back" onPress={() => router.back()} />
       </View>
     );
@@ -28,51 +46,144 @@ export default function TaskDetailsScreen() {
   function confirmDelete() {
     Alert.alert('Delete task?', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => {
+        allowNavigation();
+        deleteTask(taskId);
+        router.replace('/tasks');
+      } },
+    ]);
+  }
+
+  function cancelEditing() {
+    if (!hasUnsavedChanges) {
+      setIsEditing(false);
+      return;
+    }
+    Alert.alert('Discard task changes?', 'Your unsaved edits will be lost.', [
+      { text: 'Keep editing', style: 'cancel' },
       {
-        text: 'Delete',
+        text: 'Discard changes',
         style: 'destructive',
         onPress: () => {
-          allowNavigation();
-          deleteTask(taskId);
-          router.replace('/tasks');
+          setHasUnsavedChanges(false);
+          setIsEditing(false);
         },
       },
     ]);
   }
 
-  return (
-    <View style={styles.screen}>
-      <TaskForm
-        initial={task}
-        onDirtyChange={setHasUnsavedChanges}
-        submitLabel="Save changes"
-        onSubmit={(draft) => {
-          allowNavigation();
-          updateTask(taskId, draft);
-          router.back();
-        }}
-      />
-      <View style={styles.delete}>
-        <PrimaryButton label="Delete task" onPress={confirmDelete} />
+  if (isEditing) {
+    return (
+      <View style={styles.screen}>
+        <TaskForm
+          footer={
+            <Pressable
+              accessibilityRole="button"
+              onPress={cancelEditing}
+              style={({ pressed }) => [styles.cancelEdit, pressed && styles.pressed]}
+            >
+              <Text style={styles.cancelEditText}>Cancel editing</Text>
+            </Pressable>
+          }
+          initial={task}
+          onDirtyChange={setHasUnsavedChanges}
+          submitLabel="Save changes"
+          onSubmit={(draft) => {
+            updateTask(taskId, draft);
+            setHasUnsavedChanges(false);
+            setIsEditing(false);
+          }}
+        />
       </View>
+    );
+  }
+
+  const subjectName = getSubjectName(task.subjectId);
+  const completed = task.status === 'completed';
+  const priority = `${task.priority[0].toUpperCase()}${task.priority.slice(1)} priority`;
+
+  return (
+    <ScreenShell scroll>
+      <View style={styles.hero}>
+        <View style={styles.heroTopRow}>
+          <View style={styles.typeBadge}>
+            <Ionicons name="document-text-outline" size={16} color={colors.surface} />
+            <Text style={styles.typeBadgeText}>{taskTypeLabel(task.taskType)}</Text>
+          </View>
+          <Pressable
+            accessibilityLabel="Delete task"
+            accessibilityRole="button"
+            onPress={confirmDelete}
+            style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
+          >
+            <Ionicons name="trash-outline" size={20} color={colors.surface} />
+          </Pressable>
+        </View>
+        <Text style={styles.heroSubject}>{subjectName}</Text>
+        <Text accessibilityRole="header" style={styles.heroTitle}>{task.title}</Text>
+        <Text style={styles.heroStatus}>{completed ? 'Completed' : priority}</Text>
+      </View>
+
+      <View style={styles.detailsGrid}>
+        <Detail label="Deadline" value={formatDeadline(task.dueAt)} />
+        <Detail label="Task type" value={taskTypeLabel(task.taskType)} />
+        <Detail label="Priority" value={priority} />
+        <Detail label="Estimated workload" value={effortLabel(task.estimatedEffortMinutes)} />
+        <Detail label="Reminder" value={reminderLabel(task.reminderMinutesBefore)} />
+      </View>
+
+      <View style={styles.notesCard}>
+        <Text style={styles.label}>Instructions &amp; notes</Text>
+        <Text style={styles.notes}>{task.notes.trim() || 'No instructions or notes.'}</Text>
+      </View>
+
+      <View style={styles.actions}>
+        <Pressable accessibilityRole="button" onPress={() => setIsEditing(true)} style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
+          <Ionicons name="create-outline" size={19} color={colors.primary} />
+          <Text style={styles.editButtonText}>Edit</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => toggleTaskCompletion(task)} style={({ pressed }) => [styles.completeButton, pressed && styles.pressed]}>
+          <Ionicons name={completed ? 'refresh-outline' : 'checkmark'} size={20} color={colors.surface} />
+          <Text style={styles.completeButtonText}>{completed ? 'Mark as open' : 'Mark as done'}</Text>
+        </Pressable>
+      </View>
+    </ScreenShell>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.detailCard}>
+      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  delete: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xl },
-  missing: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: spacing.xl,
-    padding: spacing.xl,
-    backgroundColor: colors.background,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
+  missing: { flex: 1, justifyContent: 'center', gap: spacing.xl, padding: spacing.xl, backgroundColor: colors.background },
+  missingTitle: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 24, textAlign: 'center' },
+  hero: { gap: spacing.sm, padding: spacing.lg, borderRadius: radius.xl, backgroundColor: colors.navy },
+  heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  typeBadge: { minHeight: 32, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: '#15172B' },
+  typeBadgeText: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 12 },
+  deleteButton: { width: minimumTouchTarget, height: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full, backgroundColor: '#15172B' },
+  heroSubject: { color: '#C9D0FF', fontFamily: typography.bodyBold, fontSize: 12, textTransform: 'uppercase' },
+  heroTitle: { color: colors.surface, fontFamily: typography.headingStrong, fontSize: 24 },
+  heroStatus: { alignSelf: 'flex-start', overflow: 'hidden', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, backgroundColor: colors.primary, color: colors.surface, fontFamily: typography.bodySemibold, fontSize: 12, textTransform: 'capitalize' },
+  detailsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  detailCard: { minHeight: 88, flexBasis: '47%', flexGrow: 1, gap: spacing.sm, padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, elevation: 1 },
+  label: { color: colors.textMuted, fontFamily: typography.bodyBold, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
+  detailValue: { color: colors.text, fontFamily: typography.bodySemibold, fontSize: 15, lineHeight: 21 },
+  notesCard: { minHeight: 120, gap: spacing.sm, padding: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, elevation: 1 },
+  notes: { color: colors.text, fontFamily: typography.body, fontSize: 16, lineHeight: 24 },
+  actions: { flexDirection: 'row', gap: spacing.sm },
+  editButton: { minWidth: 96, minHeight: minimumTouchTarget, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface },
+  editButtonText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 15 },
+  completeButton: { minHeight: minimumTouchTarget, flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: radius.lg, backgroundColor: colors.primary, elevation: 2 },
+  completeButtonText: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 15 },
+  cancelEdit: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center' },
+  cancelEditText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 15 },
+  pressed: { opacity: 0.7 },
 });
