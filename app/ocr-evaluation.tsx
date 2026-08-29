@@ -11,6 +11,12 @@ import {
   type NativeOcrObservation,
 } from '../src/domain/nativeOcrEvaluation';
 import { NATIVE_OCR_IMAGE_FIXTURES } from '../src/domain/nativeOcrImageFixtures';
+import {
+  evaluatePrivateOcrObservations,
+  type PrivateOcrEvaluationReport,
+  type PrivateOcrFixture,
+  type PrivateOcrObservation,
+} from '../src/domain/privateOcrEvaluation';
 import { startOnDeviceOcr, supportsOnDeviceOcr } from '../src/services/ocr';
 import { colors, radius, spacing } from '../src/theme/tokens';
 
@@ -20,17 +26,19 @@ const EVALUATION_NOW = new Date(2026, 7, 25, 12, 0, 0);
 
 type EvaluationState = 'idle' | 'running' | 'complete' | 'error';
 
-function writeReport(report: NativeOcrEvaluationReport | { status: 'failed'; error: string }) {
+type EvaluationReport = NativeOcrEvaluationReport | PrivateOcrEvaluationReport;
+
+function writeReport(report: EvaluationReport | { status: 'failed'; error: string }) {
   const output = new File(Paths.document, REPORT_FILENAME);
   output.create({ overwrite: true });
   output.write(JSON.stringify(report, null, 2));
 }
 
 export default function OcrEvaluationScreen() {
-  const { autorun } = useLocalSearchParams<{ autorun?: string }>();
+  const { autorun, mode } = useLocalSearchParams<{ autorun?: string; mode?: string }>();
   const [state, setState] = useState<EvaluationState>('idle');
   const [completed, setCompleted] = useState(0);
-  const [report, setReport] = useState<NativeOcrEvaluationReport | null>(null);
+  const [report, setReport] = useState<EvaluationReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const lastAutomaticRun = useRef<string | null>(null);
 
@@ -53,10 +61,18 @@ export default function OcrEvaluationScreen() {
     setError(null);
     setReport(null);
     const fixtureDirectory = new Directory(Paths.document, FIXTURE_DIRECTORY);
-    const observations: NativeOcrObservation[] = [];
+    const isPrivateEvaluation = mode === 'private';
 
     try {
-      for (const fixture of NATIVE_OCR_IMAGE_FIXTURES) {
+      let fixtures: readonly (typeof NATIVE_OCR_IMAGE_FIXTURES)[number][] | PrivateOcrFixture[] = NATIVE_OCR_IMAGE_FIXTURES;
+      if (isPrivateEvaluation) {
+        const manifest = new File(fixtureDirectory, 'manifest.json');
+        if (!manifest.exists) throw new Error('Private evaluation manifest is missing.');
+        fixtures = JSON.parse(await manifest.text()) as PrivateOcrFixture[];
+      }
+      const observations: Array<NativeOcrObservation | PrivateOcrObservation> = [];
+
+      for (const fixture of fixtures) {
         const image = new File(fixtureDirectory, fixture.filename);
         if (!image.exists) {
           observations.push({
@@ -88,11 +104,17 @@ export default function OcrEvaluationScreen() {
         setCompleted((value) => value + 1);
       }
 
-      const nextReport = evaluateNativeOcrObservations(
-        NATIVE_OCR_IMAGE_FIXTURES,
-        observations,
-        EVALUATION_NOW,
-      );
+      const nextReport = isPrivateEvaluation
+        ? evaluatePrivateOcrObservations(
+            fixtures as PrivateOcrFixture[],
+            observations as PrivateOcrObservation[],
+            EVALUATION_NOW,
+          )
+        : evaluateNativeOcrObservations(
+            fixtures as typeof NATIVE_OCR_IMAGE_FIXTURES,
+            observations as NativeOcrObservation[],
+            EVALUATION_NOW,
+          );
       writeReport(nextReport);
       setReport(nextReport);
       setState('complete');
@@ -102,7 +124,7 @@ export default function OcrEvaluationScreen() {
       setError(message);
       setState('error');
     }
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     if (!autorun || autorun === lastAutomaticRun.current) return;
@@ -123,13 +145,15 @@ export default function OcrEvaluationScreen() {
     <ScreenShell scroll>
       <Text accessibilityRole="header" style={styles.title}>Android OCR evaluation</Text>
       <Text style={styles.body}>
-        Runs 12 synthetic assignment images through bundled ML Kit. Images and full recognized text are not written to the report.
+        {mode === 'private'
+          ? 'Runs local private samples through bundled ML Kit. Images and full recognized text are not written to the report.'
+          : 'Runs 12 synthetic assignment images through bundled ML Kit. Images and full recognized text are not written to the report.'}
       </Text>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>
           {state === 'running'
-            ? `Processing ${completed} of ${NATIVE_OCR_IMAGE_FIXTURES.length}`
+            ? `Processing ${completed} ${mode === 'private' ? 'private samples' : `of ${NATIVE_OCR_IMAGE_FIXTURES.length}`}`
             : state === 'complete'
               ? 'Evaluation complete'
               : state === 'error'
@@ -138,7 +162,7 @@ export default function OcrEvaluationScreen() {
         </Text>
         {state === 'running' && <Text style={styles.body}>Keep this screen open.</Text>}
         {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-        {report && (
+        {report && 'parser' in report && (
           <View style={styles.metrics}>
             <Text style={styles.metric}>OCR completed: {report.recognition.completed}/{report.fixtureCount}</Text>
             <Text style={styles.metric}>Token accuracy: {Math.round(report.recognition.tokenAccuracy * 100)}%</Text>
@@ -146,11 +170,19 @@ export default function OcrEvaluationScreen() {
             <Text style={styles.metric}>Parser-ready fixtures: {report.parser.metrics.essentialFieldAccuracy.passed}/{report.fixtureCount}</Text>
           </View>
         )}
+        {report && 'deadlineChecks' in report && (
+          <View style={styles.metrics}>
+            <Text style={styles.metric}>OCR completed: {report.recognition.completed}/{report.fixtureCount}</Text>
+            <Text style={styles.metric}>Deadline checks passed: {report.deadlineChecks.passed}</Text>
+            <Text style={styles.metric}>Deadline checks failed: {report.deadlineChecks.failed}</Text>
+            <Text style={styles.metric}>Manual review cases: {report.deadlineChecks.manualReview}</Text>
+          </View>
+        )}
       </View>
 
       <PrimaryButton
         disabled={state === 'running'}
-        label={state === 'running' ? 'Evaluation running' : 'Run synthetic image evaluation'}
+        label={state === 'running' ? 'Evaluation running' : `Run ${mode === 'private' ? 'private' : 'synthetic'} image evaluation`}
         onPress={() => void runEvaluation()}
       />
     </ScreenShell>

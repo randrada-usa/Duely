@@ -44,7 +44,7 @@ const titleLabels = 'assignment\\s+title|title|task|pamagat(?:\\s+ng\\s+gawain)?
 const subjectLabels =
   'subject(?:\\s*&\\s*course)?|course|asignatura(?:\\s*&\\s*kurso)?|kurso';
 const deadlineLabels =
-  'due(?:\\s+date)?|deadline|takdang\\s+petsa|petsa\\s+ng\\s+pagpasa';
+  'due(?:\\s+date)?|duc\\s+date|deadline|submit\\s+(?:before|by)|takdang\\s+petsa|petsa\\s+ng\\s+pagpasa';
 const taskTypeLabels = 'task\\s+type|type|uri\\s+ng\\s+gawain|uri';
 const priorityLabels = 'priority|prayoridad';
 const effortLabels =
@@ -55,7 +55,10 @@ const metadataLabelPattern = new RegExp(
   `^(?:${titleLabels}|${subjectLabels}|${deadlineLabels}|${taskTypeLabels}|${priorityLabels}|${effortLabels}|${notesLabels})\\b`,
   'i',
 );
-const deadlineLabelPattern = new RegExp(`\\b(?:${deadlineLabels})\\b`, 'i');
+const deadlineLinePattern = new RegExp(
+  `(?:^|[|•])\\s*(?:no\\s+marks\\s*)?(?:(?:critical|final|assignment)\\s+)?(?:${deadlineLabels})\\b`,
+  'i',
+);
 const monthPattern =
   '(?:jan(?:uary)?|enero|feb(?:ruary)?|pebrero|mar(?:ch)?|marso|apr(?:il)?|abril|may|mayo|jun(?:e)?|hunyo|jul(?:y)?|hulyo|au(?:g|q)(?:ust)?|agosto|sep(?:tember)?|setyembre|oct(?:ober)?|oktubre|nov(?:ember)?|nobyembre|dec(?:ember)?|disyembre)';
 const monthNumbers: Record<string, number> = {
@@ -177,7 +180,7 @@ function subjectCandidate(lines: string[]) {
 }
 
 function timeFromText(value: string) {
-  const twelveHour = /\b(1[0-2]|0?[1-9])(?::([0-5]\d))?\s*(a\.?m\.?|p\.?m\.?)\b/i.exec(value);
+  const twelveHour = /\b(1[0-2]|0?[1-9])(?:\s*[.:;]\s*([0-5]\d))?\s*(a\.?m\.?|p\.?m\.?)\b/i.exec(value);
   if (twelveHour) {
     let hour = Number(twelveHour[1]);
     const minutes = Number(twelveHour[2] ?? '00');
@@ -187,7 +190,7 @@ function timeFromText(value: string) {
     return `${String(hour).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
   }
 
-  const twentyFourHour = /\b([01]?\d|2[0-3]):([0-5]\d)\b/.exec(value);
+  const twentyFourHour = /\b([01]?\d|2[0-3])\s*:\s*([0-5]\d)\b/.exec(value);
   if (!twentyFourHour) return '';
   return `${String(Number(twentyFourHour[1])).padStart(2, '0')}:${twentyFourHour[2]}`;
 }
@@ -267,14 +270,14 @@ function dateKeyFromText(value: string, now: Date) {
 function deadlineCandidate(lines: string[], now: Date) {
   const dueLines = lines
     .map((line, index) => ({ line, index }))
-    .filter(({ line }) => deadlineLabelPattern.test(line));
+    .filter(({ line }) => deadlineLinePattern.test(line));
   let issue: string | null = null;
 
   for (const { line, index } of dueLines) {
     const nearbyLines = [line];
-    for (let offset = 1; offset <= 2; offset += 1) {
+    for (let offset = 1; offset <= 8; offset += 1) {
       const nextLine = lines[index + offset];
-      if (!nextLine || metadataLabelPattern.test(nextLine)) break;
+      if (!nextLine) break;
       nearbyLines.push(nextLine);
     }
     const candidateText = nearbyLines.join(' ');

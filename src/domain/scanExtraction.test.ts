@@ -162,6 +162,72 @@ describe('scan extraction', () => {
     expect(extraction.fields.dueAt?.confidence).toBe('high');
   });
 
+  it('handles deadline values separated by form metadata and OCR spacing', () => {
+    const extraction = extractTaskFromOcr(
+      [
+        'Title: Network Lab',
+        'Due Date:',
+        'Submission: Course portal',
+        'August 30, 2026 (Friday) - 10: 12 PM',
+      ].join('\n'),
+      now,
+    );
+
+    expect(deadlineParts(extraction.fields.dueAt?.value ?? null)).toEqual({
+      date: '2026-08-30',
+      time: '22:12',
+    });
+  });
+
+  it('recognizes submit-before as a deadline label', () => {
+    const extraction = extractTaskFromOcr(
+      'Practical Assignment\nSUBMIT BEFORE: Sunday, Nov 22, 2026 at 8:00 PM',
+      now,
+    );
+    expect(deadlineParts(extraction.fields.dueAt?.value ?? null)).toEqual({
+      date: '2026-11-22',
+      time: '20:00',
+    });
+  });
+
+  it('recognizes common prefixed deadline labels in learning portals and slides', () => {
+    const portal = extractTaskFromOcr(
+      'No Marks Deadline: 21 Aug 2026, 10: 12 AM\nTitle: Network Lab',
+      now,
+    );
+    const slide = extractTaskFromOcr(
+      'Brief Analysis\nCRITICAL DEADLINE: Friday, Nov 13, 2026 @ 11:59 PM',
+      now,
+    );
+    expect(deadlineParts(portal.fields.dueAt?.value ?? null)).toEqual({
+      date: '2026-08-21',
+      time: '10:12',
+    });
+    expect(deadlineParts(slide.fields.dueAt?.value ?? null)).toEqual({
+      date: '2026-11-13',
+      time: '23:59',
+    });
+  });
+
+  it('tolerates OCR punctuation substitutions in labeled twelve-hour times', () => {
+    const extraction = extractTaskFromOcr(
+      'Deadline: 21 Aug 2026, 10.12 AM\nTitle: Network Lab',
+      now,
+    );
+    expect(deadlineParts(extraction.fields.dueAt?.value ?? null)).toEqual({
+      date: '2026-08-21',
+      time: '10:12',
+    });
+  });
+
+  it('does not treat narrative uses of due as an assignment deadline', () => {
+    const extraction = extractTaskFromOcr(
+      'Accounting illustration\nTreasury bills purchased in 2021, due March 15, 2022',
+      now,
+    );
+    expect(extraction.fields.dueAt).toBeNull();
+  });
+
   it('reads conservative Filipino field labels and month names', () => {
     const extraction = extractTaskFromOcr(
       [

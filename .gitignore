@@ -44,6 +44,9 @@ yarn-error.*
 .expo-scaffold/
 .figma-duely-state.json
 
+# sensitive local evaluation data; never commit student scans
+/Duely_RealTestData/
+
 # typescript
 *.tsbuildinfo
 
