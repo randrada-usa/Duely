@@ -13,6 +13,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { ScreenShell } from '../../src/components/ScreenShell';
@@ -650,75 +651,77 @@ export default function ScanScreen() {
     };
 
     return (
-      <TaskForm
-        defaultReminder={defaultReminder}
-        fieldNotices={extraction.issues}
-        footer={
-          <TextButton
-            danger
-            label="Re-scan"
-            onPress={() =>
-              confirmRescan(image.source === 'camera' ? 'camera' : 'gallery')
-            }
-          />
-        }
-        header={
-          <View style={styles.reviewHeader}>
-            <View style={styles.reviewTitleRow}>
-              <Pressable
-                accessibilityHint="Discard extraction edits and return to the selected image"
-                accessibilityLabel="Back to image review"
-                accessibilityRole="button"
-                onPress={confirmReturnToImage}
-                style={({ pressed }) => [
-                  styles.reviewBackButton,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Ionicons
-                  accessibilityElementsHidden
-                  color={colors.text}
-                  name="chevron-back"
-                  size={23}
-                />
-              </Pressable>
-              <View style={styles.reviewTitleCopy}>
-                <Text
-                  accessibilityRole="header"
-                  style={[styles.title, styles.reviewTitle]}
+      <SafeAreaView style={styles.reviewSafeArea}>
+        <TaskForm
+          defaultReminder={defaultReminder}
+          fieldNotices={extraction.issues}
+          footer={
+            <TextButton
+              danger
+              label="Re-scan"
+              onPress={() =>
+                confirmRescan(image.source === 'camera' ? 'camera' : 'gallery')
+              }
+            />
+          }
+          header={
+            <View style={styles.reviewHeader}>
+              <View style={styles.reviewTitleRow}>
+                <Pressable
+                  accessibilityHint="Discard extraction edits and return to the selected image"
+                  accessibilityLabel="Back to image review"
+                  accessibilityRole="button"
+                  onPress={confirmReturnToImage}
+                  style={({ pressed }) => [
+                    styles.reviewBackButton,
+                    pressed && styles.pressed,
+                  ]}
                 >
-                  Review extraction
-                </Text>
-                <Text style={styles.subtitle}>
-                  Fields marked with a warning need your attention.
-                </Text>
+                  <Ionicons
+                    accessibilityElementsHidden
+                    color={colors.text}
+                    name="chevron-back"
+                    size={23}
+                  />
+                </Pressable>
+                <View style={styles.reviewTitleCopy}>
+                  <Text
+                    accessibilityRole="header"
+                    style={[styles.title, styles.reviewTitle]}
+                  >
+                    Review extraction
+                  </Text>
+                  <Text style={styles.subtitle}>
+                    Fields marked with a warning need your attention.
+                  </Text>
+                </View>
               </View>
-            </View>
-            <View style={styles.reviewPreviewRow}>
-              <Image
-                accessibilityLabel="Source assignment image preview"
-                resizeMode="cover"
-                source={{ uri: image.uri }}
-                style={styles.reviewPreview}
-              />
-              <View style={styles.reviewPrivacyCopy}>
-                <Text style={styles.reviewPrivacyTitle}>On-device extraction</Text>
-                <Text style={styles.reviewPrivacyBody}>
-                  Raw recognized text and the temporary image are cleared after you save or re-scan.
-                </Text>
+              <View style={styles.reviewPreviewRow}>
+                <Image
+                  accessibilityLabel="Source assignment image preview"
+                  resizeMode="cover"
+                  source={{ uri: image.uri }}
+                  style={styles.reviewPreview}
+                />
+                <View style={styles.reviewPrivacyCopy}>
+                  <Text style={styles.reviewPrivacyTitle}>On-device extraction</Text>
+                  <Text style={styles.reviewPrivacyBody}>
+                    Raw recognized text and the temporary image are cleared after you save or re-scan.
+                  </Text>
+                </View>
               </View>
+              {error && <ErrorMessage message={error} />}
             </View>
-            {error && <ErrorMessage message={error} />}
-          </View>
-        }
-        initial={initial}
-        initialSubjectName={matchingSubject ? '' : values.subject}
-        key={`${image.uri}-${extraction.rawText.length}`}
-        onSubmit={(draft, context) =>
-          saveExtractedTask(draft, context.subjectName)
-        }
-        submitLabel="Confirm & Save"
-      />
+          }
+          initial={initial}
+          initialSubjectName={matchingSubject ? '' : values.subject}
+          key={`${image.uri}-${extraction.rawText.length}`}
+          onSubmit={(draft, context) =>
+            saveExtractedTask(draft, context.subjectName)
+          }
+          submitLabel="Confirm & Save"
+        />
+      </SafeAreaView>
     );
   }
 
@@ -1284,7 +1287,8 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: 'center',
   },
-  reviewHeader: { gap: spacing.lg, paddingBottom: spacing.xs },
+  reviewSafeArea: { flex: 1, backgroundColor: colors.background },
+  reviewHeader: { gap: spacing.md, paddingBottom: spacing.xs },
   reviewTitleRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1299,18 +1303,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
   },
   reviewTitleCopy: { flex: 1 },
-  reviewTitle: { fontSize: 24, lineHeight: 31 },
+  reviewTitle: { fontSize: 22, lineHeight: 28 },
   reviewPreviewRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
+    gap: spacing.sm,
+    padding: spacing.sm,
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceSubtle,
   },
   reviewPreview: {
-    width: 72,
-    height: 72,
+    width: 56,
+    height: 56,
     borderRadius: radius.md,
     backgroundColor: '#10101F',
   },
