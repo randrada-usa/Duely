@@ -248,7 +248,7 @@ export function TaskForm({
     >
       {header}
       <Field
-        label="Title *"
+        label="Assignment title *"
         onChangeText={(value) => {
           setTitle(value);
           acknowledgeNotice('title');
@@ -259,7 +259,7 @@ export function TaskForm({
       <FieldNotice message={noticeFor('title')} />
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.label}>Subject</Text>
+        <Text style={styles.label}>Subject / course</Text>
         <Pressable
           accessibilityRole="button"
           onPress={() => {
@@ -516,7 +516,7 @@ export function TaskForm({
       )}
 
       <Field
-        label="Notes"
+        label="Instructions & notes"
         multiline
         onChangeText={(value) => {
           setNotes(value);
@@ -531,7 +531,7 @@ export function TaskForm({
           {error}
         </Text>
       )}
-      <PrimaryButton label={submitLabel} onPress={submit} />
+      <PrimaryButton label={submitLabel} onPress={submit} style={styles.submitButton} />
       {footer}
     </ScrollView>
   );
@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.surface,
   },
-  prioritySelected: { borderColor: colors.primary, backgroundColor: colors.primary },
+  prioritySelected: { borderColor: colors.navy, backgroundColor: colors.navy },
   priorityText: { color: colors.text, fontFamily: typography.bodySemibold },
   priorityTextSelected: { color: colors.surface },
   reminderOptions: { gap: spacing.sm },
@@ -729,6 +729,7 @@ const styles = StyleSheet.create({
   radioDotSelected: { borderWidth: 5, borderColor: colors.primary },
   disabled: { opacity: 0.45 },
   helper: { marginTop: -spacing.sm, color: colors.textMuted, fontFamily: typography.body, fontSize: 14 },
+  submitButton: { borderRadius: radius.lg },
   fieldNotice: {
     flexDirection: 'row',
     alignItems: 'flex-start',

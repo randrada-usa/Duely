@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { ScreenShell } from '../../src/components/ScreenShell';
+import { TaskEditorHero } from '../../src/components/TaskEditorHero';
 import { TaskForm } from '../../src/components/TaskForm';
 import {
   buildMlKitProvenance,
@@ -666,49 +667,23 @@ export default function ScanScreen() {
           }
           header={
             <View style={styles.reviewHeader}>
-              <View style={styles.reviewTitleRow}>
-                <Pressable
-                  accessibilityHint="Discard extraction edits and return to the selected image"
-                  accessibilityLabel="Back to image review"
-                  accessibilityRole="button"
-                  onPress={confirmReturnToImage}
-                  style={({ pressed }) => [
-                    styles.reviewBackButton,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Ionicons
-                    accessibilityElementsHidden
-                    color={colors.text}
-                    name="chevron-back"
-                    size={23}
-                  />
-                </Pressable>
-                <View style={styles.reviewTitleCopy}>
-                  <Text
-                    accessibilityRole="header"
-                    style={[styles.title, styles.reviewTitle]}
-                  >
-                    Review extraction
-                  </Text>
-                  <Text style={styles.subtitle}>
-                    Fields marked with a warning need your attention.
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.reviewPreviewRow}>
-                <Image
-                  accessibilityLabel="Source assignment image preview"
-                  resizeMode="cover"
-                  source={{ uri: image.uri }}
-                  style={styles.reviewPreview}
+              <TaskEditorHero
+                description="Check every detail before saving. Fields marked with a warning need your attention."
+                eyebrow="On-device extraction"
+                imageUri={image.uri}
+                onBack={confirmReturnToImage}
+                title="Review extraction"
+              />
+              <View style={styles.reviewPrivacyRow}>
+                <Ionicons
+                  accessibilityElementsHidden
+                  color={colors.primary}
+                  name="shield-checkmark-outline"
+                  size={20}
                 />
-                <View style={styles.reviewPrivacyCopy}>
-                  <Text style={styles.reviewPrivacyTitle}>On-device extraction</Text>
-                  <Text style={styles.reviewPrivacyBody}>
-                    Raw recognized text and the temporary image are cleared after you save or re-scan.
-                  </Text>
-                </View>
+                <Text style={styles.reviewPrivacyBody}>
+                  Raw recognized text and the temporary image are cleared after you save or re-scan.
+                </Text>
               </View>
               {error && <ErrorMessage message={error} />}
             </View>
@@ -1289,43 +1264,20 @@ const styles = StyleSheet.create({
   },
   reviewSafeArea: { flex: 1, backgroundColor: colors.background },
   reviewHeader: { gap: spacing.md, paddingBottom: spacing.xs },
-  reviewTitleRow: {
+  reviewPrivacyRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-  reviewBackButton: {
-    width: minimumTouchTarget,
-    height: minimumTouchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceSubtle,
-  },
-  reviewTitleCopy: { flex: 1 },
-  reviewTitle: { fontSize: 22, lineHeight: 28 },
-  reviewPreviewRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing.sm,
-    padding: spacing.sm,
+    padding: spacing.md,
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceSubtle,
   },
-  reviewPreview: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.md,
-    backgroundColor: '#10101F',
-  },
-  reviewPrivacyCopy: { flex: 1 },
-  reviewPrivacyTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 15 },
   reviewPrivacyBody: {
-    marginTop: spacing.xs,
+    flex: 1,
     color: colors.textMuted,
     fontFamily: typography.body,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 19,
   },
   helperText: { flexShrink: 1, color: colors.textMuted, fontFamily: typography.body, fontSize: 14, lineHeight: 21 },
   processingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
