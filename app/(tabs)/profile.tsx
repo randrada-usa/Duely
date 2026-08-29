@@ -1,12 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { REMINDER_OPTIONS } from '../../src/domain/reminder';
 import { useAuth } from '../../src/store/AuthStore';
 import { useCloudBackup } from '../../src/store/CloudBackupStore';
 import { useReminders } from '../../src/store/ReminderStore';
-import { colors, minimumTouchTarget, radius, spacing } from '../../src/theme/tokens';
+import {
+  colors,
+  minimumTouchTarget,
+  radius,
+  spacing,
+  typography,
+} from '../../src/theme/tokens';
 
 export default function ProfileScreen() {
   const {
@@ -59,6 +65,12 @@ export default function ProfileScreen() {
     status === 'authenticated'
       ? user?.email ?? 'Signed in'
       : 'Guest · tasks stay on this device';
+  const profileName =
+    status === 'authenticated' &&
+    typeof user?.user_metadata.full_name === 'string' &&
+    user.user_metadata.full_name.trim().length > 0
+      ? user.user_metadata.full_name.trim()
+      : 'Your profile';
 
   function enableNotifications() {
     Alert.alert(
@@ -97,15 +109,20 @@ export default function ProfileScreen() {
     <ScreenShell scroll>
       <View style={styles.header}>
         <View style={styles.avatar}>
-          <Ionicons name="person-outline" size={30} color={colors.primary} />
+          <Image
+            accessibilityLabel="Due, the Duely mascot"
+            source={require('../../assets/mascot.png')}
+            style={styles.avatarImage}
+          />
         </View>
         <View style={styles.headerCopy}>
-          <Text style={styles.title}>Your profile</Text>
+          <Text accessibilityRole="header" style={styles.title}>{profileName}</Text>
           <Text style={styles.subtitle}>{profileSubtitle}</Text>
         </View>
       </View>
 
       <View style={styles.card}>
+        <Text style={styles.eyebrow}>NOTIFICATIONS</Text>
         <View style={styles.cardHeading}>
           <Ionicons name="notifications-outline" size={24} color={colors.primary} />
           <View style={styles.headingCopy}>
@@ -135,6 +152,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.card}>
+        <Text style={styles.eyebrow}>DEFAULT SCHEDULE</Text>
         <Text style={styles.cardTitle}>Default reminder</Text>
         <Text style={styles.cardBody}>
           This is preselected for new tasks with a deadline. You can change it per task.
@@ -161,6 +179,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.card}>
+        <Text style={styles.eyebrow}>ACCOUNT &amp; BACKUP</Text>
         <Text style={styles.cardTitle}>Account</Text>
         <Text style={styles.cardBody}>
           {status === 'unconfigured'
@@ -337,10 +356,11 @@ export default function ProfileScreen() {
             onPress={confirmSignOut}
             style={({ pressed }) => [
               styles.secondaryAction,
+              styles.signOutAction,
               pressed && styles.secondaryActionPressed,
             ]}
           >
-            <Text style={styles.secondaryActionText}>
+            <Text style={styles.signOutActionText}>
               {isSigningOut ? 'Signing out…' : 'Sign out'}
             </Text>
           </Pressable>
@@ -351,33 +371,104 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingBottom: spacing.sm },
-  avatar: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceSubtle },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: colors.primarySoft,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+  },
+  avatarImage: { width: 58, height: 58, resizeMode: 'contain' },
   headerCopy: { flex: 1, gap: spacing.xs },
-  title: { color: colors.text, fontSize: 26, fontWeight: '800' },
-  subtitle: { color: colors.textMuted, fontSize: 16 },
-  card: { gap: spacing.md, padding: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface },
+  title: {
+    color: colors.text,
+    fontFamily: typography.headingStrong,
+    fontSize: 22,
+  },
+  subtitle: {
+    color: colors.textMuted,
+    fontFamily: typography.body,
+    fontSize: 14,
+  },
+  card: {
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    elevation: 1,
+  },
+  eyebrow: {
+    color: colors.textMuted,
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
+    letterSpacing: 0.8,
+  },
   cardHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   headingCopy: { flex: 1, gap: spacing.xs },
-  cardTitle: { color: colors.text, fontSize: 18, fontWeight: '800' },
-  cardBody: { color: colors.textMuted, fontSize: 16, lineHeight: 23 },
+  cardTitle: {
+    color: colors.text,
+    fontFamily: typography.bodyBold,
+    fontSize: 17,
+  },
+  cardBody: {
+    color: colors.textMuted,
+    fontFamily: typography.body,
+    fontSize: 15,
+    lineHeight: 22,
+  },
   action: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radius.md, backgroundColor: colors.primary },
   actionPressed: { backgroundColor: colors.primaryPressed },
   actionDisabled: { opacity: 0.6 },
-  actionText: { color: colors.surface, fontSize: 16, fontWeight: '800' },
+  actionText: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 16 },
   secondaryAction: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
   secondaryActionPressed: { backgroundColor: colors.surfaceSubtle },
-  secondaryActionText: { color: colors.primary, fontSize: 16, fontWeight: '800' },
+  secondaryActionText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 16 },
+  signOutAction: {
+    borderColor: colors.dangerSoft,
+    backgroundColor: colors.dangerSoft,
+  },
+  signOutActionText: {
+    color: colors.danger,
+    fontFamily: typography.bodyBold,
+    fontSize: 16,
+  },
   googleAction: { minHeight: minimumTouchTarget, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
-  googleActionText: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  googleActionText: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 16 },
   successPanel: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
   backupPanel: { gap: spacing.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
-  successTitle: { color: colors.text, fontSize: 17, fontWeight: '800' },
-  recovery: { color: colors.warning, fontSize: 14, lineHeight: 20 },
-  error: { color: colors.danger, fontSize: 14, lineHeight: 20 },
-  options: { gap: spacing.sm },
-  option: { minHeight: minimumTouchTarget, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
+  successTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 17 },
+  recovery: { color: colors.warning, fontFamily: typography.body, fontSize: 14, lineHeight: 20 },
+  error: { color: colors.danger, fontFamily: typography.body, fontSize: 14, lineHeight: 20 },
+  options: {
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+  },
+  option: {
+    minHeight: minimumTouchTarget,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
   optionSelected: { borderColor: colors.primary, backgroundColor: colors.surfaceSubtle },
-  optionText: { color: colors.text, fontSize: 16 },
-  optionTextSelected: { color: colors.primary, fontWeight: '800' },
+  optionText: { color: colors.text, fontFamily: typography.body, fontSize: 15 },
+  optionTextSelected: { color: colors.primary, fontFamily: typography.bodySemibold },
 });
