@@ -200,7 +200,11 @@ export default function CalendarScreen() {
             <Text style={styles.loadingText}>Loading tasks…</Text>
           </View>
         ) : selectedTasks.length === 0 ? (
-          <View accessibilityRole="summary" style={styles.emptyDate}>
+          <View
+            accessibilityLabel="No tasks due. Add a task and this date will appear in your plan."
+            accessibilityRole="summary"
+            style={styles.emptyDate}
+          >
             <Ionicons
               accessibilityElementsHidden
               color={colors.primary}
@@ -224,6 +228,7 @@ export default function CalendarScreen() {
 
         <Pressable
           accessibilityHint={`Prefills the deadline as ${selectedDate.toLocaleDateString()}`}
+          accessibilityLabel="Add task for this date"
           accessibilityRole="button"
           accessibilityState={{ disabled: !canEditTasks }}
           disabled={!canEditTasks}

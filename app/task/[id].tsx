@@ -107,7 +107,12 @@ export default function TaskDetailsScreen() {
       <View style={styles.hero}>
         <View style={styles.heroTopRow}>
           <View style={styles.typeBadge}>
-            <Ionicons name="document-text-outline" size={16} color={colors.surface} />
+            <Ionicons
+              accessibilityElementsHidden
+              name="document-text-outline"
+              size={16}
+              color={colors.surface}
+            />
             <Text style={styles.typeBadgeText}>{taskTypeLabel(task.taskType)}</Text>
           </View>
           <Pressable
@@ -116,7 +121,12 @@ export default function TaskDetailsScreen() {
             onPress={confirmDelete}
             style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
           >
-            <Ionicons name="trash-outline" size={20} color={colors.surface} />
+            <Ionicons
+              accessibilityElementsHidden
+              name="trash-outline"
+              size={20}
+              color={colors.surface}
+            />
           </Pressable>
         </View>
         <Text style={styles.heroSubject}>{subjectName}</Text>
@@ -138,12 +148,32 @@ export default function TaskDetailsScreen() {
       </View>
 
       <View style={styles.actions}>
-        <Pressable accessibilityRole="button" onPress={() => setIsEditing(true)} style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}>
-          <Ionicons name="create-outline" size={19} color={colors.primary} />
+        <Pressable
+          accessibilityLabel="Edit task"
+          accessibilityRole="button"
+          onPress={() => setIsEditing(true)}
+          style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}
+        >
+          <Ionicons
+            accessibilityElementsHidden
+            name="create-outline"
+            size={19}
+            color={colors.primary}
+          />
           <Text style={styles.editButtonText}>Edit</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" onPress={() => toggleTaskCompletion(task)} style={({ pressed }) => [styles.completeButton, pressed && styles.pressed]}>
-          <Ionicons name={completed ? 'refresh-outline' : 'checkmark'} size={20} color={colors.surface} />
+        <Pressable
+          accessibilityLabel={completed ? 'Mark task as open' : 'Mark task as done'}
+          accessibilityRole="button"
+          onPress={() => toggleTaskCompletion(task)}
+          style={({ pressed }) => [styles.completeButton, pressed && styles.pressed]}
+        >
+          <Ionicons
+            accessibilityElementsHidden
+            name={completed ? 'refresh-outline' : 'checkmark'}
+            size={20}
+            color={colors.surface}
+          />
           <Text style={styles.completeButtonText}>{completed ? 'Mark as open' : 'Mark as done'}</Text>
         </Pressable>
       </View>

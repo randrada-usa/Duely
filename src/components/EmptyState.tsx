@@ -9,10 +9,14 @@ type EmptyStateProps = {
 
 export function EmptyState({ title, description }: EmptyStateProps) {
   return (
-    <View accessibilityRole="summary" style={styles.container}>
+    <View
+      accessibilityLabel={`${title}. ${description}`}
+      accessibilityRole="summary"
+      style={styles.container}
+    >
       <Image
         accessibilityIgnoresInvertColors
-        accessibilityLabel="Duely mascot"
+        accessibilityElementsHidden
         source={require('../../assets/mascot.png')}
         style={styles.mascot}
       />

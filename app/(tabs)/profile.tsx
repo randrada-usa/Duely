@@ -162,6 +162,7 @@ export default function ProfileScreen() {
             const selected = defaultReminder === option.value;
             return (
               <Pressable
+                accessibilityLabel={option.label}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
                 key={option.label}
@@ -171,7 +172,14 @@ export default function ProfileScreen() {
                 <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
                   {option.label}
                 </Text>
-                {selected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
+                {selected && (
+                  <Ionicons
+                    accessibilityElementsHidden
+                    name="checkmark-circle"
+                    size={22}
+                    color={colors.primary}
+                  />
+                )}
               </Pressable>
             );
           })}
@@ -194,6 +202,9 @@ export default function ProfileScreen() {
         </Text>
         {status === 'guest' && (
           <Pressable
+            accessibilityLabel={
+              isAuthActionPending ? 'Google sign-in in progress' : 'Continue with Google'
+            }
             accessibilityRole="button"
             accessibilityState={{ disabled: isAuthActionPending }}
             disabled={isAuthActionPending}
@@ -204,7 +215,12 @@ export default function ProfileScreen() {
               isAuthActionPending && styles.actionDisabled,
             ]}
           >
-            <Ionicons name="logo-google" size={22} color={colors.text} />
+            <Ionicons
+              accessibilityElementsHidden
+              name="logo-google"
+              size={22}
+              color={colors.text}
+            />
             <Text style={styles.googleActionText}>
               {isAuthActionPending ? 'Please wait…' : 'Continue with Google'}
             </Text>

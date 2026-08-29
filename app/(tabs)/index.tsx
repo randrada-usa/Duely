@@ -152,18 +152,29 @@ export default function HomeScreen() {
 
       <Pressable
         accessibilityHint="Opens the camera and gallery scan options"
+        accessibilityLabel="Scan an assignment"
         accessibilityRole="button"
         onPress={() => router.push('/(tabs)/scan')}
         style={({ pressed }) => [styles.scanCard, pressed && styles.pressed]}
       >
         <View style={styles.scanIcon}>
-          <Ionicons name="camera-outline" size={24} color={colors.surface} />
+          <Ionicons
+            accessibilityElementsHidden
+            name="camera-outline"
+            size={24}
+            color={colors.surface}
+          />
         </View>
         <View style={styles.scanCopy}>
           <Text style={styles.scanTitle}>Scan an assignment</Text>
           <Text style={styles.scanBody}>Turn one clear image into an editable task.</Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+        <Ionicons
+          accessibilityElementsHidden
+          name="chevron-forward"
+          size={20}
+          color={colors.primary}
+        />
       </Pressable>
 
       <View

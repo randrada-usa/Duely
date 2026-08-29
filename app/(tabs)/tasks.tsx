@@ -103,6 +103,7 @@ export default function TasksScreen() {
             Tasks
           </Text>
           <Pressable
+            accessibilityLabel="Add task"
             accessibilityRole="button"
             accessibilityState={{ disabled: !canEditTasks }}
             disabled={!canEditTasks}
@@ -113,7 +114,12 @@ export default function TasksScreen() {
               !canEditTasks && styles.disabled,
             ]}
           >
-            <Ionicons name="add" size={19} color={colors.surface} />
+            <Ionicons
+              accessibilityElementsHidden
+              name="add"
+              size={19}
+              color={colors.surface}
+            />
             <Text style={styles.addButtonText}>Add task</Text>
           </Pressable>
         </View>
@@ -122,7 +128,12 @@ export default function TasksScreen() {
 
         <View style={styles.searchRow}>
           <View style={styles.searchBox}>
-            <Ionicons name="search-outline" size={20} color={colors.textMuted} />
+            <Ionicons
+              accessibilityElementsHidden
+              name="search-outline"
+              size={20}
+              color={colors.textMuted}
+            />
             <TextInput
               accessibilityLabel="Search tasks"
               autoCapitalize="none"
@@ -316,6 +327,7 @@ type FilterChipProps = {
 function FilterChip({ label, selected, role, onPress }: FilterChipProps) {
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole={role}
       accessibilityState={
         role === 'checkbox' ? { checked: selected } : { selected }

@@ -59,6 +59,9 @@ export function TaskCard({ task }: { task: Task }) {
   return (
     <Pressable
       accessibilityHint="Opens task details"
+      accessibilityLabel={`${task.title}, ${subjectName}, ${
+        overdue ? 'Overdue' : priorityLabels[task.priority]
+      }, ${formatDueDate(task.dueAt)}`}
       accessibilityRole="button"
       onPress={() => router.push(`/task/${task.id}`)}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
@@ -117,7 +120,12 @@ export function TaskCard({ task }: { task: Task }) {
         style={[styles.checkbox, task.status === 'completed' && styles.checked]}
       >
         {task.status === 'completed' && (
-          <Ionicons name="checkmark" size={21} color={colors.surface} />
+          <Ionicons
+            accessibilityElementsHidden
+            name="checkmark"
+            size={21}
+            color={colors.surface}
+          />
         )}
       </Pressable>
     </Pressable>

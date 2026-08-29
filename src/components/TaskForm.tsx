@@ -261,6 +261,7 @@ export function TaskForm({
       <View style={styles.sectionHeader}>
         <Text style={styles.label}>Subject / course</Text>
         <Pressable
+          accessibilityLabel={showSubjectInput ? 'Cancel adding subject' : 'Add subject'}
           accessibilityRole="button"
           onPress={() => {
             if (showSubjectInput) setNewSubjectName('');
@@ -443,6 +444,7 @@ export function TaskForm({
           const selected = priority === value;
           return (
             <Pressable
+              accessibilityLabel={value[0].toUpperCase() + value.slice(1)}
               accessibilityRole="radio"
               accessibilityState={{ selected }}
               key={value}
@@ -485,6 +487,7 @@ export function TaskForm({
           const disabled = option.value !== null && !date.trim();
           return (
             <Pressable
+              accessibilityLabel={option.label}
               accessibilityRole="radio"
               accessibilityState={{ selected, disabled }}
               disabled={disabled}
@@ -558,6 +561,7 @@ function Field({ label, multiline, style, ...props }: FieldProps) {
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
+        accessibilityLabel={label}
         multiline={multiline}
         placeholderTextColor={colors.textMuted}
         style={[styles.input, multiline && styles.multiline, style]}
@@ -584,6 +588,7 @@ function SelectionChips<T extends string | number | null>({
         const selected = value === option.value;
         return (
           <Pressable
+            accessibilityLabel={option.label}
             accessibilityRole="radio"
             accessibilityState={{ selected }}
             key={option.label}

@@ -892,6 +892,7 @@ function SourceCard({
   return (
     <Pressable
       accessibilityHint={description}
+      accessibilityLabel={label}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.sourceCard, pressed && styles.pressed]}
@@ -918,6 +919,7 @@ function SecondaryButton({
 }) {
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}

@@ -55,11 +55,26 @@ export default function TabLayout() {
         );
       },
     })}>
-      <Tabs.Screen name="index" options={{ title: 'Home' }} />
-      <Tabs.Screen name="tasks" options={{ title: 'Tasks' }} />
-      <Tabs.Screen name="scan" options={{ title: 'Scan' }} />
-      <Tabs.Screen name="calendar" options={{ title: 'Calendar' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen
+        name="index"
+        options={{ tabBarAccessibilityLabel: 'Home tab', title: 'Home' }}
+      />
+      <Tabs.Screen
+        name="tasks"
+        options={{ tabBarAccessibilityLabel: 'Tasks tab', title: 'Tasks' }}
+      />
+      <Tabs.Screen
+        name="scan"
+        options={{ tabBarAccessibilityLabel: 'Scan tab', title: 'Scan' }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{ tabBarAccessibilityLabel: 'Calendar tab', title: 'Calendar' }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{ tabBarAccessibilityLabel: 'Profile tab', title: 'Profile' }}
+      />
     </Tabs>
   );
 }
