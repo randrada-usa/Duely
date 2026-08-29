@@ -61,6 +61,27 @@ describe('task reminders', () => {
     expect(plan).toEqual({ cancelIdentifiers: [], schedule: [] });
   });
 
+  it('replaces exact schedules during startup recovery', () => {
+    const wanted = desiredReminderForTask(task(), now)!;
+    const plan = buildReminderPlan(
+      [task()],
+      [
+        {
+          identifier: wanted.identifier,
+          taskId: wanted.taskId,
+          fingerprint: wanted.fingerprint,
+        },
+      ],
+      now,
+      true,
+    );
+
+    expect(plan).toEqual({
+      cancelIdentifiers: [wanted.identifier],
+      schedule: [wanted],
+    });
+  });
+
   it('cancels stale and duplicate schedules before replacing them', () => {
     const wanted = desiredReminderForTask(task(), now)!;
     const plan = buildReminderPlan(

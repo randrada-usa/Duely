@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { Linking } from 'react-native';
@@ -42,6 +43,7 @@ const ReminderStoreContext = createContext<ReminderStoreValue | null>(null);
 
 export function ReminderStoreProvider({ children }: PropsWithChildren) {
   const { tasks, isHydrated: tasksHydrated } = useTasks();
+  const needsStartupReschedule = useRef(true);
   const [defaultReminder, setDefaultReminderState] =
     useState<ReminderMinutes | null>(60);
   const [permission, setPermission] = useState(initialPermission);
@@ -75,11 +77,14 @@ export function ReminderStoreProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!isReady || !tasksHydrated) return;
     let active = true;
-    reconcileTaskReminders(tasks, permission.granted)
+    const replaceExisting = needsStartupReschedule.current;
+    needsStartupReschedule.current = false;
+    reconcileTaskReminders(tasks, permission.granted, new Date(), replaceExisting)
       .then(() => {
         if (active) setSchedulingError(null);
       })
       .catch(() => {
+        if (replaceExisting) needsStartupReschedule.current = true;
         if (active) {
           setSchedulingError(
             'Your task was saved, but its reminder could not be scheduled.',

@@ -88,6 +88,7 @@ export function buildReminderPlan(
   tasks: Task[],
   scheduled: ScheduledReminder[],
   now = new Date(),
+  replaceExisting = false,
 ): ReminderPlan {
   const desired = tasks
     .map((task) => desiredReminderForTask(task, now))
@@ -100,6 +101,7 @@ export function buildReminderPlan(
     const wanted = desiredByTask.get(existing.taskId);
     const reminderKey = `${existing.taskId}|${existing.fingerprint}`;
     const isExact =
+      !replaceExisting &&
       wanted &&
       existing.identifier === wanted.identifier &&
       existing.fingerprint === wanted.fingerprint &&

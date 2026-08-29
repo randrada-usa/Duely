@@ -71,11 +71,17 @@ export async function reconcileTaskReminders(
   tasks: Task[],
   canSchedule: boolean,
   now = new Date(),
+  replaceExisting = false,
 ) {
   if (Platform.OS === 'web') return;
 
   const requests = await Notifications.getAllScheduledNotificationsAsync();
-  const plan = buildReminderPlan(tasks, scheduledDuelyReminders(requests), now);
+  const plan = buildReminderPlan(
+    tasks,
+    scheduledDuelyReminders(requests),
+    now,
+    replaceExisting,
+  );
 
   await Promise.all(
     plan.cancelIdentifiers.map((identifier) =>
