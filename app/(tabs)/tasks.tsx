@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -12,7 +13,6 @@ import {
 } from 'react-native';
 
 import { EmptyState } from '../../src/components/EmptyState';
-import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { SubjectManagerModal } from '../../src/components/SubjectManagerModal';
 import { TaskCard } from '../../src/components/TaskCard';
@@ -36,6 +36,7 @@ import {
   minimumTouchTarget,
   radius,
   spacing,
+  typography,
 } from '../../src/theme/tokens';
 
 export default function TasksScreen() {
@@ -101,28 +102,48 @@ export default function TasksScreen() {
           <Text accessibilityRole="header" style={styles.title}>
             Tasks
           </Text>
-          <Text style={styles.subtitle}>Everything you need, easy to find.</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !canEditTasks }}
+            disabled={!canEditTasks}
+            onPress={() => router.push('/task/new')}
+            style={({ pressed }) => [
+              styles.addButton,
+              pressed && styles.pressed,
+              !canEditTasks && styles.disabled,
+            ]}
+          >
+            <Ionicons name="add" size={19} color={colors.surface} />
+            <Text style={styles.addButtonText}>Add task</Text>
+          </Pressable>
         </View>
 
         <TaskStorageWarning />
 
-        <TextInput
-          accessibilityLabel="Search tasks"
-          autoCapitalize="none"
-          onChangeText={(search) => updateQuery({ search })}
-          placeholder="Search title, subject, notes, or type"
-          placeholderTextColor={colors.textMuted}
-          style={styles.search}
-          value={taskQuery.search}
-        />
+        <View style={styles.searchRow}>
+          <View style={styles.searchBox}>
+            <Ionicons name="search-outline" size={20} color={colors.textMuted} />
+            <TextInput
+              accessibilityLabel="Search tasks"
+              autoCapitalize="none"
+              onChangeText={(search) => updateQuery({ search })}
+              placeholder="Search assignments, subjects…"
+              placeholderTextColor={colors.textSubtle}
+              style={styles.search}
+              value={taskQuery.search}
+            />
+          </View>
+          <Pressable
+            accessibilityLabel={`Filters and view options. Sorted by ${sortLabel}. Grouped by ${groupingLabel}.`}
+            accessibilityRole="button"
+            onPress={() => setShowViewOptions(true)}
+            style={({ pressed }) => [styles.filterButton, pressed && styles.pressed]}
+          >
+            <Ionicons name="options-outline" size={21} color={colors.primary} />
+            {extraFilterLabels.length > 0 && <View style={styles.filterIndicator} />}
+          </Pressable>
+        </View>
 
-        <PrimaryButton
-          disabled={!canEditTasks}
-          label="Add task"
-          onPress={() => router.push('/task/new')}
-        />
-
-        <Text style={styles.filterLabel}>Quick filters</Text>
         <ScrollView
           contentContainerStyle={styles.chipRow}
           horizontal
@@ -207,7 +228,7 @@ export default function TasksScreen() {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.viewButtonTitle}>More filters & view</Text>
+            <Text style={styles.viewButtonTitle}>Sort and group</Text>
             <Text numberOfLines={2} style={styles.viewButtonSummary}>
               {extraFilterLabels.length > 0
                 ? `${extraFilterLabels.join(' · ')}  |  `
@@ -314,25 +335,65 @@ function FilterChip({ label, selected, role, onPress }: FilterChipProps) {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingBottom: spacing.md },
-  title: { color: colors.text, fontSize: 30, fontWeight: '800' },
-  subtitle: { marginTop: spacing.xs, color: colors.textMuted, fontSize: 16 },
-  search: {
+  header: {
     minHeight: minimumTouchTarget,
-    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  title: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 30 },
+  addButton: {
+    minHeight: minimumTouchTarget,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
     paddingHorizontal: spacing.lg,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    elevation: 2,
+  },
+  addButtonText: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 14 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  searchBox: {
+    minHeight: minimumTouchTarget,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
+  },
+  search: {
+    minHeight: minimumTouchTarget,
+    flex: 1,
+    paddingVertical: 0,
     color: colors.text,
+    fontFamily: typography.body,
     fontSize: 16,
   },
-  filterLabel: {
-    marginTop: spacing.lg,
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800',
+  filterButton: {
+    width: minimumTouchTarget,
+    height: minimumTouchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
+  filterIndicator: {
+    position: 'absolute',
+    right: 8,
+    top: 8,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.danger,
   },
   subjectHeader: {
     flexDirection: 'row',
@@ -341,7 +402,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginTop: spacing.sm,
   },
-  sectionTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  sectionTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 14 },
   manageButton: {
     minHeight: minimumTouchTarget,
     justifyContent: 'center',
@@ -349,7 +410,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.surfaceSubtle,
   },
-  manageButtonText: { color: colors.primary, fontSize: 14, fontWeight: '800' },
+  manageButtonText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 14 },
   chipRow: { gap: spacing.sm, paddingVertical: spacing.sm },
   chipScroller: { flexGrow: 0 },
   chip: {
@@ -366,7 +427,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     backgroundColor: colors.primary,
   },
-  chipText: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  chipText: { color: colors.text, fontFamily: typography.bodySemibold, fontSize: 14 },
   chipTextSelected: { color: colors.surface },
   viewBar: {
     flexDirection: 'row',
@@ -382,13 +443,14 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
   },
-  viewButtonTitle: { color: colors.primary, fontSize: 14, fontWeight: '800' },
+  viewButtonTitle: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 13 },
   viewButtonSummary: {
     marginTop: 2,
     color: colors.textMuted,
+    fontFamily: typography.body,
     fontSize: 12,
     lineHeight: 17,
   },
@@ -401,7 +463,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSubtle,
   },
-  clearButtonText: { color: colors.primary, fontSize: 14, fontWeight: '800' },
+  clearButtonText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 14 },
   listContainer: { flex: 1 },
   list: { paddingTop: spacing.sm, paddingBottom: spacing.xxl },
   sectionHeader: {
@@ -412,7 +474,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     backgroundColor: colors.background,
   },
-  sectionHeaderTitle: { color: colors.text, fontSize: 17, fontWeight: '800' },
+  sectionHeaderTitle: { color: colors.text, fontFamily: typography.heading, fontSize: 17 },
   sectionHeaderCount: {
     minWidth: 24,
     paddingHorizontal: spacing.sm,
@@ -420,8 +482,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.surfaceSubtle,
     color: colors.primary,
+    fontFamily: typography.bodyBold,
     fontSize: 12,
-    fontWeight: '800',
     textAlign: 'center',
   },
   separator: { height: spacing.md },
@@ -431,7 +493,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  loadingText: { color: colors.textMuted, fontSize: 16 },
+  loadingText: { color: colors.textMuted, fontFamily: typography.body, fontSize: 16 },
   pressed: { opacity: 0.65 },
   disabled: { opacity: 0.45 },
 });
