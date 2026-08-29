@@ -29,7 +29,13 @@ import {
   type TaskFormSnapshot,
 } from '../domain/taskForm';
 import { useTasks } from '../store/TaskStore';
-import { colors, minimumTouchTarget, radius, spacing } from '../theme/tokens';
+import {
+  colors,
+  minimumTouchTarget,
+  radius,
+  spacing,
+  typography,
+} from '../theme/tokens';
 import { PrimaryButton } from './PrimaryButton';
 
 type TaskFormProps = {
@@ -598,7 +604,7 @@ function SelectionChips<T extends string | number | null>({
 }
 
 const styles = StyleSheet.create({
-  form: { padding: spacing.xl, gap: spacing.lg },
+  form: { padding: spacing.lg, gap: spacing.lg, backgroundColor: colors.background },
   field: { gap: spacing.sm },
   sectionHeader: {
     flexDirection: 'row',
@@ -608,8 +614,8 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.textMuted,
+    fontFamily: typography.bodyBold,
     fontSize: 12,
-    fontWeight: '800',
     letterSpacing: 0.7,
     textTransform: 'uppercase',
   },
@@ -621,7 +627,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     color: colors.text,
+    fontFamily: typography.body,
     fontSize: 16,
+    elevation: 1,
   },
   newSubjectCard: {
     flexDirection: 'row',
@@ -633,7 +641,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },
-  addSubjectText: { color: colors.primary, fontSize: 14, fontWeight: '800' },
+  addSubjectText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 14 },
   saveSubjectButton: {
     minHeight: minimumTouchTarget,
     justifyContent: 'center',
@@ -641,7 +649,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.primary,
   },
-  saveSubjectText: { color: colors.surface, fontSize: 15, fontWeight: '800' },
+  saveSubjectText: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 15 },
   inputButton: {
     minHeight: minimumTouchTarget,
     justifyContent: 'center',
@@ -652,7 +660,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
   },
-  inputButtonText: { color: colors.text, fontSize: 16 },
+  inputButtonText: { color: colors.text, fontFamily: typography.body, fontSize: 16 },
   placeholder: { color: colors.textMuted },
   clearDeadline: {
     minHeight: minimumTouchTarget,
@@ -661,7 +669,7 @@ const styles = StyleSheet.create({
     marginTop: -spacing.md,
     paddingHorizontal: spacing.sm,
   },
-  clearDeadlineText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  clearDeadlineText: { color: colors.primary, fontFamily: typography.bodySemibold, fontSize: 14 },
   multiline: { minHeight: 112, paddingTop: spacing.md, textAlignVertical: 'top' },
   row: { flexDirection: 'row', gap: spacing.md },
   flex: { flex: 1 },
@@ -677,7 +685,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipSelected: { borderColor: colors.primary, backgroundColor: colors.primary },
-  chipText: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  chipText: { color: colors.text, fontFamily: typography.bodySemibold, fontSize: 15 },
   chipTextSelected: { color: colors.surface },
   priorityRow: { flexDirection: 'row', gap: spacing.sm },
   priority: {
@@ -691,7 +699,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   prioritySelected: { borderColor: colors.primary, backgroundColor: colors.primary },
-  priorityText: { color: colors.text, fontWeight: '700' },
+  priorityText: { color: colors.text, fontFamily: typography.bodySemibold },
   priorityTextSelected: { color: colors.surface },
   reminderOptions: { gap: spacing.sm },
   reminder: {
@@ -709,8 +717,8 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     backgroundColor: colors.surfaceSubtle,
   },
-  reminderText: { color: colors.text, fontSize: 16 },
-  reminderTextSelected: { color: colors.primary, fontWeight: '700' },
+  reminderText: { color: colors.text, fontFamily: typography.body, fontSize: 16 },
+  reminderTextSelected: { color: colors.primary, fontFamily: typography.bodySemibold },
   radioDot: {
     width: 18,
     height: 18,
@@ -720,7 +728,7 @@ const styles = StyleSheet.create({
   },
   radioDotSelected: { borderWidth: 5, borderColor: colors.primary },
   disabled: { opacity: 0.45 },
-  helper: { marginTop: -spacing.sm, color: colors.textMuted, fontSize: 14 },
+  helper: { marginTop: -spacing.sm, color: colors.textMuted, fontFamily: typography.body, fontSize: 14 },
   fieldNotice: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -739,17 +747,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: '#F4C98B',
     color: colors.warning,
+    fontFamily: typography.bodyBold,
     fontSize: 14,
-    fontWeight: '900',
     lineHeight: 22,
     textAlign: 'center',
   },
   fieldNoticeText: {
     flex: 1,
     color: colors.warning,
+    fontFamily: typography.body,
     fontSize: 16,
     lineHeight: 24,
   },
-  error: { color: colors.danger, fontSize: 14, lineHeight: 20 },
+  error: { color: colors.danger, fontFamily: typography.body, fontSize: 14, lineHeight: 20 },
   pressed: { opacity: 0.65 },
 });

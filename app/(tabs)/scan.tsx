@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -48,6 +48,7 @@ import {
   minimumTouchTarget,
   radius,
   spacing,
+  typography,
 } from '../../src/theme/tokens';
 
 type IntakeSource = 'camera' | 'gallery';
@@ -74,6 +75,7 @@ const pickerOptions: ImagePicker.ImagePickerOptions = {
 };
 
 export default function ScanScreen() {
+  const navigation = useNavigation();
   const { addTask, canEditTasks, subjects } = useTasks();
   const { defaultReminder } = useReminders();
   const [image, setImage] = useState<PreparedScanImage | null>(null);
@@ -89,6 +91,14 @@ export default function ScanScreen() {
   const activeImageUri = useRef<string | null>(null);
   const activeOcrRun = useRef<OcrRun | null>(null);
   const isMounted = useRef(true);
+  const focusedScanFlow = permissionIssue !== null || image !== null || scanStage !== 'image';
+
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: focusedScanFlow ? { display: 'none' } : undefined,
+    });
+    return () => navigation.setOptions({ tabBarStyle: undefined });
+  }, [focusedScanFlow, navigation]);
 
   const acceptPickerResult = useCallback(
     async (
@@ -1014,10 +1024,11 @@ function ErrorMessage({ message }: { message: string }) {
 
 const styles = StyleSheet.create({
   header: { paddingBottom: spacing.xs },
-  title: { color: colors.text, fontSize: 30, fontWeight: '800' },
+  title: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 30 },
   subtitle: {
     marginTop: spacing.xs,
     color: colors.textMuted,
+    fontFamily: typography.body,
     fontSize: 16,
     lineHeight: 24,
   },
@@ -1035,13 +1046,14 @@ const styles = StyleSheet.create({
   viewfinderTitle: {
     marginTop: spacing.md,
     color: colors.surface,
+    fontFamily: typography.heading,
     fontSize: 18,
-    fontWeight: '800',
     textAlign: 'center',
   },
   viewfinderBody: {
     marginTop: spacing.sm,
     color: '#CDD3FF',
+    fontFamily: typography.body,
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
@@ -1083,8 +1095,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceSubtle,
   },
-  sourceTitle: { marginTop: spacing.md, color: colors.text, fontSize: 17, fontWeight: '800' },
-  sourceDescription: { marginTop: 2, color: colors.textMuted, fontSize: 14, lineHeight: 20 },
+  sourceTitle: { marginTop: spacing.md, color: colors.text, fontFamily: typography.bodyBold, fontSize: 17 },
+  sourceDescription: { marginTop: 2, color: colors.textMuted, fontFamily: typography.body, fontSize: 14, lineHeight: 20 },
   privacyCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1094,10 +1106,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
   },
   privacyCopy: { flex: 1 },
-  privacyTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
-  cardTitle: { color: colors.text, fontSize: 18, fontWeight: '800', textAlign: 'center' },
-  cardBody: { marginTop: spacing.xs, color: colors.textMuted, fontSize: 15, lineHeight: 22 },
-  fileRule: { color: colors.textMuted, fontSize: 13, lineHeight: 20, textAlign: 'center' },
+  privacyTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 16 },
+  cardTitle: { color: colors.text, fontFamily: typography.heading, fontSize: 18, textAlign: 'center' },
+  cardBody: { marginTop: spacing.xs, color: colors.textMuted, fontFamily: typography.body, fontSize: 15, lineHeight: 22 },
+  fileRule: { color: colors.textMuted, fontFamily: typography.body, fontSize: 13, lineHeight: 20, textAlign: 'center' },
   permissionCard: {
     alignItems: 'center',
     gap: spacing.md,
@@ -1130,10 +1142,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.surfaceSubtle,
     color: colors.primary,
+    fontFamily: typography.bodyBold,
     fontSize: 13,
-    fontWeight: '800',
   },
-  imageMeta: { flexShrink: 1, color: colors.textMuted, fontSize: 13, textAlign: 'right' },
+  imageMeta: { flexShrink: 1, color: colors.textMuted, fontFamily: typography.body, fontSize: 13, textAlign: 'right' },
   warningCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1144,7 +1156,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: '#FFF7E8',
   },
-  warningText: { flex: 1, color: colors.warning, fontSize: 15, lineHeight: 22 },
+  warningText: { flex: 1, color: colors.warning, fontFamily: typography.body, fontSize: 15, lineHeight: 22 },
   errorCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1155,7 +1167,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: '#FFF0F0',
   },
-  errorText: { flex: 1, color: colors.danger, fontSize: 15, lineHeight: 22 },
+  errorText: { flex: 1, color: colors.danger, fontFamily: typography.body, fontSize: 15, lineHeight: 22 },
   successState: {
     alignItems: 'center',
     gap: spacing.md,
@@ -1172,6 +1184,7 @@ const styles = StyleSheet.create({
   successBody: {
     maxWidth: 420,
     color: colors.textMuted,
+    fontFamily: typography.body,
     fontSize: 16,
     lineHeight: 24,
     textAlign: 'center',
@@ -1216,13 +1229,14 @@ const styles = StyleSheet.create({
   progressTitle: {
     marginTop: spacing.xl,
     color: colors.text,
+    fontFamily: typography.headingStrong,
     fontSize: 24,
-    fontWeight: '800',
     textAlign: 'center',
   },
   progressBody: {
     marginTop: spacing.sm,
     color: colors.textMuted,
+    fontFamily: typography.body,
     fontSize: 16,
     lineHeight: 24,
     textAlign: 'center',
@@ -1255,8 +1269,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.border,
   },
-  progressStepText: { flex: 1, color: colors.textMuted, fontSize: 16 },
-  progressStepTextActive: { color: colors.text, fontWeight: '700' },
+  progressStepText: { flex: 1, color: colors.textMuted, fontFamily: typography.body, fontSize: 16 },
+  progressStepTextActive: { color: colors.text, fontFamily: typography.bodySemibold },
   recoveryState: {
     alignItems: 'center',
     gap: spacing.md,
@@ -1265,6 +1279,7 @@ const styles = StyleSheet.create({
   recoveryBody: {
     maxWidth: 440,
     color: colors.textMuted,
+    fontFamily: typography.body,
     fontSize: 16,
     lineHeight: 24,
     textAlign: 'center',
@@ -1300,14 +1315,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#10101F',
   },
   reviewPrivacyCopy: { flex: 1 },
-  reviewPrivacyTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  reviewPrivacyTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 15 },
   reviewPrivacyBody: {
     marginTop: spacing.xs,
     color: colors.textMuted,
+    fontFamily: typography.body,
     fontSize: 14,
     lineHeight: 20,
   },
-  helperText: { flexShrink: 1, color: colors.textMuted, fontSize: 14, lineHeight: 21 },
+  helperText: { flexShrink: 1, color: colors.textMuted, fontFamily: typography.body, fontSize: 14, lineHeight: 21 },
   processingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   reviewActions: { gap: spacing.sm },
   secondaryButton: {
@@ -1323,14 +1339,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.surface,
   },
-  secondaryButtonText: { flexShrink: 1, color: colors.primary, fontSize: 16, fontWeight: '800', textAlign: 'center' },
+  secondaryButtonText: { flexShrink: 1, color: colors.primary, fontFamily: typography.bodyBold, fontSize: 16, textAlign: 'center' },
   textButton: {
     minHeight: minimumTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
-  textButtonLabel: { color: colors.primary, fontSize: 15, fontWeight: '800' },
+  textButtonLabel: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 15 },
   textButtonLabelDanger: { color: colors.danger },
   pressed: { opacity: 0.65 },
   disabled: { opacity: 0.45 },
