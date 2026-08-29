@@ -26,6 +26,7 @@ import {
   minimumTouchTarget,
   radius,
   spacing,
+  typography,
 } from '../../src/theme/tokens';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -255,21 +256,32 @@ function IconButton({ accessibilityLabel, icon, onPress }: IconButtonProps) {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: spacing.xxl, gap: spacing.xl },
+  content: { paddingBottom: spacing.xxl, gap: spacing.md },
   header: {
+    minHeight: minimumTouchTarget,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    flexWrap: 'wrap',
     gap: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  title: { color: colors.text, fontSize: 30, fontWeight: '800' },
-  monthControls: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  monthTitle: {
-    minWidth: 132,
+  title: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: typography.headingStrong,
+    fontSize: 28,
+  },
+  monthControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  monthTitle: {
+    minWidth: 116,
+    color: colors.text,
+    fontFamily: typography.bodyBold,
+    fontSize: 14,
     textAlign: 'center',
   },
   iconButton: {
@@ -281,19 +293,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
   },
   calendarCard: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.xl,
-    backgroundColor: colors.surface,
+    paddingVertical: spacing.sm,
   },
-  weekdayRow: { flexDirection: 'row', marginBottom: spacing.sm },
+  weekdayRow: {
+    flexDirection: 'row',
+    marginBottom: spacing.sm,
+  },
   weekday: {
     flex: 1,
     color: colors.textMuted,
+    fontFamily: typography.bodyBold,
     fontSize: 11,
-    fontWeight: '800',
     textAlign: 'center',
     textTransform: 'uppercase',
   },
@@ -301,7 +311,7 @@ const styles = StyleSheet.create({
   weekRow: { flexDirection: 'row' },
   cellWrapper: {
     flex: 1,
-    minHeight: 54,
+    minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -317,7 +327,11 @@ const styles = StyleSheet.create({
   today: { borderColor: colors.primary },
   selectedDay: { borderColor: colors.primary, backgroundColor: colors.primary },
   dayPressed: { opacity: 0.65 },
-  dayNumber: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  dayNumber: {
+    color: colors.text,
+    fontFamily: typography.bodySemibold,
+    fontSize: 15,
+  },
   selectedText: { color: colors.surface },
   taskCount: {
     minWidth: 18,
@@ -327,8 +341,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.surfaceSubtle,
     color: colors.primary,
+    fontFamily: typography.bodyBold,
     fontSize: 10,
-    fontWeight: '800',
     lineHeight: 16,
     textAlign: 'center',
   },
@@ -340,23 +354,40 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   selectedTitleGroup: { flex: 1 },
-  selectedTitle: { color: colors.text, fontSize: 22, fontWeight: '800' },
-  selectedWeekday: { marginTop: 2, color: colors.textMuted, fontSize: 14 },
+  selectedTitle: {
+    color: colors.text,
+    fontFamily: typography.heading,
+    fontSize: 20,
+  },
+  selectedWeekday: {
+    marginTop: 2,
+    color: colors.textMuted,
+    fontFamily: typography.body,
+    fontSize: 14,
+  },
   todayButton: {
     minHeight: minimumTouchTarget,
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceSubtle,
+    backgroundColor: colors.dangerSoft,
   },
-  todayButtonText: { color: colors.primary, fontSize: 14, fontWeight: '800' },
+  todayButtonText: {
+    color: colors.danger,
+    fontFamily: typography.bodyBold,
+    fontSize: 14,
+  },
   loading: {
     minHeight: 112,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  loadingText: { color: colors.textMuted, fontSize: 16 },
+  loadingText: {
+    color: colors.textMuted,
+    fontFamily: typography.body,
+    fontSize: 16,
+  },
   emptyDate: {
     minHeight: 112,
     flexDirection: 'row',
@@ -367,10 +398,20 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
+    elevation: 1,
   },
   emptyCopy: { flex: 1, gap: spacing.xs },
-  emptyTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
-  emptyDescription: { color: colors.textMuted, fontSize: 15, lineHeight: 21 },
+  emptyTitle: {
+    color: colors.text,
+    fontFamily: typography.bodyBold,
+    fontSize: 16,
+  },
+  emptyDescription: {
+    color: colors.textMuted,
+    fontFamily: typography.body,
+    fontSize: 15,
+    lineHeight: 21,
+  },
   taskList: { gap: spacing.md },
   addButton: {
     minHeight: minimumTouchTarget,
@@ -381,8 +422,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderRadius: radius.lg,
     backgroundColor: colors.primary,
+    elevation: 2,
   },
   addButtonPressed: { backgroundColor: colors.primaryPressed },
   addButtonDisabled: { opacity: 0.45 },
-  addButtonText: { color: colors.surface, fontSize: 16, fontWeight: '800' },
+  addButtonText: {
+    color: colors.surface,
+    fontFamily: typography.bodyBold,
+    fontSize: 16,
+  },
 });
