@@ -38,9 +38,9 @@ function isSameLocalDay(value: string, reference: Date) {
 
 function displayName(metadata: Record<string, unknown> | undefined) {
   const candidate = metadata?.full_name ?? metadata?.name;
-  return typeof candidate === 'string' && candidate.trim()
-    ? candidate.trim().split(/\s+/)[0]
-    : null;
+  if (typeof candidate !== 'string' || !candidate.trim()) return null;
+  const firstName = candidate.trim().split(/\s+/)[0];
+  return `${firstName.charAt(0).toUpperCase()}${firstName.slice(1)}`;
 }
 
 function nextTaskSummary(task: Task | undefined) {
@@ -155,7 +155,7 @@ export default function HomeScreen() {
         style={({ pressed }) => [styles.scanCard, pressed && styles.pressed]}
       >
         <View style={styles.scanIcon}>
-          <Ionicons name="scan" size={24} color={colors.surface} />
+          <Ionicons name="camera-outline" size={24} color={colors.surface} />
         </View>
         <View style={styles.scanCopy}>
           <Text style={styles.scanTitle}>Scan an assignment</Text>

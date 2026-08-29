@@ -16,9 +16,9 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 Current milestone: **M5 — On-Device OCR and Editable Review** remains open only for the broader beta-scan accuracy gate. **M6 — Supabase Backend and Authentication** and **M7 — Cloud Synchronization** are complete for the beta scope.
 
-Current outcome: M5 implementation is complete and its beta-scan accuracy gate remains open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. The 12-image synthetic Android pack completed at 99.5% aggregate token accuracy and 12/12 parser-ready results after a targeted, review-visible correction for ML Kit reading `August` as `Auqust`. Clearly printed deadlines passed 6/6, missing-deadline avoidance passed 3/3, and ambiguous-deadline flagging passed 3/3. These small synthetic results validate the harness but do not certify beta-scan accuracy.
+Current outcome: M5 implementation is complete and its beta-scan accuracy gate remains open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. The 12-image synthetic Android pack completed at 99.5% aggregate token accuracy and 12/12 parser-ready results after a targeted, review-visible correction for ML Kit reading `August` as `Auqust`. Clearly printed deadlines passed 6/6, missing-deadline avoidance passed 3/3, and ambiguous-deadline flagging passed 3/3. These small synthetic results validate the harness but do not certify beta-scan accuracy. The UI/UX revision is underway: the shared palette, typography, surfaces, bottom navigation, Home screen, empty state, buttons, and reusable task card now follow the local DuelyPages direction and are visually verified on the Pixel 7 emulator without adding unsupported productivity metrics.
 
-Next recommended task: begin the UI/UX revision using the local DuelyPages and DuelyIcons references. Passwordless school-email authentication and the verified-school badge are deliberately deferred. The real Nunito and Inter font families now load before app startup. Pixel 7 verification confirmed local task retention through sign-out, successful Google sign-in to a second account, separate cloud ownership, an explicit first-backup prompt without silent copying, explicit empty-device restore, and a keep-data uninstall/reinstall that retained all 47 app-data files, the local task, and the signed-in Google session. Queued offline retry, ongoing subject/reminder synchronization, and the corrected 12-image OCR pack are also live-verified on Android.
+Next recommended task: continue the UI/UX revision with the Tasks collection, search, grouping/filter controls, and task states, using only the local DuelyPages and DuelyIcons references. Passwordless school-email authentication and the verified-school badge are deliberately deferred. The real Nunito and Inter font families now load before app startup. Pixel 7 verification confirmed local task retention through sign-out, successful Google sign-in to a second account, separate cloud ownership, an explicit first-backup prompt without silent copying, explicit empty-device restore, and a keep-data uninstall/reinstall that retained all 47 app-data files, the local task, and the signed-in Google session. Queued offline retry, ongoing subject/reminder synchronization, and the corrected 12-image OCR pack are also live-verified on Android.
 
 ## Locked Product Decisions
 
@@ -49,8 +49,8 @@ Next recommended task: begin the UI/UX revision using the local DuelyPages and D
 | M3 | Internal calendar and reminders | Complete | M2 |
 | M4 | Image intake and preparation | Complete | M1 |
 | M5 | On-device OCR and review | In progress | M4 |
-| M6 | Supabase backend and authentication | In progress | M2 |
-| M7 | Cloud synchronization | In progress | M6 |
+| M6 | Supabase backend and authentication | Complete | M2 |
+| M7 | Cloud synchronization | Complete | M6 |
 | M8 | Gemini-assisted extraction | Not started | M5, M6 |
 | M9 | Consent, privacy, export, and deletion | Not started | M6–M8 |
 | M10 | Quality, analytics, and beta release | Not started | M2–M9 |
@@ -76,7 +76,7 @@ Status: `[x] Complete`
 - [x] Document team ownership in `roles.md`.
 - [x] Document UI/UX requirements in `ui-ux-plan.md`.
 - [x] Document repository-wide agent rules in `AGENTS.md`.
-- [x] Establish Figma tokens and reusable reference components.
+- [x] Establish local design tokens and reusable reference components.
 
 ### Exit verification
 
@@ -102,7 +102,7 @@ Status: `[x] Complete`
 - [x] Add shared color, spacing, radius, and touch-target tokens.
 - [x] Add environment-variable template without secrets.
 - [x] Add type-check script.
-- [ ] Integrate Nunito and Inter as bundled local fonts.
+- [x] Integrate Nunito and Inter as bundled local fonts.
 - [ ] Add linting and formatting configuration.
 - [x] Add unit-test framework and baseline tests.
 - [x] Create development and preview profiles in `eas.json`.

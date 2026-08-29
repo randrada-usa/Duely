@@ -8,7 +8,7 @@ type IconName = React.ComponentProps<typeof Ionicons>['name'];
 const icons: Record<string, { active: IconName; inactive: IconName }> = {
   index: { active: 'home', inactive: 'home-outline' },
   tasks: { active: 'checkbox', inactive: 'checkbox-outline' },
-  scan: { active: 'scan', inactive: 'scan-outline' },
+  scan: { active: 'camera', inactive: 'camera-outline' },
   calendar: { active: 'calendar', inactive: 'calendar-outline' },
   profile: { active: 'person', inactive: 'person-outline' },
 };
