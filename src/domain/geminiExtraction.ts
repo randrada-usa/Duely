@@ -120,6 +120,7 @@ export function mergeGeminiExtraction(
     const localField = local.fields[field] as ExtractedValue<unknown> | null;
     const aiField = geminiField(gemini, field);
     if (aiField.value === null || aiField.value === '') continue;
+    if (field === 'notes' && !local.hasExplicitInstructions) continue;
 
     if (!localField) {
       (fields as Record<string, unknown>)[field] = aiField;
@@ -160,7 +161,10 @@ export function buildCombinedProvenance(
   for (const field of fieldNames) {
     const localField = local.fields[field] as ExtractedValue<unknown> | null;
     const aiField = geminiField(gemini, field);
-    const hasAiValue = aiField.value !== null && aiField.value !== '';
+    const hasAiValue =
+      aiField.value !== null &&
+      aiField.value !== '' &&
+      (field !== 'notes' || local.hasExplicitInstructions);
     const sources = [
       ...(localField ? (['ml-kit'] as const) : []),
       ...(hasAiValue ? (['gemini'] as const) : []),

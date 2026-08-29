@@ -35,7 +35,11 @@ describe('private OCR evaluation', () => {
     expect(report.fixtures[0]).toMatchObject({
       fixtureId: 'sample-01',
       deadlineCheck: 'passed',
-      detected: { title: true, deadline: true },
+      detected: {
+        title: true,
+        deadline: true,
+        needsAssignmentConfirmation: false,
+      },
     });
     expect(JSON.stringify(report)).not.toContain(sensitiveText);
     expect(JSON.stringify(report)).not.toContain('Private Student Task');

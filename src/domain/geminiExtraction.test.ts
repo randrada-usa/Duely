@@ -25,14 +25,15 @@ describe('Gemini extraction', () => {
     expect(isGeminiScanExtraction({ ...gemini, priority: { value: 'urgent', confidence: 'high' } })).toBe(false);
   });
 
-  it('fills missing fields and explicitly marks disagreements', () => {
+  it('fills missing fields, marks disagreements, and rejects unlabeled AI notes', () => {
     const local = extractTaskFromOcr('Title: Cell Activity\nSubject: BIO 101');
     const merged = mergeGeminiExtraction(local, gemini);
 
     expect(merged.fields.title?.value).toBe('Cell Activity');
     expect(merged.fields.taskType?.value).toBe('project');
     expect(merged.issues.title).toContain('disagreed');
-    expect(merged.issues.notes).toContain('AI suggested');
+    expect(merged.fields.notes).toBeNull();
+    expect(merged.issues.notes).toContain('No instructions were found');
   });
 
   it('records both engines and the final student decision', () => {
@@ -47,10 +48,20 @@ describe('Gemini extraction', () => {
       userAction: 'edited',
     });
     expect(provenance.notes).toMatchObject({
-      sources: ['gemini'],
+      sources: [],
       comparison: 'not-compared',
-      userAction: 'accepted',
+      userAction: 'cleared',
     });
+  });
+
+  it('allows AI to recover notes only when OCR found an instruction label', () => {
+    const local = extractTaskFromOcr(
+      'Title: Cell Activity\nInstructions:\nSubject: BIO 101',
+    );
+    const merged = mergeGeminiExtraction(local, gemini);
+    expect(local.hasExplicitInstructions).toBe(true);
+    expect(merged.fields.notes?.value).toBe('Build a labeled model.');
+    expect(merged.issues.notes).toContain('AI suggested');
   });
 
   it('treats equivalent deadline offsets as agreement', () => {

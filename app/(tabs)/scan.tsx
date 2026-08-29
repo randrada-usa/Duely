@@ -876,6 +876,19 @@ export default function ScanScreen() {
                 onBack={confirmReturnToImage}
                 title="Review extraction"
               />
+              {reviewExtraction.needsAssignmentConfirmation && (
+                <View accessibilityRole="alert" style={styles.warningCard}>
+                  <Ionicons
+                    accessibilityElementsHidden
+                    color={colors.warning}
+                    name="help-circle-outline"
+                    size={24}
+                  />
+                  <Text style={styles.warningText}>
+                    This image may be reference material instead of an assignment. Confirm the title and details before saving.
+                  </Text>
+                </View>
+              )}
               <View style={styles.reviewPrivacyRow}>
                 <Ionicons
                   accessibilityElementsHidden

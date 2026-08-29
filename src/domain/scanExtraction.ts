@@ -28,6 +28,8 @@ export type ScanExtraction = {
   fields: ScanExtractionFields;
   issues: Partial<Record<ExtractedTaskField, string>>;
   hasMultipleAssignments: boolean;
+  hasExplicitInstructions: boolean;
+  needsAssignmentConfirmation: boolean;
 };
 
 export type ScanReviewValues = {
@@ -50,7 +52,7 @@ const priorityLabels = 'priority|prayoridad';
 const effortLabels =
   'estimated\\s+(?:time|effort|workload)|workload|tinatayang\\s+(?:oras|tagal)';
 const notesLabels =
-  'instructions?|notes?|description|panuto|mga\\s+panuto|tala|paglalarawan';
+  'instructions?(?:\\s*\\/\\s*questions?)?|directions?|requirements?|notes?|description|panuto|mga\\s+panuto|tala|paglalarawan';
 const metadataLabelPattern = new RegExp(
   `^(?:${titleLabels}|${subjectLabels}|${deadlineLabels}|${taskTypeLabels}|${priorityLabels}|${effortLabels}|${notesLabels})\\b`,
   'i',
@@ -402,7 +404,7 @@ function effortCandidate(lines: string[]) {
     : null;
 }
 
-function notesCandidate(lines: string[], excludedIndexes: Set<number>) {
+function notesCandidate(lines: string[]) {
   const labelPattern = new RegExp(
     `^(?:${notesLabels})\\s*[:\\-–—]?\\s*(.*)$`,
     'i',
@@ -417,22 +419,30 @@ function notesCandidate(lines: string[], excludedIndexes: Set<number>) {
     }
     const value = values.join('\n').trim();
     if (value) {
-      return { value, confidence: 'high' } satisfies ExtractedValue<string>;
+      return {
+        field: { value, confidence: 'high' } satisfies ExtractedValue<string>,
+        hasExplicitLabel: true,
+      };
     }
+    return { field: null, hasExplicitLabel: true };
   }
 
-  const remaining = lines.filter(
-    (line, index) =>
-      !excludedIndexes.has(index) &&
-      !metadataLabelPattern.test(line) &&
-      !/^assignment\s*(?:#|no\.?\s*)?\d+$/i.test(line) &&
-      line.length >= 18,
+  return { field: null, hasExplicitLabel: false };
+}
+
+function needsAssignmentConfirmation(lines: readonly string[]) {
+  const explicitLabelPattern = new RegExp(
+    `^(?:${titleLabels}|${taskTypeLabels}|${notesLabels})\\b`,
+    'i',
   );
-  if (!remaining.length) return null;
-  return {
-    value: remaining.slice(0, 8).join('\n'),
-    confidence: 'low',
-  } satisfies ExtractedValue<string>;
+  const assignmentLanguage =
+    /\b(?:assignment|homework|activity|quiz|exam(?:ination)?|project|worksheet|problem\s+set|submit|submission|takdang[-\s]?aralin|gawain|pagsusulit|proyekto|panuto)\b/i;
+  return !lines.some(
+    (line) =>
+      explicitLabelPattern.test(line) ||
+      deadlineLinePattern.test(line) ||
+      assignmentLanguage.test(line),
+  );
 }
 
 export function detectsMultipleAssignments(lines: readonly string[]) {
@@ -465,12 +475,7 @@ export function extractTaskFromOcr(text: string, now = new Date()): ScanExtracti
   const taskType = taskTypeCandidate(lines, title.field?.value ?? null);
   const priority = priorityCandidate(lines);
   const estimatedEffortMinutes = effortCandidate(lines);
-  const excludedIndexes = new Set(
-    [title.lineIndex, subject.lineIndex, deadline.lineIndex].filter(
-      (index) => index >= 0,
-    ),
-  );
-  const notes = notesCandidate(lines, excludedIndexes);
+  const notes = notesCandidate(lines);
   const fields: ScanExtractionFields = {
     title: title.field,
     subject: subject.field,
@@ -478,13 +483,15 @@ export function extractTaskFromOcr(text: string, now = new Date()): ScanExtracti
     taskType,
     priority,
     estimatedEffortMinutes,
-    notes,
+    notes: notes.field,
   };
 
   return {
     rawText,
     fields,
     hasMultipleAssignments: detectsMultipleAssignments(lines),
+    hasExplicitInstructions: notes.hasExplicitLabel,
+    needsAssignmentConfirmation: needsAssignmentConfirmation(lines),
     issues: {
       title: issueFor(
         fields.title,

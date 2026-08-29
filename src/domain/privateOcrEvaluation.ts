@@ -30,6 +30,7 @@ export type PrivateOcrFixtureResult = {
     taskType: boolean;
     notes: boolean;
     multipleAssignments: boolean;
+    needsAssignmentConfirmation: boolean;
   };
   deadlineCheck: 'passed' | 'failed' | 'manual-review' | 'not-run';
   deadlineMismatch?: 'missing' | 'unexpected' | 'date' | 'time' | 'date-and-time';
@@ -104,6 +105,7 @@ export function evaluatePrivateOcrObservations(
           taskType: false,
           notes: false,
           multipleAssignments: false,
+          needsAssignmentConfirmation: false,
         },
         deadlineCheck: 'not-run',
       };
@@ -131,6 +133,7 @@ export function evaluatePrivateOcrObservations(
         taskType: extraction.fields.taskType !== null,
         notes: extraction.fields.notes !== null,
         multipleAssignments: extraction.hasMultipleAssignments,
+        needsAssignmentConfirmation: extraction.needsAssignmentConfirmation,
       },
       deadlineCheck: check,
       deadlineMismatch: deadline.deadlineMismatch,

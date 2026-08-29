@@ -103,6 +103,7 @@ describe('scan extraction', () => {
     expect(extraction.fields.dueAt).toBeNull();
     expect(extraction.issues.title).toContain('likely heading');
     expect(extraction.issues.dueAt).toContain('No deadline');
+    expect(extraction.needsAssignmentConfirmation).toBe(true);
   });
 
   it('flags an inferred year and defaults a missing time to the end of day', () => {
@@ -207,6 +208,8 @@ describe('scan extraction', () => {
       date: '2026-11-13',
       time: '23:59',
     });
+    expect(portal.needsAssignmentConfirmation).toBe(false);
+    expect(slide.needsAssignmentConfirmation).toBe(false);
   });
 
   it('tolerates OCR punctuation substitutions in labeled twelve-hour times', () => {
@@ -226,6 +229,40 @@ describe('scan extraction', () => {
       now,
     );
     expect(extraction.fields.dueAt).toBeNull();
+    expect(extraction.fields.notes).toBeNull();
+    expect(extraction.hasExplicitInstructions).toBe(false);
+    expect(extraction.needsAssignmentConfirmation).toBe(true);
+  });
+
+  it('does not prefill notes from unlabeled conversation text', () => {
+    const extraction = extractTaskFromOcr(
+      [
+        'Activity 2',
+        'Please answer the questions on Tuesday.',
+        'A participant replied with an unrelated personal message.',
+      ].join('\n'),
+      now,
+    );
+    expect(extraction.fields.notes).toBeNull();
+    expect(extraction.issues.notes).toContain('No instructions were found');
+    expect(extraction.needsAssignmentConfirmation).toBe(false);
+  });
+
+  it('prefills only explicitly labeled instruction blocks', () => {
+    const extraction = extractTaskFromOcr(
+      [
+        'Assignment Title: Network Lab',
+        'Instructions/Questions:',
+        'Create a diagram and explain each connection.',
+      ].join('\n'),
+      now,
+    );
+    expect(extraction.fields.notes).toEqual({
+      value: 'Create a diagram and explain each connection.',
+      confidence: 'high',
+    });
+    expect(extraction.hasExplicitInstructions).toBe(true);
+    expect(extraction.needsAssignmentConfirmation).toBe(false);
   });
 
   it('reads conservative Filipino field labels and month names', () => {

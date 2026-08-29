@@ -113,6 +113,10 @@ Do not add archive, trash, nested folders, shared folders, or multi-subject memb
 
 Only one task is created per image in the beta. If multiple assignments are detected, ask the student to crop or select one.
 
+If OCR does not find clear assignment language or a recognized assignment/deadline/instruction label, continue to the editable review with a visible “may be reference material” warning. Do not block manual task creation.
+
+Prefill Instructions/notes only from an explicitly labeled instruction, question, direction, requirement, description, or notes section. Do not copy arbitrary surrounding OCR or unrelated conversation into Notes.
+
 ### Review fields
 
 - Title
