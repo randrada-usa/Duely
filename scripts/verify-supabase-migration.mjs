@@ -11,6 +11,24 @@ const clientTimestampGrantSql = readFileSync(
   ),
   'utf8',
 ).toLowerCase();
+const aiAssistSql = readFileSync(
+  resolve(
+    'supabase/migrations/20260829150015_ai_assist_consent_and_allowance.sql',
+  ),
+  'utf8',
+).toLowerCase();
+const consentVersionSql = readFileSync(
+  resolve(
+    'supabase/migrations/20260829150648_enforce_consent_versions.sql',
+  ),
+  'utf8',
+).toLowerCase();
+const aiLedgerDenialSql = readFileSync(
+  resolve(
+    'supabase/migrations/20260829151029_document_ai_ledger_client_denial.sql',
+  ),
+  'utf8',
+).toLowerCase();
 const tables = [
   'profiles',
   'subjects',
@@ -92,6 +110,48 @@ assert(
   !clientTimestampGrantSql.includes('grant update') &&
     !clientTimestampGrantSql.includes('user_id'),
   'guest backup timestamp grants must not permit ownership or timestamp rewrites',
+);
+assert(
+  aiAssistSql.includes("consent_type in ('ai_processing', 'model_improvement')"),
+  'cloud AI processing and model-improvement consent must remain separate',
+);
+assert(
+  aiAssistSql.includes('create table public.ai_scan_requests') &&
+    aiAssistSql.includes('alter table public.ai_scan_requests enable row level security') &&
+    aiAssistSql.includes('alter table public.ai_scan_requests force row level security'),
+  'AI request idempotency ledger must use forced RLS',
+);
+assert(
+  aiAssistSql.includes('create function public.reserve_ai_scan') &&
+    aiAssistSql.includes('allowance.used_count < allowance.allowance_limit') &&
+    aiAssistSql.includes("reservation_status text"),
+  'AI allowance reservation must be atomic and report a stable status',
+);
+assert(
+  aiAssistSql.includes('create function public.release_ai_scan') &&
+    aiAssistSql.includes("request.state = 'reserved'") &&
+    aiAssistSql.includes('greatest(allowance.used_count - 1, 0)'),
+  'failed AI requests must be refunded at most once',
+);
+assert(
+  aiAssistSql.includes('from public, anon, authenticated') &&
+    aiAssistSql.includes('to service_role') &&
+    !aiAssistSql.includes('security definer'),
+  'AI allowance functions must remain server-only invoker functions',
+);
+assert(
+  consentVersionSql.includes("consent_type = 'ai_processing'") &&
+    consentVersionSql.includes("consent_version = 'ai-processing-v1'") &&
+    consentVersionSql.includes("consent_type = 'model_improvement'") &&
+    consentVersionSql.includes("consent_version = 'model-improvement-v1'"),
+  'consent events must use the reviewed version for their specific purpose',
+);
+assert(
+  aiLedgerDenialSql.includes('create policy ai_scan_requests_deny_clients') &&
+    aiLedgerDenialSql.includes('to anon, authenticated') &&
+    aiLedgerDenialSql.includes('using (false)') &&
+    aiLedgerDenialSql.includes('with check (false)'),
+  'the AI request ledger must explicitly deny every client operation',
 );
 
 console.log(`Verified secure migration structure for ${tables.length} tables.`);

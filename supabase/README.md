@@ -9,6 +9,8 @@ Copy `.env.example` to an untracked `.env.local` and set only:
 
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `EXPO_PUBLIC_GEMINI_ASSIST_ENABLED` (keep `false` until the hosted AI privacy
+  gate is approved and configured)
 
 The mobile client deliberately rejects secret/service-role key formats. Guest mode
 continues to work when both values are absent. Native auth sessions use Expo Secure
@@ -25,9 +27,13 @@ development client before testing authenticated sessions.
   cannot be rewritten by the mobile client.
 - Task/subject and reminder/task relationships use composite foreign keys so a
   client cannot attach its record to another user's record.
-- Consent is an append-only event history for authenticated clients.
-- AI allowances are client-readable but server-writable, keeping the monthly limit
-  configurable and resistant to client manipulation.
+- Consent is an append-only event history for authenticated clients. Cloud AI
+  processing and optional model-improvement consent are separate, versioned
+  events; neither choice implies the other.
+- AI allowances are client-readable but server-writable. A server-only request
+  ledger reserves, completes, or refunds each idempotent request atomically.
+- Authenticated and anonymous clients cannot call the allowance mutation functions
+  or read the request ledger directly.
 - Overdue remains calculated from an open task's deadline; it is not stored as a
   task status.
 - School-domain verification is intentionally deferred until the allowlist and
@@ -47,3 +53,11 @@ npx supabase db lint
 Do not run `supabase db push` against the hosted project until Rey reviews the auth,
 privacy, and RLS changes. After linking, test with at least two authenticated users
 and run the hosted security and performance advisors.
+
+## Gemini Edge Function
+
+`gemini-extract` accepts authenticated OCR text only; scan images are never sent to
+Gemini. Its hosted secrets are documented in
+`functions/gemini-extract/README.md`. A key in `.env.local` is not available to the
+hosted function. Keep `GEMINI_REAL_DATA_ENABLED=false` until the Gemini project is
+confirmed as paid and the privacy review is approved.

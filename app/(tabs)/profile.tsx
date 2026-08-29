@@ -3,6 +3,7 @@ import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { REMINDER_OPTIONS } from '../../src/domain/reminder';
+import { useAiPrivacy } from '../../src/store/AiPrivacyStore';
 import { useAuth } from '../../src/store/AuthStore';
 import { useCloudBackup } from '../../src/store/CloudBackupStore';
 import { useReminders } from '../../src/store/ReminderStore';
@@ -26,6 +27,16 @@ export default function ProfileScreen() {
     startGoogleSignIn,
     signOut,
   } = useAuth();
+  const {
+    featureEnabled: aiAssistEnabled,
+    snapshot: aiPrivacy,
+    isLoading: isAiPrivacyLoading,
+    isSaving: isAiPrivacySaving,
+    error: aiPrivacyError,
+    refresh: retryAiPrivacy,
+    setAiProcessingDecision,
+    withdrawModelImprovement,
+  } = useAiPrivacy();
   const {
     defaultReminder,
     permission,
@@ -100,6 +111,35 @@ export default function ProfileScreen() {
                 );
               }
             }),
+        },
+      ],
+    );
+  }
+
+  function explainAndEnableAiProcessing() {
+    Alert.alert(
+      'Allow optional cloud AI?',
+      'Only the recognized OCR text—not the assignment image—is sent to Google Gemini to suggest task fields. Duely does not save that raw text. You still review every field, and on-device extraction keeps working if you decline.',
+      [
+        { text: 'Keep it on-device', style: 'cancel' },
+        {
+          text: 'Allow OCR text',
+          onPress: () => void setAiProcessingDecision('granted'),
+        },
+      ],
+    );
+  }
+
+  function confirmDisableAiProcessing() {
+    Alert.alert(
+      'Turn off cloud AI?',
+      'Future scans will stay on this phone and use on-device text extraction.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Turn off',
+          style: 'destructive',
+          onPress: () => void setAiProcessingDecision('withdrawn'),
         },
       ],
     );
@@ -183,6 +223,92 @@ export default function ProfileScreen() {
               </Pressable>
             );
           })}
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.eyebrow}>AI &amp; PRIVACY</Text>
+        <View style={styles.cardHeading}>
+          <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
+          <View style={styles.headingCopy}>
+            <Text style={styles.cardTitle}>Optional AI extraction</Text>
+            <Text style={styles.cardBody}>
+              On-device text extraction is always available. Cloud AI is optional and never receives the assignment image.
+            </Text>
+          </View>
+        </View>
+        {!aiAssistEnabled && (
+          <Text style={styles.recovery}>
+            Cloud AI is disabled in this build while its billing and privacy configuration is reviewed.
+          </Text>
+        )}
+        {aiAssistEnabled && status !== 'authenticated' && (
+          <Text style={styles.cardBody}>Sign in with Google before choosing cloud AI.</Text>
+        )}
+        {aiAssistEnabled && status === 'authenticated' && !isAiPrivacyLoading && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isAiPrivacySaving }}
+            disabled={isAiPrivacySaving}
+            onPress={
+              aiPrivacy.aiProcessing === 'granted'
+                ? confirmDisableAiProcessing
+                : explainAndEnableAiProcessing
+            }
+            style={({ pressed }) => [
+              aiPrivacy.aiProcessing === 'granted'
+                ? styles.secondaryAction
+                : styles.action,
+              pressed &&
+                (aiPrivacy.aiProcessing === 'granted'
+                  ? styles.secondaryActionPressed
+                  : styles.actionPressed),
+              isAiPrivacySaving && styles.actionDisabled,
+            ]}
+          >
+            <Text
+              style={
+                aiPrivacy.aiProcessing === 'granted'
+                  ? styles.secondaryActionText
+                  : styles.actionText
+              }
+            >
+              {isAiPrivacySaving
+                ? 'Saving choice…'
+                : aiPrivacy.aiProcessing === 'granted'
+                  ? 'Turn off cloud AI'
+                  : 'Review and allow cloud AI'}
+            </Text>
+          </Pressable>
+        )}
+        {!!aiPrivacyError && (
+          <>
+            <Text accessibilityRole="alert" style={styles.error}>{aiPrivacyError}</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={retryAiPrivacy}
+              style={({ pressed }) => [styles.secondaryAction, pressed && styles.secondaryActionPressed]}
+            >
+              <Text style={styles.secondaryActionText}>Retry privacy check</Text>
+            </Pressable>
+          </>
+        )}
+        <View style={styles.privacyPanel}>
+          <Text style={styles.successTitle}>Model-improvement contributions are off</Text>
+          <Text style={styles.cardBody}>
+            Duely is not collecting assignment images, OCR text, or corrections for a training dataset. Using AI extraction does not opt you in.
+          </Text>
+          {aiPrivacy.modelImprovement === 'granted' && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isAiPrivacySaving }}
+              disabled={isAiPrivacySaving}
+              onPress={() => void withdrawModelImprovement()}
+              style={({ pressed }) => [styles.secondaryAction, pressed && styles.secondaryActionPressed]}
+            >
+              <Text style={styles.secondaryActionText}>Withdraw old contribution consent</Text>
+            </Pressable>
+          )}
         </View>
       </View>
 
@@ -466,6 +592,7 @@ const styles = StyleSheet.create({
   googleActionText: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 16 },
   successPanel: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
   backupPanel: { gap: spacing.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
+  privacyPanel: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
   successTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 17 },
   recovery: { color: colors.warning, fontFamily: typography.body, fontSize: 14, lineHeight: 20 },
   error: { color: colors.danger, fontFamily: typography.body, fontSize: 14, lineHeight: 20 },

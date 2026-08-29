@@ -20,6 +20,11 @@ import { ScreenShell } from '../../src/components/ScreenShell';
 import { TaskEditorHero } from '../../src/components/TaskEditorHero';
 import { TaskForm } from '../../src/components/TaskForm';
 import {
+  buildCombinedProvenance,
+  mergeGeminiExtraction,
+  type GeminiScanExtraction,
+} from '../../src/domain/geminiExtraction';
+import {
   buildMlKitProvenance,
   extractTaskFromOcr,
   scanReviewValues,
@@ -38,13 +43,21 @@ import {
   type OcrRun,
 } from '../../src/services/ocr';
 import {
+  GeminiAssistError,
+  requestGeminiAssistance,
+  type AiAllowance,
+} from '../../src/services/geminiAssist';
+import {
   cleanupAbandonedScanImages,
   deleteTemporaryScanImage,
   prepareScanImage,
   rotateScanImage,
 } from '../../src/services/scanImage';
 import { useReminders } from '../../src/store/ReminderStore';
+import { useAiPrivacy } from '../../src/store/AiPrivacyStore';
+import { useAuth } from '../../src/store/AuthStore';
 import { useTasks } from '../../src/store/TaskStore';
+import { getSupabaseClient } from '../../src/services/supabaseClient';
 import {
   colors,
   minimumTouchTarget,
@@ -58,6 +71,8 @@ type PermissionIssue = { source: IntakeSource; canAskAgain: boolean };
 type ScanStage =
   | 'image'
   | 'processing'
+  | 'ai-choice'
+  | 'ai-processing'
   | 'review'
   | 'no-text'
   | 'multiple'
@@ -78,6 +93,14 @@ const pickerOptions: ImagePicker.ImagePickerOptions = {
 
 export default function ScanScreen() {
   const navigation = useNavigation();
+  const { status: authStatus } = useAuth();
+  const {
+    featureEnabled: aiAssistEnabled,
+    snapshot: aiPrivacy,
+    isLoading: isAiPrivacyLoading,
+    isSaving: isAiPrivacySaving,
+    setAiProcessingDecision,
+  } = useAiPrivacy();
   const { addTask, canEditTasks, subjects } = useTasks();
   const { defaultReminder } = useReminders();
   const [image, setImage] = useState<PreparedScanImage | null>(null);
@@ -89,9 +112,13 @@ export default function ScanScreen() {
   const [ocrProgressStep, setOcrProgressStep] =
     useState<OcrProgressStep>('reading');
   const [extraction, setExtraction] = useState<ScanExtraction | null>(null);
+  const [geminiExtraction, setGeminiExtraction] =
+    useState<GeminiScanExtraction | null>(null);
+  const [aiAllowance, setAiAllowance] = useState<AiAllowance | null>(null);
   const [savedTaskId, setSavedTaskId] = useState<string | null>(null);
   const activeImageUri = useRef<string | null>(null);
   const activeOcrRun = useRef<OcrRun | null>(null);
+  const activeAiRun = useRef<AbortController | null>(null);
   const isMounted = useRef(true);
   const focusedScanFlow = permissionIssue !== null || image !== null || scanStage !== 'image';
 
@@ -131,6 +158,8 @@ export default function ScanScreen() {
         setImage(prepared);
         setScanStage('image');
         setExtraction(null);
+        setGeminiExtraction(null);
+        setAiAllowance(null);
         setSavedTaskId(null);
         setPermissionIssue(null);
         setError(null);
@@ -165,6 +194,7 @@ export default function ScanScreen() {
     return () => {
       isMounted.current = false;
       activeOcrRun.current?.cancel();
+      activeAiRun.current?.abort();
       deleteTemporaryScanImage(activeImageUri.current);
     };
   }, [acceptPickerResult]);
@@ -291,6 +321,8 @@ export default function ScanScreen() {
       setImage(rotated);
       setScanStage('image');
       setExtraction(null);
+      setGeminiExtraction(null);
+      setAiAllowance(null);
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
@@ -310,6 +342,8 @@ export default function ScanScreen() {
     setImage(null);
     setScanStage('image');
     setExtraction(null);
+    setGeminiExtraction(null);
+    setAiAllowance(null);
     setSavedTaskId(null);
     setError(null);
   }
@@ -321,6 +355,8 @@ export default function ScanScreen() {
     activeOcrRun.current = run;
     setError(null);
     setExtraction(null);
+    setGeminiExtraction(null);
+    setAiAllowance(null);
     setOcrProgressStep('reading');
     setScanStage('processing');
 
@@ -343,7 +379,13 @@ export default function ScanScreen() {
       }
 
       setExtraction(parsed);
-      setScanStage('review');
+      setGeminiExtraction(null);
+      setAiAllowance(null);
+      setScanStage(
+        aiAssistEnabled && authStatus === 'authenticated'
+          ? 'ai-choice'
+          : 'review',
+      );
     } catch (caughtError) {
       if (caughtError instanceof OcrCancelledError) {
         if (activeOcrRun.current === run) setScanStage('image');
@@ -368,9 +410,84 @@ export default function ScanScreen() {
     setScanStage('image');
   }
 
+  async function runAiAssistance(localExtraction: ScanExtraction) {
+    const supabase = getSupabaseClient();
+    if (!supabase || authStatus !== 'authenticated') {
+      setError('Sign in before using optional cloud AI. Your on-device result is ready.');
+      setScanStage('review');
+      return;
+    }
+
+    const controller = new AbortController();
+    activeAiRun.current?.abort();
+    activeAiRun.current = controller;
+    setError(null);
+    setScanStage('ai-processing');
+    try {
+      const result = await requestGeminiAssistance(
+        supabase,
+        localExtraction.rawText,
+        controller.signal,
+      );
+      if (!isMounted.current || activeAiRun.current !== controller) return;
+      if (result.extraction.hasMultipleAssignments) {
+        setScanStage('multiple');
+        return;
+      }
+      setGeminiExtraction(result.extraction);
+      setAiAllowance(result.allowance);
+      setScanStage('review');
+    } catch (caughtError) {
+      if (!isMounted.current || activeAiRun.current !== controller) return;
+      if (!controller.signal.aborted) {
+        setError(
+          caughtError instanceof GeminiAssistError
+            ? `${caughtError.message} Continue with the on-device result.`
+            : 'AI assistance was unavailable. Continue with the on-device result.',
+        );
+      }
+      setScanStage('review');
+    } finally {
+      if (activeAiRun.current === controller) activeAiRun.current = null;
+    }
+  }
+
+  function chooseAiAssistance() {
+    if (!extraction) return;
+    if (aiPrivacy.aiProcessing === 'granted') {
+      void runAiAssistance(extraction);
+      return;
+    }
+
+    Alert.alert(
+      'Send recognized text to cloud AI?',
+      'Duely will send only the OCR text—not the assignment image—to Google Gemini. Duely does not retain the raw text, and you will review every suggested field. This is separate from model-improvement consent.',
+      [
+        { text: 'Keep it on-device', onPress: () => setScanStage('review') },
+        {
+          text: 'Allow and continue',
+          onPress: () =>
+            void setAiProcessingDecision('granted').then((saved) => {
+              if (saved && extraction) void runAiAssistance(extraction);
+            }),
+        },
+      ],
+    );
+  }
+
+  function cancelAiAssistance() {
+    const controller = activeAiRun.current;
+    activeAiRun.current = null;
+    controller?.abort();
+    setError(null);
+    setScanStage('review');
+  }
+
   function retryWith(source: IntakeSource) {
     setError(null);
     setExtraction(null);
+    setGeminiExtraction(null);
+    setAiAllowance(null);
     setScanStage('image');
     void beginSource(source);
   }
@@ -401,6 +518,8 @@ export default function ScanScreen() {
           style: 'destructive',
           onPress: () => {
             setExtraction(null);
+            setGeminiExtraction(null);
+            setAiAllowance(null);
             setError(null);
             setScanStage('image');
           },
@@ -417,7 +536,7 @@ export default function ScanScreen() {
       return;
     }
 
-    const provenance = buildMlKitProvenance(extraction, {
+    const confirmedValues = {
       title: draft.title,
       subject: subjectName,
       dueAt: draft.dueAt,
@@ -425,7 +544,10 @@ export default function ScanScreen() {
       priority: draft.priority,
       estimatedEffortMinutes: draft.estimatedEffortMinutes,
       notes: draft.notes,
-    });
+    };
+    const provenance = geminiExtraction
+      ? buildCombinedProvenance(extraction, geminiExtraction, confirmedValues)
+      : buildMlKitProvenance(extraction, confirmedValues);
     const saved = addTask({
       ...draft,
       sourceImageRef: null,
@@ -440,6 +562,8 @@ export default function ScanScreen() {
     activeImageUri.current = null;
     setImage(null);
     setExtraction(null);
+    setGeminiExtraction(null);
+    setAiAllowance(null);
     setError(null);
     setSavedTaskId(saved.id);
     setScanStage('saved');
@@ -586,6 +710,71 @@ export default function ScanScreen() {
     );
   }
 
+  if (image && scanStage === 'ai-processing') {
+    return (
+      <ScreenShell scroll>
+        <View
+          accessibilityLabel="Improving assignment details with cloud AI"
+          accessibilityLiveRegion="polite"
+          accessibilityRole="progressbar"
+          style={styles.progressState}
+        >
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text accessibilityRole="header" style={styles.progressTitle}>
+            Checking the task details…
+          </Text>
+          <Text style={styles.progressBody}>
+            Only the recognized OCR text is being processed. The assignment image stays on this phone.
+          </Text>
+        </View>
+        <TextButton label="Cancel and use on-device result" onPress={cancelAiAssistance} />
+      </ScreenShell>
+    );
+  }
+
+  if (image && scanStage === 'ai-choice' && extraction) {
+    return (
+      <ScreenShell scroll>
+        <View style={styles.header}>
+          <Text accessibilityRole="header" style={styles.title}>
+            On-device result ready
+          </Text>
+          <Text style={styles.subtitle}>
+            Review it now, or explicitly send only the recognized text to cloud AI for another suggestion.
+          </Text>
+        </View>
+        <View style={styles.previewCard}>
+          <Image
+            accessibilityLabel="Selected assignment image preview"
+            resizeMode="contain"
+            source={{ uri: image.uri }}
+            style={styles.previewImage}
+          />
+        </View>
+        <View style={styles.privacyCard}>
+          <Ionicons
+            accessibilityElementsHidden
+            color={colors.primary}
+            name="shield-checkmark-outline"
+            size={26}
+          />
+          <View style={styles.privacyCopy}>
+            <Text style={styles.privacyTitle}>You choose what leaves the phone</Text>
+            <Text style={styles.cardBody}>
+              The image is never uploaded. Cloud AI receives OCR text only, does not save it in Duely, and is separate from dataset contribution consent.
+            </Text>
+          </View>
+        </View>
+        <PrimaryButton
+          disabled={isAiPrivacyLoading || isAiPrivacySaving}
+          label={isAiPrivacySaving ? 'Saving privacy choice…' : 'Improve with optional cloud AI'}
+          onPress={chooseAiAssistance}
+        />
+        <SecondaryButton label="Review on-device result" onPress={() => setScanStage('review')} />
+      </ScreenShell>
+    );
+  }
+
   if (
     image &&
     (scanStage === 'no-text' ||
@@ -645,7 +834,10 @@ export default function ScanScreen() {
   }
 
   if (image && scanStage === 'review' && extraction) {
-    const values = scanReviewValues(extraction);
+    const reviewExtraction = geminiExtraction
+      ? mergeGeminiExtraction(extraction, geminiExtraction)
+      : extraction;
+    const values = scanReviewValues(reviewExtraction);
     const matchingSubject = subjects.find(
       (subject) =>
         subjectNameKey(subject.name) === subjectNameKey(values.subject),
@@ -665,7 +857,7 @@ export default function ScanScreen() {
       <SafeAreaView style={styles.reviewSafeArea}>
         <TaskForm
           defaultReminder={defaultReminder}
-          fieldNotices={extraction.issues}
+          fieldNotices={reviewExtraction.issues}
           footer={
             <TextButton
               danger
@@ -679,7 +871,7 @@ export default function ScanScreen() {
             <View style={styles.reviewHeader}>
               <TaskEditorHero
                 description="Check every detail before saving. Fields marked with a warning need your attention."
-                eyebrow="On-device extraction"
+                eyebrow={geminiExtraction ? 'On-device + optional AI' : 'On-device extraction'}
                 imageUri={image.uri}
                 onBack={confirmReturnToImage}
                 title="Review extraction"
@@ -692,15 +884,22 @@ export default function ScanScreen() {
                   size={20}
                 />
                 <Text style={styles.reviewPrivacyBody}>
-                  Raw recognized text and the temporary image are cleared after you save or re-scan.
+                  {geminiExtraction
+                    ? 'Only OCR text was sent to cloud AI. The image stayed on this phone, and raw text is not retained by Duely.'
+                    : 'Raw recognized text and the temporary image are cleared after you save or re-scan.'}
                 </Text>
               </View>
+              {aiAllowance && (
+                <Text style={styles.allowanceText}>
+                  AI-assisted scans this period: {aiAllowance.usedCount} of {aiAllowance.limit}
+                </Text>
+              )}
               {error && <ErrorMessage message={error} />}
             </View>
           }
           initial={initial}
           initialSubjectName={matchingSubject ? '' : values.subject}
-          key={`${image.uri}-${extraction.rawText.length}`}
+          key={`${image.uri}-${extraction.rawText.length}-${geminiExtraction ? 'ai' : 'local'}`}
           onSubmit={(draft, context) =>
             saveExtractedTask(draft, context.subjectName)
           }
@@ -1296,6 +1495,12 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.textMuted,
     fontFamily: typography.body,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  allowanceText: {
+    color: colors.textMuted,
+    fontFamily: typography.bodySemibold,
     fontSize: 13,
     lineHeight: 19,
   },

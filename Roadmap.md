@@ -1,6 +1,6 @@
 # Duely Development Roadmap
 
-Last updated: 2026-08-29
+Last updated: 2026-08-30
 
 This is the living execution plan for the Duely Android beta. Update it whenever a milestone begins, finishes, changes scope, or becomes blocked. Product behavior remains governed by `ui-ux-plan.md`; ownership and required reviews remain governed by `roles.md` and `AGENTS.md`.
 
@@ -14,11 +14,11 @@ This is the living execution plan for the Duely Android beta. Update it whenever
 
 ## Current Position
 
-Current milestone: **M5 — On-Device OCR and Editable Review** remains open only for the broader beta-scan accuracy gate. **M6 — Supabase Backend and Authentication** and **M7 — Cloud Synchronization** are complete for the beta scope.
+Current milestone: **M8 — Gemini-Assisted Extraction** is in progress behind disabled-by-default client and server gates. **M5 — On-Device OCR and Editable Review** remains open only for the broader beta-scan accuracy gate. **M6 — Supabase Backend and Authentication** and **M7 — Cloud Synchronization** are complete for the beta scope.
 
 Current outcome: M5 implementation is complete and its beta-scan accuracy gate remains open. The Android development build now runs bundled ML Kit OCR fully on device, keeps raw text and the temporary image transient, parses conservative task candidates, flags uncertainty per field, handles no-text/multiple-assignment recovery, and saves only an editable user-confirmed task with field provenance. A deterministic post-OCR parser harness covers 24 synthetic English, Filipino, and mixed-language cases. The 12-image synthetic Android pack completed at 99.5% aggregate token accuracy and 12/12 parser-ready results after a targeted, review-visible correction for ML Kit reading `August` as `Auqust`. Clearly printed deadlines passed 6/6, missing-deadline avoidance passed 3/3, and ambiguous-deadline flagging passed 3/3. These small synthetic results validate the harness but do not certify beta-scan accuracy. The UI/UX revision is underway: the shared palette, typography, surfaces, bottom navigation, Home screen, Tasks collection, the complete Scan intake/progress/editable-review flow, Calendar month and selected-day states, Profile identity and settings, read-first Task Details with explicit edit/completion/delete actions, manual Add Task editor, empty state, buttons, editable task form, and reusable task card now follow the local DuelyPages direction without adding unsupported productivity metrics or removing existing task controls. Home, Tasks, all primary Scan states, Calendar empty and populated dates, Profile reminder and account/backup states, Task Details read/edit states, Add Task, and the revised text-extraction review are visually verified on the Pixel 7 emulator; the focused Scan flow hides the primary navigation and respects Android safe areas until the student leaves or finishes it. A cross-screen Pixel pass at 130% and 150% Android font scaling verified the primary destinations and task flows after responsive fixes to Home schedule controls, Calendar month navigation, long profile text, and Task Details actions. Camera explanation, denial, repeated denial, settings recovery, and alternate-gallery actions were also verified at 150% text, and progress states now expose explicit accessibility semantics.
 
-Next recommended task: finish the TalkBack pass on Scan processing/review and conditional cloud recovery states, then perform the final DuelyPages/DuelyIcons consistency review. The Pixel 7 TalkBack pass now verifies clean labels and selected/disabled states across all five primary destinations, manual Add Task, Task Details, task cards, Calendar dates/empty state, notification explanation recovery, blank-form validation, and unsaved-change protection. Decorative icon glyphs no longer leak into those control names. Passwordless school-email authentication and the verified-school badge are deliberately deferred. The real Nunito and Inter font families now load before app startup. Pixel 7 verification confirmed local task retention through sign-out, successful Google sign-in to a second account, separate cloud ownership, an explicit first-backup prompt without silent copying, explicit empty-device restore, and a keep-data uninstall/reinstall that retained all 47 app-data files, the local task, and the signed-in Google session. Queued offline retry, ongoing subject/reminder synchronization, and the corrected 12-image OCR pack are also live-verified on Android.
+Next recommended task: configure the hosted Gemini secret only after confirming paid-service privacy treatment, enable the server and client gates, and run a synthetic authenticated Pixel 7 pass covering success, cancel, timeout, quota, and local fallback. Then finish the TalkBack pass on conditional cloud states before the final DuelyPages/DuelyIcons consistency review. The Pixel 7 TalkBack pass now verifies clean labels and selected/disabled states across all five primary destinations, manual Add Task, Task Details, task cards, Calendar dates/empty state, notification explanation recovery, blank-form validation, and unsaved-change protection. Decorative icon glyphs no longer leak into those control names. Passwordless school-email authentication and the verified-school badge are deliberately deferred. The real Nunito and Inter font families now load before app startup. Pixel 7 verification confirmed local task retention through sign-out, successful Google sign-in to a second account, separate cloud ownership, an explicit first-backup prompt without silent copying, explicit empty-device restore, and a keep-data uninstall/reinstall that retained all 47 app-data files, the local task, and the signed-in Google session. Queued offline retry, ongoing subject/reminder synchronization, and the corrected 12-image OCR pack are also live-verified on Android.
 
 ## Locked Product Decisions
 
@@ -51,8 +51,8 @@ Next recommended task: finish the TalkBack pass on Scan processing/review and co
 | M5 | On-device OCR and review | In progress | M4 |
 | M6 | Supabase backend and authentication | Complete | M2 |
 | M7 | Cloud synchronization | Complete | M6 |
-| M8 | Gemini-assisted extraction | Not started | M5, M6 |
-| M9 | Consent, privacy, export, and deletion | Not started | M6–M8 |
+| M8 | Gemini-assisted extraction | In progress | M5, M6 |
+| M9 | Consent, privacy, export, and deletion | In progress | M6–M8 |
 | M10 | Quality, analytics, and beta release | Not started | M2–M9 |
 | M11 | Premium study planning | Deferred | Post-beta |
 | M12 | iOS release | Deferred | Stable Android release |
@@ -307,18 +307,18 @@ Status: `[x] Complete`
 
 ## M8 — Gemini-Assisted Extraction
 
-Status: `[ ] Not started`
+Status: `[~] In progress — deployed behind disabled real-data gate; live Gemini verification pending`
 
-- [ ] Keep Gemini calls server-side; never ship the API secret in the application.
-- [ ] Require authentication for Gemini-assisted scans.
-- [ ] Enforce the configurable monthly allowance server-side.
-- [ ] Start with five free AI-assisted scans per month.
-- [ ] Define structured output schema and validation.
-- [ ] Compare ML Kit and Gemini outputs by field.
-- [ ] Record agreement, disagreement, correction, and final confirmed value separately.
-- [ ] Do not claim agreement is confirmation of correctness.
-- [ ] Handle cloud timeout, service failure, quota exhaustion, and offline mode.
-- [ ] Fall back to the editable on-device result.
+- [x] Keep Gemini calls server-side; never ship the API secret in the application.
+- [x] Require authentication for Gemini-assisted scans.
+- [x] Enforce the configurable monthly allowance server-side.
+- [x] Start with five free AI-assisted scans per month.
+- [x] Define structured output schema and validation.
+- [x] Compare ML Kit and Gemini outputs by field.
+- [x] Record agreement, disagreement, correction, and final confirmed value separately.
+- [x] Do not claim agreement is confirmation of correctness.
+- [~] Handle cloud timeout, service failure, quota exhaustion, and offline mode. Code paths exist; authenticated Pixel verification is pending while real-data access remains disabled.
+- [x] Fall back to the editable on-device result.
 - [ ] Add allowance display in Profile.
 
 ### Acceptance criteria
@@ -332,11 +332,11 @@ Status: `[ ] Not started`
 
 ## M9 — Consent, Privacy, Export, and Deletion
 
-Status: `[ ] Not started`
+Status: `[~] In progress — consent foundation live; retention, export, and deletion remain`
 
-- [ ] Add separate optional model-improvement consent.
-- [ ] Keep consent off by default.
-- [ ] Version and timestamp consent records.
+- [x] Add separate optional model-improvement consent.
+- [x] Keep consent off by default.
+- [x] Version and timestamp consent records.
 - [ ] Explain what is collected, why, retention, and withdrawal.
 - [ ] Redact unrelated personal information before dataset retention.
 - [ ] Let users view or delete retained contributions.
