@@ -544,7 +544,17 @@ export default function ScanScreen() {
     const organizing = ocrProgressStep === 'organizing';
     return (
       <ScreenShell scroll>
-        <View accessibilityLiveRegion="polite" style={styles.progressState}>
+        <View
+          accessibilityLabel="Reading assignment"
+          accessibilityLiveRegion="polite"
+          accessibilityRole="progressbar"
+          accessibilityValue={{
+            text: organizing
+              ? 'Organizing task details'
+              : 'Detecting text in image',
+          }}
+          style={styles.progressState}
+        >
           <View style={styles.progressRings}>
             <View style={styles.progressRingOuter} />
             <View style={styles.progressRingMiddle} />
@@ -758,7 +768,11 @@ export default function ScanScreen() {
         />
 
         {isProcessing && (
-          <View accessibilityLabel="Preparing image" style={styles.processingRow}>
+          <View
+            accessibilityLabel="Preparing image"
+            accessibilityRole="progressbar"
+            style={styles.processingRow}
+          >
             <ActivityIndicator color={colors.primary} />
             <Text style={styles.helperText}>Preparing image locally…</Text>
           </View>
@@ -830,7 +844,11 @@ export default function ScanScreen() {
       {error && <ErrorMessage message={error} />}
 
       {isProcessing && (
-        <View accessibilityLabel="Restoring image selection" style={styles.processingRow}>
+        <View
+          accessibilityLabel="Restoring image selection"
+          accessibilityRole="progressbar"
+          style={styles.processingRow}
+        >
           <ActivityIndicator color={colors.primary} />
           <Text style={styles.helperText}>Preparing image locally…</Text>
         </View>

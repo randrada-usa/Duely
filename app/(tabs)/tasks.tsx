@@ -127,7 +127,7 @@ export default function TasksScreen() {
               accessibilityLabel="Search tasks"
               autoCapitalize="none"
               onChangeText={(search) => updateQuery({ search })}
-              placeholder="Search assignments, subjects…"
+              placeholder="Search tasks"
               placeholderTextColor={colors.textSubtle}
               style={styles.search}
               value={taskQuery.search}
@@ -251,7 +251,11 @@ export default function TasksScreen() {
         </View>
 
         {!isHydrated ? (
-          <View accessibilityLabel="Loading tasks" style={styles.loading}>
+          <View
+            accessibilityLabel="Loading tasks"
+            accessibilityRole="progressbar"
+            style={styles.loading}
+          >
             <ActivityIndicator color={colors.primary} />
             <Text style={styles.loadingText}>Loading tasks…</Text>
           </View>

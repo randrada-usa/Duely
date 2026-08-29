@@ -11,10 +11,17 @@ import {
 
 type PrimaryButtonProps = ComponentProps<typeof Pressable> & { label: string };
 
-export function PrimaryButton({ label, disabled, style, ...props }: PrimaryButtonProps) {
+export function PrimaryButton({
+  accessibilityState,
+  label,
+  disabled,
+  style,
+  ...props
+}: PrimaryButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ ...accessibilityState, disabled: Boolean(disabled) }}
       disabled={disabled}
       style={({ pressed }) => [
         styles.button,

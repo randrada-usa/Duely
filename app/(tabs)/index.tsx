@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -55,6 +56,7 @@ function nextTaskSummary(task: Task | undefined) {
 }
 
 export default function HomeScreen() {
+  const { fontScale } = useWindowDimensions();
   const { user } = useAuth();
   const { canEditTasks, isHydrated, tasks } = useTasks();
   const [view, setView] = useState<HomeView>('today');
@@ -164,7 +166,12 @@ export default function HomeScreen() {
         <Ionicons name="chevron-forward" size={20} color={colors.primary} />
       </Pressable>
 
-      <View style={styles.sectionHeader}>
+      <View
+        style={[
+          styles.sectionHeader,
+          fontScale >= 1.4 && styles.sectionHeaderLargeText,
+        ]}
+      >
         <Text style={styles.sectionTitle}>Your schedule</Text>
         <View accessibilityRole="tablist" style={styles.segmentedControl}>
           {(['today', 'upcoming'] as const).map((option) => {
@@ -175,7 +182,11 @@ export default function HomeScreen() {
                 accessibilityState={{ selected }}
                 key={option}
                 onPress={() => setView(option)}
-                style={[styles.segment, selected && styles.segmentSelected]}
+                style={[
+                  styles.segment,
+                  fontScale >= 1.4 && styles.segmentLargeText,
+                  selected && styles.segmentSelected,
+                ]}
               >
                 <Text style={[styles.segmentText, selected && styles.segmentTextSelected]}>
                   {option === 'today' ? 'Today' : 'Upcoming'}
@@ -187,7 +198,11 @@ export default function HomeScreen() {
       </View>
 
       {!isHydrated ? (
-        <View accessibilityLabel="Loading tasks" style={styles.loading}>
+        <View
+          accessibilityLabel="Loading tasks"
+          accessibilityRole="progressbar"
+          style={styles.loading}
+        >
           <ActivityIndicator color={colors.primary} />
           <Text style={styles.loadingText}>Loading tasks…</Text>
         </View>
@@ -347,6 +362,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
   },
+  sectionHeaderLargeText: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+  },
   sectionTitle: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 20 },
   segmentedControl: {
     flexDirection: 'row',
@@ -362,6 +381,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
   },
+  segmentLargeText: { flex: 1 },
   segmentSelected: { backgroundColor: colors.primary },
   segmentText: { color: colors.textMuted, fontFamily: typography.bodySemibold, fontSize: 12 },
   segmentTextSelected: { color: colors.surface },

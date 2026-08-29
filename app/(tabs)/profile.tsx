@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   avatarImage: { width: 58, height: 58, resizeMode: 'contain' },
-  headerCopy: { flex: 1, gap: spacing.xs },
+  headerCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
   title: {
     color: colors.text,
     fontFamily: typography.headingStrong,

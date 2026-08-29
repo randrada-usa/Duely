@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -32,6 +33,7 @@ import {
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function CalendarScreen() {
+  const { fontScale } = useWindowDimensions();
   const today = useMemo(() => new Date(), []);
   const [visibleMonth, setVisibleMonth] = useState(() => startOfLocalMonth(today));
   const [selectedDate, setSelectedDate] = useState(today);
@@ -56,11 +58,21 @@ export default function CalendarScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            fontScale >= 1.4 && styles.headerLargeText,
+          ]}
+        >
           <Text accessibilityRole="header" style={styles.title}>
             Calendar
           </Text>
-          <View style={styles.monthControls}>
+          <View
+            style={[
+              styles.monthControls,
+              fontScale >= 1.4 && styles.monthControlsLargeText,
+            ]}
+          >
             <IconButton
               accessibilityLabel="Previous month"
               icon="chevron-back"
@@ -179,7 +191,11 @@ export default function CalendarScreen() {
         </View>
 
         {!isHydrated ? (
-          <View accessibilityLabel="Loading calendar tasks" style={styles.loading}>
+          <View
+            accessibilityLabel="Loading calendar tasks"
+            accessibilityRole="progressbar"
+            style={styles.loading}
+          >
             <ActivityIndicator color={colors.primary} />
             <Text style={styles.loadingText}>Loading tasks…</Text>
           </View>
@@ -267,6 +283,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  headerLargeText: { alignItems: 'stretch', flexDirection: 'column' },
   title: {
     color: colors.text,
     fontFamily: typography.headingStrong,
@@ -277,7 +294,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
+  monthControlsLargeText: { justifyContent: 'space-between' },
   monthTitle: {
+    flexShrink: 1,
     minWidth: 116,
     color: colors.text,
     fontFamily: typography.bodyBold,
