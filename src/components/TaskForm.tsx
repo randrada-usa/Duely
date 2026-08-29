@@ -29,6 +29,7 @@ import {
   type TaskFormSnapshot,
 } from '../domain/taskForm';
 import { useTasks } from '../store/TaskStore';
+import { priorityColors } from '../theme/priority';
 import {
   colors,
   minimumTouchTarget,
@@ -442,6 +443,7 @@ export function TaskForm({
       <View accessibilityRole="radiogroup" style={styles.priorityRow}>
         {(['low', 'medium', 'high'] as const).map((value) => {
           const selected = priority === value;
+          const palette = priorityColors[value];
           return (
             <Pressable
               accessibilityLabel={value[0].toUpperCase() + value.slice(1)}
@@ -452,11 +454,16 @@ export function TaskForm({
                 setPriority(value);
                 acknowledgeNotice('priority');
               }}
-              style={[styles.priority, selected && styles.prioritySelected]}
+              style={[
+                styles.priority,
+                { borderColor: palette.accent },
+                selected && { backgroundColor: palette.background },
+              ]}
             >
               <Text
                 style={[
                   styles.priorityText,
+                  { color: palette.foreground },
                   selected && styles.priorityTextSelected,
                 ]}
               >
@@ -703,9 +710,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.surface,
   },
-  prioritySelected: { borderColor: colors.navy, backgroundColor: colors.navy },
   priorityText: { color: colors.text, fontFamily: typography.bodySemibold },
-  priorityTextSelected: { color: colors.surface },
+  priorityTextSelected: { fontFamily: typography.bodyBold },
   reminderOptions: { gap: spacing.sm },
   reminder: {
     minHeight: minimumTouchTarget,

@@ -19,6 +19,7 @@ import {
   type TaskPriority,
   type TaskType,
 } from '../domain/task';
+import { priorityColors } from '../theme/priority';
 import { colors, minimumTouchTarget, radius, spacing } from '../theme/tokens';
 
 type ViewOptionPatch = Pick<
@@ -101,6 +102,7 @@ export function TaskViewOptionsModal({
                 key={option.value ?? 'any-priority'}
                 label={option.label}
                 onPress={() => onChange({ priority: option.value })}
+                priority={option.value ?? undefined}
                 selected={value.priority === option.value}
               />
             ))}
@@ -171,9 +173,12 @@ type OptionRowProps = {
   label: string;
   selected: boolean;
   onPress: () => void;
+  priority?: TaskPriority;
 };
 
-function OptionRow({ label, selected, onPress }: OptionRowProps) {
+function OptionRow({ label, selected, onPress, priority }: OptionRowProps) {
+  const palette = priority ? priorityColors[priority] : null;
+
   return (
     <Pressable
       accessibilityRole="radio"
@@ -182,14 +187,37 @@ function OptionRow({ label, selected, onPress }: OptionRowProps) {
       style={({ pressed }) => [
         styles.option,
         selected && styles.optionSelected,
+        selected && palette && {
+          borderColor: palette.accent,
+          backgroundColor: palette.background,
+        },
         pressed && styles.pressed,
       ]}
     >
-      <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
+      <Text
+        style={[
+          styles.optionText,
+          selected && styles.optionTextSelected,
+          palette && { color: palette.foreground },
+        ]}
+      >
         {label}
       </Text>
-      <View style={[styles.radio, selected && styles.radioSelected]}>
-        {selected && <View style={styles.radioCenter} />}
+      <View
+        style={[
+          styles.radio,
+          selected && styles.radioSelected,
+          palette && { borderColor: palette.accent },
+        ]}
+      >
+        {selected && (
+          <View
+            style={[
+              styles.radioCenter,
+              palette && { backgroundColor: palette.accent },
+            ]}
+          />
+        )}
       </View>
     </Pressable>
   );

@@ -10,6 +10,7 @@ import { TaskForm } from '../../src/components/TaskForm';
 import { effortLabel, taskTypeLabel } from '../../src/domain/task';
 import { useUnsavedChangesGuard } from '../../src/hooks/useUnsavedChangesGuard';
 import { useTasks } from '../../src/store/TaskStore';
+import { priorityColors } from '../../src/theme/priority';
 import { colors, minimumTouchTarget, radius, spacing, typography } from '../../src/theme/tokens';
 
 function formatDeadline(value: string | null) {
@@ -101,6 +102,7 @@ export default function TaskDetailsScreen() {
   const subjectName = getSubjectName(task.subjectId);
   const completed = task.status === 'completed';
   const priority = `${task.priority[0].toUpperCase()}${task.priority.slice(1)} priority`;
+  const priorityPalette = priorityColors[task.priority];
 
   return (
     <ScreenShell scroll>
@@ -131,13 +133,29 @@ export default function TaskDetailsScreen() {
         </View>
         <Text style={styles.heroSubject}>{subjectName}</Text>
         <Text accessibilityRole="header" style={styles.heroTitle}>{task.title}</Text>
-        <Text style={styles.heroStatus}>{completed ? 'Completed' : priority}</Text>
+        <Text
+          style={[
+            styles.heroStatus,
+            completed
+              ? styles.completedStatus
+              : {
+                  backgroundColor: priorityPalette.background,
+                  color: priorityPalette.foreground,
+                },
+          ]}
+        >
+          {completed ? 'Completed' : priority}
+        </Text>
       </View>
 
       <View style={styles.detailsGrid}>
         <Detail label="Deadline" value={formatDeadline(task.dueAt)} />
         <Detail label="Task type" value={taskTypeLabel(task.taskType)} />
-        <Detail label="Priority" value={priority} />
+        <Detail
+          label="Priority"
+          value={priority}
+          valueColor={priorityPalette.foreground}
+        />
         <Detail label="Estimated workload" value={effortLabel(task.estimatedEffortMinutes)} />
         <Detail label="Reminder" value={reminderLabel(task.reminderMinutesBefore)} />
       </View>
@@ -181,11 +199,21 @@ export default function TaskDetailsScreen() {
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({
+  label,
+  value,
+  valueColor,
+}: {
+  label: string;
+  value: string;
+  valueColor?: string;
+}) {
   return (
     <View style={styles.detailCard}>
       <Text style={styles.label}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
+      <Text style={[styles.detailValue, valueColor ? { color: valueColor } : undefined]}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -201,7 +229,8 @@ const styles = StyleSheet.create({
   deleteButton: { width: minimumTouchTarget, height: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full, backgroundColor: '#15172B' },
   heroSubject: { color: '#C9D0FF', fontFamily: typography.bodyBold, fontSize: 12, textTransform: 'uppercase' },
   heroTitle: { color: colors.surface, fontFamily: typography.headingStrong, fontSize: 24 },
-  heroStatus: { alignSelf: 'flex-start', overflow: 'hidden', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, backgroundColor: colors.primary, color: colors.surface, fontFamily: typography.bodySemibold, fontSize: 12, textTransform: 'capitalize' },
+  heroStatus: { alignSelf: 'flex-start', overflow: 'hidden', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, fontFamily: typography.bodySemibold, fontSize: 12, textTransform: 'capitalize' },
+  completedStatus: { color: priorityColors.low.foreground, backgroundColor: priorityColors.low.background },
   detailsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   detailCard: { minHeight: 88, flexBasis: '47%', flexGrow: 1, gap: spacing.sm, padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, elevation: 1 },
   label: { color: colors.textMuted, fontFamily: typography.bodyBold, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },

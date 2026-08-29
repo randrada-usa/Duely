@@ -11,6 +11,7 @@ import {
   spacing,
   typography,
 } from '../theme/tokens';
+import { priorityColors } from '../theme/priority';
 import { useCompletionUndo } from './CompletionUndoProvider';
 
 function formatDueDate(dueAt: string | null) {
@@ -39,15 +40,15 @@ const priorityLabels = {
 } as const;
 
 const priorityIconBackgrounds = {
-  high: colors.dangerSoft,
-  medium: colors.primarySoft,
-  low: colors.warningSoft,
+  high: priorityColors.high.background,
+  medium: priorityColors.medium.background,
+  low: priorityColors.low.background,
 } as const;
 
 const priorityIconColors = {
-  high: colors.danger,
-  medium: colors.primary,
-  low: colors.warning,
+  high: priorityColors.high.accent,
+  medium: priorityColors.medium.accent,
+  low: priorityColors.low.accent,
 } as const;
 
 export function TaskCard({ task }: { task: Task }) {
@@ -183,8 +184,17 @@ const styles = StyleSheet.create({
     fontFamily: typography.bodySemibold,
     fontSize: 10,
   },
-  highPriority: { color: colors.danger, backgroundColor: colors.dangerSoft },
-  mediumPriority: { color: colors.primary, backgroundColor: colors.primarySoft },
-  lowPriority: { color: colors.textMuted, backgroundColor: colors.surfaceSubtle },
+  highPriority: {
+    color: priorityColors.high.foreground,
+    backgroundColor: priorityColors.high.background,
+  },
+  mediumPriority: {
+    color: priorityColors.medium.foreground,
+    backgroundColor: priorityColors.medium.background,
+  },
+  lowPriority: {
+    color: priorityColors.low.foreground,
+    backgroundColor: priorityColors.low.background,
+  },
   overduePriority: { color: colors.danger, backgroundColor: colors.dangerSoft },
 });
