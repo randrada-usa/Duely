@@ -10,7 +10,13 @@ export function ScreenShell({ children, scroll = false }: ScreenShellProps) {
   return (
     <SafeAreaView style={styles.safeArea}>
       {scroll ? (
-        <ScrollView contentContainerStyle={styles.scrollContent}>{children}</ScrollView>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
       ) : (
         <View style={styles.content}>{children}</View>
       )}
@@ -25,12 +31,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
   },
   scrollContent: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xxl,
     gap: spacing.lg,
   },

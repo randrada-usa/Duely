@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 
-import { colors, minimumTouchTarget } from '../../src/theme/tokens';
+import { colors, minimumTouchTarget, typography } from '../../src/theme/tokens';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 const icons: Record<string, { active: IconName; inactive: IconName }> = {
@@ -29,11 +29,12 @@ export default function TabLayout() {
         </Text>
       ),
       tabBarStyle: {
-        height: 76,
-        paddingBottom: 8,
-        paddingTop: 8,
+        height: 74,
+        paddingBottom: 7,
+        paddingTop: 7,
         borderTopColor: colors.border,
         backgroundColor: colors.surface,
+        elevation: 14,
       },
       tabBarItemStyle: { minHeight: minimumTouchTarget },
       tabBarIcon: ({ color, focused, size }) => {
@@ -44,7 +45,7 @@ export default function TabLayout() {
             allowFontScaling={false}
             color={route.name === 'scan' ? colors.surface : color}
             name={focused ? icon.active : icon.inactive}
-            size={route.name === 'scan' ? 26 : size}
+            size={route.name === 'scan' ? 25 : size}
             style={
               route.name === 'scan'
                 ? styles.scanIcon
@@ -65,13 +66,17 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   scanIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 54,
+    height: 54,
+    marginTop: -18,
+    borderWidth: 4,
+    borderColor: colors.background,
+    borderRadius: 27,
     overflow: 'hidden',
     textAlign: 'center',
     textAlignVertical: 'center',
     backgroundColor: colors.primary,
+    elevation: 8,
   },
-  tabLabel: { fontSize: 11, fontWeight: '600' },
+  tabLabel: { fontFamily: typography.bodySemibold, fontSize: 11 },
 });

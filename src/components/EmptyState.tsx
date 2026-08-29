@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing } from '../theme/tokens';
+import { colors, spacing, typography } from '../theme/tokens';
 
 type EmptyStateProps = {
   title: string;
@@ -37,13 +37,14 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
+    fontFamily: typography.heading,
     fontSize: 24,
-    fontWeight: '700',
     textAlign: 'center',
   },
   description: {
     maxWidth: 300,
     color: colors.textMuted,
+    fontFamily: typography.body,
     fontSize: 16,
     lineHeight: 24,
     textAlign: 'center',

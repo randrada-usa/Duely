@@ -1,7 +1,13 @@
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, minimumTouchTarget, radius, spacing } from '../theme/tokens';
+import {
+  colors,
+  minimumTouchTarget,
+  radius,
+  spacing,
+  typography,
+} from '../theme/tokens';
 
 type PrimaryButtonProps = ComponentProps<typeof Pressable> & { label: string };
 
@@ -29,10 +35,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
+    elevation: 2,
   },
   pressed: { backgroundColor: colors.primaryPressed },
   disabled: { opacity: 0.45 },
-  label: { color: colors.surface, fontSize: 16, fontWeight: '700' },
+  label: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 15 },
 });
