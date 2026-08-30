@@ -1,4 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Platform,
@@ -146,6 +147,10 @@ export function TaskForm({
     return reviewedNotices[field] ? undefined : fieldNotices[field];
   }
 
+  const remainingNotices = Object.keys(fieldNotices).filter(
+    (field) => !reviewedNotices[field as ExtractedTaskField],
+  ).length;
+
   function submit() {
     if (!title.trim()) {
       setError('Enter a task title.');
@@ -249,7 +254,30 @@ export function TaskForm({
         ref={formRef}
       >
         {header}
+        {remainingNotices > 0 && (
+          <View
+            accessible
+            accessibilityLabel={`${remainingNotices} ${remainingNotices === 1 ? 'field needs' : 'fields need'} your attention before saving.`}
+            style={styles.reviewSummary}
+          >
+            <Ionicons
+              accessibilityElementsHidden
+              color={colors.warning}
+              name="warning-outline"
+              size={22}
+            />
+            <View style={styles.reviewSummaryCopy}>
+              <Text style={styles.reviewSummaryTitle}>
+                {remainingNotices} {remainingNotices === 1 ? 'field needs' : 'fields need'} attention
+              </Text>
+              <Text style={styles.reviewSummaryBody}>
+                Check each highlighted field before confirming this task.
+              </Text>
+            </View>
+          </View>
+        )}
         <Field
+          attention={Boolean(noticeFor('title'))}
           label="Assignment title *"
           onChangeText={(value) => {
             setTitle(value);
@@ -340,7 +368,10 @@ export function TaskForm({
                 }
                 accessibilityRole="button"
                 onPress={() => setPickerMode('date')}
-                style={styles.inputButton}
+                style={[
+                  styles.inputButton,
+                  noticeFor('dueAt') && styles.attentionControl,
+                ]}
               >
                 <Text
                   style={[styles.inputButtonText, !date && styles.placeholder]}
@@ -367,7 +398,11 @@ export function TaskForm({
                 accessibilityState={{ disabled: !date }}
                 disabled={!date}
                 onPress={() => setPickerMode('time')}
-                style={[styles.inputButton, !date && styles.disabled]}
+                style={[
+                  styles.inputButton,
+                  noticeFor('dueAt') && styles.attentionControl,
+                  !date && styles.disabled,
+                ]}
               >
                 <Text
                   style={[styles.inputButtonText, !date && styles.placeholder]}
@@ -527,6 +562,7 @@ export function TaskForm({
       )}
 
       <Field
+        attention={Boolean(noticeFor('notes'))}
         label="Instructions & notes"
         multiline
         onChangeText={(value) => {
@@ -563,15 +599,29 @@ function FieldNotice({ message }: { message?: string }) {
       accessibilityLabel={`Needs attention. ${message}`}
       style={styles.fieldNotice}
     >
-      <Text style={styles.fieldNoticeMark}>!</Text>
+      <Ionicons
+        accessibilityElementsHidden
+        color={colors.warning}
+        name="warning-outline"
+        size={20}
+      />
       <Text style={styles.fieldNoticeText}>{message}</Text>
     </View>
   );
 }
 
-type FieldProps = React.ComponentProps<typeof TextInput> & { label: string };
+type FieldProps = React.ComponentProps<typeof TextInput> & {
+  attention?: boolean;
+  label: string;
+};
 
-function Field({ label, multiline, style, ...props }: FieldProps) {
+function Field({
+  attention = false,
+  label,
+  multiline,
+  style,
+  ...props
+}: FieldProps) {
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -579,7 +629,12 @@ function Field({ label, multiline, style, ...props }: FieldProps) {
         accessibilityLabel={label}
         multiline={multiline}
         placeholderTextColor={colors.textMuted}
-        style={[styles.input, multiline && styles.multiline, style]}
+        style={[
+          styles.input,
+          attention && styles.attentionControl,
+          multiline && styles.multiline,
+          style,
+        ]}
         {...props}
       />
     </View>
@@ -656,6 +711,33 @@ const styles = StyleSheet.create({
     fontFamily: typography.body,
     fontSize: 16,
     elevation: 1,
+  },
+  attentionControl: {
+    borderColor: colors.warning,
+    borderWidth: 1.5,
+    backgroundColor: colors.warningSoft,
+  },
+  reviewSummary: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: '#F4C98B',
+    borderRadius: radius.lg,
+    backgroundColor: colors.warningSoft,
+  },
+  reviewSummaryCopy: { flex: 1, gap: spacing.xs },
+  reviewSummaryTitle: {
+    color: colors.warning,
+    fontFamily: typography.bodyBold,
+    fontSize: 16,
+  },
+  reviewSummaryBody: {
+    color: colors.warning,
+    fontFamily: typography.body,
+    fontSize: 14,
+    lineHeight: 20,
   },
   newSubjectCard: {
     flexDirection: 'row',
@@ -775,18 +857,6 @@ const styles = StyleSheet.create({
     borderColor: '#F4C98B',
     borderRadius: radius.lg,
     backgroundColor: '#FFF7E8',
-  },
-  fieldNoticeMark: {
-    width: 22,
-    height: 22,
-    overflow: 'hidden',
-    borderRadius: radius.full,
-    backgroundColor: '#F4C98B',
-    color: colors.warning,
-    fontFamily: typography.bodyBold,
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: 'center',
   },
   fieldNoticeText: {
     flex: 1,
