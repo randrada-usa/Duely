@@ -242,22 +242,23 @@ export function TaskForm({
   ];
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.form}
-      keyboardShouldPersistTaps="handled"
-      ref={formRef}
-    >
-      {header}
-      <Field
-        label="Assignment title *"
-        onChangeText={(value) => {
-          setTitle(value);
-          acknowledgeNotice('title');
-        }}
-        placeholder="Research paper draft"
-        value={title}
-      />
-      <FieldNotice message={noticeFor('title')} />
+    <View style={styles.screen}>
+      <ScrollView
+        contentContainerStyle={styles.form}
+        keyboardShouldPersistTaps="handled"
+        ref={formRef}
+      >
+        {header}
+        <Field
+          label="Assignment title *"
+          onChangeText={(value) => {
+            setTitle(value);
+            acknowledgeNotice('title');
+          }}
+          placeholder="Research paper draft"
+          value={title}
+        />
+        <FieldNotice message={noticeFor('title')} />
 
       <View style={styles.sectionHeader}>
         <Text style={styles.label}>Subject / course</Text>
@@ -536,14 +537,21 @@ export function TaskForm({
         value={notes}
       />
       <FieldNotice message={noticeFor('notes')} />
-      {!!error && (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {error}
-        </Text>
-      )}
-      <PrimaryButton label={submitLabel} onPress={submit} style={styles.submitButton} />
-      {footer}
-    </ScrollView>
+        {!!error && (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {error}
+          </Text>
+        )}
+      </ScrollView>
+      <View style={styles.actionBar}>
+        <PrimaryButton
+          label={submitLabel}
+          onPress={submit}
+          style={styles.submitButton}
+        />
+        {footer}
+      </View>
+    </View>
   );
 }
 
@@ -616,7 +624,13 @@ function SelectionChips<T extends string | number | null>({
 }
 
 const styles = StyleSheet.create({
-  form: { padding: spacing.lg, gap: spacing.lg, backgroundColor: colors.background },
+  screen: { flex: 1, backgroundColor: colors.background },
+  form: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+    gap: spacing.lg,
+    backgroundColor: colors.background,
+  },
   field: { gap: spacing.sm },
   sectionHeader: {
     flexDirection: 'row',
@@ -740,7 +754,17 @@ const styles = StyleSheet.create({
   radioDotSelected: { borderWidth: 5, borderColor: colors.primary },
   disabled: { opacity: 0.45 },
   helper: { marginTop: -spacing.sm, color: colors.textMuted, fontFamily: typography.body, fontSize: 14 },
-  submitButton: { borderRadius: radius.lg },
+  actionBar: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+    elevation: 8,
+  },
+  submitButton: { minHeight: 56, borderRadius: radius.lg },
   fieldNotice: {
     flexDirection: 'row',
     alignItems: 'flex-start',
