@@ -227,7 +227,7 @@ Deno.serve(async (request) => {
           contents: [{ role: 'user', parts: [{ text: ocrText }] }],
           generationConfig: {
             responseMimeType: 'application/json',
-            responseSchema,
+            responseJsonSchema: responseSchema,
             temperature: 0,
           },
         }),
