@@ -2,6 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
 
 import {
+  cancelGeminiAssistance,
+  createGeminiAssistRequestId,
   requestGeminiAssistance,
 } from './geminiAssist';
 
@@ -42,10 +44,38 @@ describe('Gemini assistance service', () => {
   it('accepts a valid structured extraction and allowance', async () => {
     const result = await requestGeminiAssistance(
       clientReturning({ data: { extraction, allowance }, error: null }),
+      createGeminiAssistRequestId(),
       'Synthetic OCR text',
     );
 
     expect(result).toEqual({ extraction, allowance });
+  });
+
+  it('forwards cancellation and applies the client request timeout', async () => {
+    const abortController = new AbortController();
+    let invocationOptions: Record<string, unknown> | undefined;
+    const client = {
+      functions: {
+        invoke: async (_name: string, options: Record<string, unknown>) => {
+          invocationOptions = options;
+          return { data: { extraction, allowance }, error: null };
+        },
+      },
+    } as unknown as SupabaseClient;
+
+    const requestId = createGeminiAssistRequestId();
+    await requestGeminiAssistance(
+      client,
+      requestId,
+      'Synthetic OCR text',
+      abortController.signal,
+    );
+
+    expect(invocationOptions).toMatchObject({
+      signal: abortController.signal,
+      timeout: 30_000,
+      body: { requestId, ocrText: 'Synthetic OCR text' },
+    });
   });
 
   it.each([
@@ -56,6 +86,7 @@ describe('Gemini assistance service', () => {
   ] as const)('maps HTTP %s and %s to %s', async (status, code, expectedCode) => {
     const promise = requestGeminiAssistance(
       clientReturning({ data: null, error: functionError(status, code) }),
+      createGeminiAssistRequestId(),
       'Synthetic OCR text',
     );
 
@@ -67,11 +98,31 @@ describe('Gemini assistance service', () => {
   it('rejects malformed successful responses', async () => {
     const promise = requestGeminiAssistance(
       clientReturning({ data: { extraction: { title: 'wrong' }, allowance }, error: null }),
+      createGeminiAssistRequestId(),
       'Synthetic OCR text',
     );
 
     await expect(promise).rejects.toMatchObject({
       code: 'invalid-response',
+    });
+  });
+
+  it('requests an authenticated server-side cancellation and refund', async () => {
+    let invocationOptions: Record<string, unknown> | undefined;
+    const client = {
+      functions: {
+        invoke: async (_name: string, options: Record<string, unknown>) => {
+          invocationOptions = options;
+          return { data: { cancelled: true }, error: null };
+        },
+      },
+    } as unknown as SupabaseClient;
+    const requestId = createGeminiAssistRequestId();
+
+    await expect(cancelGeminiAssistance(client, requestId)).resolves.toBe(true);
+    expect(invocationOptions).toEqual({
+      body: { action: 'cancel', requestId },
+      timeout: 10_000,
     });
   });
 });
