@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
   },
-  title: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 30 },
+  title: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 26 },
   addButton: {
     minHeight: minimumTouchTarget,
     flexDirection: 'row',

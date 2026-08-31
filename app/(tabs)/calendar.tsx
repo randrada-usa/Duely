@@ -153,12 +153,10 @@ export default function CalendarScreen() {
                           {date.getDate()}
                         </Text>
                         {count > 0 && (
-                          <Text
+                          <View
                             accessibilityElementsHidden
-                            style={[styles.taskCount, selected && styles.selectedCount]}
-                          >
-                            {count}
-                          </Text>
+                            style={[styles.taskDot, selected && styles.selectedDot]}
+                          />
                         )}
                       </Pressable>
                     </View>
@@ -292,7 +290,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontFamily: typography.headingStrong,
-    fontSize: 28,
+    fontSize: 26,
   },
   monthControls: {
     flexDirection: 'row',
@@ -357,20 +355,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   selectedText: { color: colors.surface },
-  taskCount: {
-    minWidth: 18,
-    height: 16,
-    marginTop: 1,
-    paddingHorizontal: 4,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceSubtle,
-    color: colors.primary,
-    fontFamily: typography.bodyBold,
-    fontSize: 10,
-    lineHeight: 16,
-    textAlign: 'center',
+  taskDot: {
+    width: 5,
+    height: 5,
+    marginTop: 4,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
   },
-  selectedCount: { backgroundColor: colors.surface, color: colors.primary },
+  selectedDot: { backgroundColor: colors.surface },
   selectedHeader: {
     flexDirection: 'row',
     alignItems: 'center',

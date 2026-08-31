@@ -40,8 +40,11 @@ function isSameLocalDay(value: string, reference: Date) {
 function displayName(metadata: Record<string, unknown> | undefined) {
   const candidate = metadata?.full_name ?? metadata?.name;
   if (typeof candidate !== 'string' || !candidate.trim()) return null;
-  const firstName = candidate.trim().split(/\s+/)[0];
-  return `${firstName.charAt(0).toUpperCase()}${firstName.slice(1)}`;
+  return candidate
+    .trim()
+    .split(/\s+/)
+    .map((part) => `${part.charAt(0).toLocaleUpperCase()}${part.slice(1).toLocaleLowerCase()}`)
+    .join(' ');
 }
 
 function nextTaskSummary(task: Task | undefined) {
@@ -61,7 +64,7 @@ export default function HomeScreen() {
   const { canEditTasks, isHydrated, tasks } = useTasks();
   const [view, setView] = useState<HomeView>('today');
   const now = new Date();
-  const firstName = displayName(user?.user_metadata);
+  const name = displayName(user?.user_metadata);
   const dateLabel = new Intl.DateTimeFormat(undefined, {
     month: 'short',
     day: 'numeric',
@@ -93,21 +96,20 @@ export default function HomeScreen() {
         <View style={styles.greeting}>
           <Text style={styles.eyebrow}>WELCOME BACK · {dateLabel.toUpperCase()}</Text>
           <Text accessibilityRole="header" numberOfLines={1} style={styles.title}>
-            {firstName ? `Hi, ${firstName}` : 'Good day!'}
+            {name ?? 'Good day!'}
           </Text>
         </View>
         <Pressable
-          accessibilityLabel="Add task"
+          accessibilityLabel="Notifications"
           accessibilityRole="button"
-          disabled={!canEditTasks}
-          onPress={() => router.push('/task/new')}
+          onPress={() => router.push('/(tabs)/notifications')}
           style={({ pressed }) => [
             styles.headerAction,
             pressed && styles.pressed,
-            !canEditTasks && styles.disabled,
           ]}
         >
-          <Ionicons name="add" size={24} color={colors.primary} />
+          <Ionicons name="notifications-outline" size={22} color={colors.text} />
+          {openTasks.some((task) => task.dueAt) && <View style={styles.notificationDot} />}
         </Pressable>
       </View>
 
@@ -183,7 +185,7 @@ export default function HomeScreen() {
           fontScale >= 1.4 && styles.sectionHeaderLargeText,
         ]}
       >
-        <Text style={styles.sectionTitle}>Your schedule</Text>
+        <Text style={styles.sectionTitle}>Today's schedule</Text>
         <View accessibilityRole="tablist" style={styles.segmentedControl}>
           {(['today', 'upcoming'] as const).map((option) => {
             const selected = view === option;
@@ -258,7 +260,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.2,
   },
-  title: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 22 },
+  title: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 20 },
   headerAction: {
     width: minimumTouchTarget,
     height: minimumTouchTarget,
@@ -269,6 +271,17 @@ const styles = StyleSheet.create({
     borderRadius: minimumTouchTarget / 2,
     backgroundColor: colors.surface,
     elevation: 2,
+  },
+  notificationDot: {
+    position: 'absolute',
+    right: 8,
+    top: 8,
+    width: 8,
+    height: 8,
+    borderWidth: 1,
+    borderColor: colors.surface,
+    borderRadius: 4,
+    backgroundColor: colors.warning,
   },
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.45 },

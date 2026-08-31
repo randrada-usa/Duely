@@ -29,7 +29,7 @@ export function TaskEditorHero({
       <View style={styles.topRow}>
         {onBack && (
           <Pressable
-            accessibilityLabel="Back to image review"
+            accessibilityLabel="Go back"
             accessibilityRole="button"
             onPress={onBack}
             style={({ pressed }) => [

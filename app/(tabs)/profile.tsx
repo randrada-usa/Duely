@@ -80,7 +80,11 @@ export default function ProfileScreen() {
     status === 'authenticated' &&
     typeof user?.user_metadata.full_name === 'string' &&
     user.user_metadata.full_name.trim().length > 0
-      ? user.user_metadata.full_name.trim()
+      ? user.user_metadata.full_name
+          .trim()
+          .split(/\s+/)
+          .map((part: string) => `${part.charAt(0).toLocaleUpperCase()}${part.slice(1).toLocaleLowerCase()}`)
+          .join(' ')
       : 'Your profile';
 
   function enableNotifications() {
@@ -166,21 +170,21 @@ export default function ProfileScreen() {
         <View style={styles.cardHeading}>
           <Ionicons name="notifications-outline" size={24} color={colors.primary} />
           <View style={styles.headingCopy}>
-            <Text style={styles.cardTitle}>Task notifications</Text>
+            <Text style={styles.cardTitle}>Default reminder schedule</Text>
             <Text style={styles.cardBody}>{permissionLabel}</Text>
           </View>
+          {!permission.granted && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={permission.canAskAgain ? enableNotifications : () => void openSettings()}
+              style={({ pressed }) => [styles.permissionAction, pressed && styles.secondaryActionPressed]}
+            >
+              <Text style={styles.permissionActionText}>
+                {permission.canAskAgain ? 'Enable' : 'Settings'}
+              </Text>
+            </Pressable>
+          )}
         </View>
-        {!permission.granted && (
-          <Pressable
-            accessibilityRole="button"
-            onPress={permission.canAskAgain ? enableNotifications : () => void openSettings()}
-            style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
-          >
-            <Text style={styles.actionText}>
-              {permission.canAskAgain ? 'Enable notifications' : 'Open device settings'}
-            </Text>
-          </Pressable>
-        )}
         {permission.status === 'denied' && !permission.canAskAgain && (
           <Text style={styles.recovery}>
             Reminders remain saved with your tasks. Allow notifications in Android settings to receive them.
@@ -189,12 +193,7 @@ export default function ProfileScreen() {
         {!!schedulingError && (
           <Text accessibilityRole="alert" style={styles.error}>{schedulingError}</Text>
         )}
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.eyebrow}>DEFAULT SCHEDULE</Text>
-        <Text style={styles.cardTitle}>Default reminder</Text>
-        <Text style={styles.cardBody}>
+        <Text style={styles.scheduleHint}>
           This is preselected for new tasks with a deadline. You can change it per task.
         </Text>
         <View accessibilityRole="radiogroup" style={styles.options}>
@@ -572,6 +571,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
+  scheduleHint: {
+    color: colors.textMuted,
+    fontFamily: typography.body,
+    fontSize: 13,
+    lineHeight: 19,
+  },
   action: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radius.md, backgroundColor: colors.primary },
   actionPressed: { backgroundColor: colors.primaryPressed },
   actionDisabled: { opacity: 0.6 },
@@ -579,6 +584,20 @@ const styles = StyleSheet.create({
   secondaryAction: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
   secondaryActionPressed: { backgroundColor: colors.surfaceSubtle },
   secondaryActionText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 16 },
+  permissionAction: {
+    minWidth: 68,
+    minHeight: minimumTouchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceSubtle,
+  },
+  permissionActionText: {
+    color: colors.primary,
+    fontFamily: typography.bodyBold,
+    fontSize: 13,
+  },
   signOutAction: {
     borderColor: colors.dangerSoft,
     backgroundColor: colors.dangerSoft,

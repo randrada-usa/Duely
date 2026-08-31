@@ -2,10 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useCompletionUndo } from '../../src/components/CompletionUndoProvider';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { ScreenShell } from '../../src/components/ScreenShell';
+import { TaskEditorHero } from '../../src/components/TaskEditorHero';
 import { TaskForm } from '../../src/components/TaskForm';
 import { effortLabel, taskTypeLabel } from '../../src/domain/task';
 import { useUnsavedChangesGuard } from '../../src/hooks/useUnsavedChangesGuard';
@@ -75,7 +77,7 @@ export default function TaskDetailsScreen() {
 
   if (isEditing) {
     return (
-      <View style={styles.screen}>
+      <SafeAreaView style={styles.screen}>
         <TaskForm
           footer={
             <Pressable
@@ -86,6 +88,14 @@ export default function TaskDetailsScreen() {
               <Text style={styles.cancelEditText}>Cancel editing</Text>
             </Pressable>
           }
+          header={
+            <TaskEditorHero
+              description="Update the assignment details, deadline, priority, and reminder."
+              eyebrow="Task details"
+              onBack={cancelEditing}
+              title="Edit task"
+            />
+          }
           initial={task}
           onDirtyChange={setHasUnsavedChanges}
           submitLabel="Save changes"
@@ -95,7 +105,7 @@ export default function TaskDetailsScreen() {
             setIsEditing(false);
           }}
         />
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -108,20 +118,35 @@ export default function TaskDetailsScreen() {
     <ScreenShell scroll>
       <View style={styles.hero}>
         <View style={styles.heroTopRow}>
-          <View style={styles.typeBadge}>
-            <Ionicons
-              accessibilityElementsHidden
-              name="document-text-outline"
-              size={16}
-              color={colors.surface}
-            />
-            <Text style={styles.typeBadgeText}>{taskTypeLabel(task.taskType)}</Text>
+          <View style={styles.heroLeading}>
+            <Pressable
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+              onPress={() => router.back()}
+              style={({ pressed }) => [styles.heroIconButton, pressed && styles.pressed]}
+            >
+              <Ionicons
+                accessibilityElementsHidden
+                name="chevron-back"
+                size={22}
+                color={colors.surface}
+              />
+            </Pressable>
+            <View style={styles.typeBadge}>
+              <Ionicons
+                accessibilityElementsHidden
+                name="document-text-outline"
+                size={16}
+                color={colors.surface}
+              />
+              <Text style={styles.typeBadgeText}>{taskTypeLabel(task.taskType)}</Text>
+            </View>
           </View>
           <Pressable
             accessibilityLabel="Delete task"
             accessibilityRole="button"
             onPress={confirmDelete}
-            style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.heroIconButton, pressed && styles.pressed]}
           >
             <Ionicons
               accessibilityElementsHidden
@@ -222,20 +247,21 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   missing: { flex: 1, justifyContent: 'center', gap: spacing.xl, padding: spacing.xl, backgroundColor: colors.background },
   missingTitle: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 24, textAlign: 'center' },
-  hero: { gap: spacing.sm, padding: spacing.lg, borderRadius: radius.xl, backgroundColor: colors.navy },
+  hero: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.xl, backgroundColor: colors.navy },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  heroLeading: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   typeBadge: { minHeight: 32, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: '#15172B' },
   typeBadgeText: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 12 },
-  deleteButton: { width: minimumTouchTarget, height: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full, backgroundColor: '#15172B' },
+  heroIconButton: { width: minimumTouchTarget, height: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full, backgroundColor: '#15172B' },
   heroSubject: { color: '#C9D0FF', fontFamily: typography.bodyBold, fontSize: 12, textTransform: 'uppercase' },
-  heroTitle: { color: colors.surface, fontFamily: typography.headingStrong, fontSize: 24 },
+  heroTitle: { color: colors.surface, fontFamily: typography.headingStrong, fontSize: 22, lineHeight: 27 },
   heroStatus: { alignSelf: 'flex-start', overflow: 'hidden', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, fontFamily: typography.bodySemibold, fontSize: 12, textTransform: 'capitalize' },
   completedStatus: { color: priorityColors.low.foreground, backgroundColor: priorityColors.low.background },
-  detailsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  detailCard: { minHeight: 88, flexBasis: '47%', flexGrow: 1, gap: spacing.sm, padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, elevation: 1 },
+  detailsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  detailCard: { minHeight: 76, flexBasis: '47%', flexGrow: 1, gap: spacing.xs, padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, elevation: 1 },
   label: { color: colors.textMuted, fontFamily: typography.bodyBold, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
   detailValue: { color: colors.text, fontFamily: typography.bodySemibold, fontSize: 15, lineHeight: 21 },
-  notesCard: { minHeight: 120, gap: spacing.sm, padding: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, elevation: 1 },
+  notesCard: { minHeight: 96, gap: spacing.sm, padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, elevation: 1 },
   notes: { color: colors.text, fontFamily: typography.body, fontSize: 16, lineHeight: 24 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   editButton: { minWidth: 96, minHeight: minimumTouchTarget, flexGrow: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface },
