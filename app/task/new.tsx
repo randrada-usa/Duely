@@ -59,6 +59,7 @@ export default function NewTaskScreen() {
           description="Add the details you need to recognize and finish this assignment."
           eyebrow="Manual task"
           title="Create a new task"
+          variant="light"
         />
       }
       initial={initial}

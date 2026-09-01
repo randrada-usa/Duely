@@ -887,6 +887,7 @@ export default function ScanScreen() {
                 imageUri={image.uri}
                 onBack={confirmReturnToImage}
                 title="Review extraction"
+                variant="light"
               />
               {reviewExtraction.needsAssignmentConfirmation && (
                 <View accessibilityRole="alert" style={styles.warningCard}>

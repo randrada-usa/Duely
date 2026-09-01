@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
+import { useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenShell } from '../../src/components/ScreenShell';
+import { SubjectManagerModal } from '../../src/components/SubjectManagerModal';
 import { REMINDER_OPTIONS } from '../../src/domain/reminder';
 import { useAiPrivacy } from '../../src/store/AiPrivacyStore';
 import { useAuth } from '../../src/store/AuthStore';
@@ -16,6 +19,7 @@ import {
 } from '../../src/theme/tokens';
 
 export default function ProfileScreen() {
+  const [showSubjectManager, setShowSubjectManager] = useState(false);
   const {
     status,
     user,
@@ -150,7 +154,8 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScreenShell scroll>
+    <>
+      <ScreenShell scroll>
       <View style={styles.header}>
         <View style={styles.avatar}>
           <Image
@@ -507,7 +512,94 @@ export default function ProfileScreen() {
           </Pressable>
         )}
       </View>
-    </ScreenShell>
+      <View style={styles.card}>
+        <Text style={styles.eyebrow}>APP SETTINGS</Text>
+        <SettingRow
+          icon="library-outline"
+          label="Manage subjects"
+          onPress={() => setShowSubjectManager(true)}
+          value="Create, rename, or remove subjects"
+        />
+        <View style={styles.settingDivider} />
+        <SettingRow
+          icon="language-outline"
+          label="Language"
+          value="English (Philippines)"
+        />
+        <View style={styles.settingDivider} />
+        <SettingRow
+          icon="help-circle-outline"
+          label="Help & feedback"
+          onPress={() =>
+            Alert.alert(
+              'Help & feedback',
+              'For this internal preview, share the screen and steps that caused the issue with the Duely beta team. Do not include assignment images or personal information.',
+            )
+          }
+          value="Report a problem safely"
+        />
+        <View style={styles.settingDivider} />
+        <SettingRow
+          icon="information-circle-outline"
+          label="Duely version"
+          value={Constants.expoConfig?.version ?? 'Internal preview'}
+        />
+      </View>
+      </ScreenShell>
+      <SubjectManagerModal
+        onClose={() => setShowSubjectManager(false)}
+        visible={showSubjectManager}
+      />
+    </>
+  );
+}
+
+type SettingRowProps = {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  value: string;
+  onPress?: () => void;
+};
+
+function SettingRow({ icon, label, value, onPress }: SettingRowProps) {
+  const content = (
+    <>
+      <View style={styles.settingIcon}>
+        <Ionicons
+          accessibilityElementsHidden
+          color={colors.primary}
+          name={icon}
+          size={21}
+        />
+      </View>
+      <View style={styles.settingCopy}>
+        <Text style={styles.settingLabel}>{label}</Text>
+        <Text style={styles.settingValue}>{value}</Text>
+      </View>
+      {onPress && (
+        <Ionicons
+          accessibilityElementsHidden
+          color={colors.textMuted}
+          name="chevron-forward"
+          size={20}
+        />
+      )}
+    </>
+  );
+
+  if (!onPress) return <View style={styles.settingRow}>{content}</View>;
+  return (
+    <Pressable
+      accessibilityLabel={`${label}. ${value}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.settingRow,
+        pressed && styles.secondaryActionPressed,
+      ]}
+    >
+      {content}
+    </Pressable>
   );
 }
 
@@ -633,4 +725,33 @@ const styles = StyleSheet.create({
   optionSelected: { borderColor: colors.primary, backgroundColor: colors.surfaceSubtle },
   optionText: { color: colors.text, fontFamily: typography.body, fontSize: 15 },
   optionTextSelected: { color: colors.primary, fontFamily: typography.bodySemibold },
+  settingRow: {
+    minHeight: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+  },
+  settingIcon: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+  },
+  settingCopy: { flex: 1, minWidth: 0 },
+  settingLabel: {
+    color: colors.text,
+    fontFamily: typography.bodySemibold,
+    fontSize: 16,
+  },
+  settingValue: {
+    marginTop: 2,
+    color: colors.textMuted,
+    fontFamily: typography.body,
+    fontSize: 13,
+  },
+  settingDivider: { height: 1, backgroundColor: colors.border },
 });

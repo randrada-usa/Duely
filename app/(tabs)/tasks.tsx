@@ -72,7 +72,19 @@ export default function TasksScreen() {
     TASK_GROUPING_OPTIONS.find(
       (option) => option.value === taskQuery.grouping,
     )?.label ?? 'None';
-  const extraFilterLabels = [
+  const selectedSubjectLabel =
+    taskQuery.subject === UNASSIGNED_SUBJECTS
+      ? 'Unassigned'
+      : (subjects.find((subject) => subject.id === taskQuery.subject)?.name ??
+        null);
+  const activeFilterLabels = [
+    taskQuery.state === 'all'
+      ? null
+      : (TASK_STATE_FILTER_OPTIONS.find(
+          (option) => option.value === taskQuery.state,
+        )?.label ?? null),
+    taskQuery.noDeadline ? 'No deadline' : null,
+    selectedSubjectLabel,
     taskQuery.taskType ? taskTypeLabel(taskQuery.taskType) : null,
     taskQuery.priority
       ? `${taskQuery.priority[0].toLocaleUpperCase()}${taskQuery.priority.slice(1)} priority`
@@ -151,7 +163,9 @@ export default function TasksScreen() {
             style={({ pressed }) => [styles.filterButton, pressed && styles.pressed]}
           >
             <Ionicons name="options-outline" size={21} color={colors.primary} />
-            {extraFilterLabels.length > 0 && <View style={styles.filterIndicator} />}
+            {(filtered || taskQuery.sort !== 'smart' || taskQuery.grouping !== 'none') && (
+              <View style={styles.filterIndicator} />
+            )}
           </Pressable>
         </View>
 
@@ -225,41 +239,52 @@ export default function TasksScreen() {
           ))}
         </ScrollView>
 
-        <View style={styles.viewBar}>
-          <Pressable
-            accessibilityLabel={`More filters and view options. Sorted by ${sortLabel}. Grouped by ${groupingLabel}.${
-              extraFilterLabels.length > 0
-                ? ` Active filters: ${extraFilterLabels.join(', ')}.`
-                : ''
-            }`}
-            accessibilityRole="button"
-            onPress={() => setShowViewOptions(true)}
-            style={({ pressed }) => [
-              styles.viewButton,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={styles.viewButtonTitle}>Sort and group</Text>
-            <Text numberOfLines={2} style={styles.viewButtonSummary}>
-              {extraFilterLabels.length > 0
-                ? `${extraFilterLabels.join(' · ')}  |  `
-                : ''}
-              {sortLabel} · {groupingLabel === 'None' ? 'No grouping' : groupingLabel}
-            </Text>
-          </Pressable>
-          {filtered && (
+        {(filtered ||
+          taskQuery.sort !== 'smart' ||
+          taskQuery.grouping !== 'none') && (
+          <View style={styles.activeViewBar}>
             <Pressable
+              accessibilityLabel={`View options. Sorted by ${sortLabel}. Grouped by ${groupingLabel}.${
+                activeFilterLabels.length > 0
+                  ? ` Active filters: ${activeFilterLabels.join(', ')}.`
+                  : ''
+              }`}
               accessibilityRole="button"
-              onPress={clearFilters}
+              onPress={() => setShowViewOptions(true)}
               style={({ pressed }) => [
-                styles.clearButton,
+                styles.activeViewCopy,
                 pressed && styles.pressed,
               ]}
             >
-              <Text style={styles.clearButtonText}>Clear</Text>
+              <Ionicons
+                accessibilityElementsHidden
+                color={colors.primary}
+                name="options-outline"
+                size={18}
+              />
+              <Text numberOfLines={1} style={styles.activeViewSummary}>
+                {activeFilterLabels.length > 0
+                  ? activeFilterLabels.join(' · ')
+                  : `${sortLabel} · ${
+                      groupingLabel === 'None' ? 'No grouping' : groupingLabel
+                    }`}
+              </Text>
             </Pressable>
-          )}
-        </View>
+            {filtered && (
+              <Pressable
+                accessibilityLabel="Clear task filters"
+                accessibilityRole="button"
+                onPress={clearFilters}
+                style={({ pressed }) => [
+                  styles.clearButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
 
         {!isHydrated ? (
           <View
@@ -445,30 +470,28 @@ const styles = StyleSheet.create({
   },
   chipText: { color: colors.text, fontFamily: typography.bodySemibold, fontSize: 14 },
   chipTextSelected: { color: colors.surface },
-  viewBar: {
+  activeViewBar: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'center',
     gap: spacing.sm,
     marginBottom: spacing.sm,
+    paddingLeft: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primaryFaint,
   },
-  viewButton: {
+  activeViewCopy: {
     minHeight: minimumTouchTarget,
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
   },
-  viewButtonTitle: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 13 },
-  viewButtonSummary: {
-    marginTop: 2,
-    color: colors.textMuted,
-    fontFamily: typography.body,
-    fontSize: 12,
-    lineHeight: 17,
+  activeViewSummary: {
+    flex: 1,
+    color: colors.primary,
+    fontFamily: typography.bodySemibold,
+    fontSize: 13,
   },
   clearButton: {
     minWidth: 64,
