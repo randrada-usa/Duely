@@ -5,10 +5,10 @@ import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 import { Nunito_700Bold } from '@expo-google-fonts/nunito/700Bold';
 import { Nunito_800ExtraBold } from '@expo-google-fonts/nunito/800ExtraBold';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { CompletionUndoProvider } from '../src/components/CompletionUndoProvider';
 import { loadOnboardingCompleted } from '../src/services/onboardingStorage';
@@ -22,6 +22,9 @@ import { colors, typography } from '../src/theme/tokens';
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const router = useRouter();
+  const segments = useSegments();
+  const handledInitialRoute = useRef(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(
     null,
   );
@@ -54,6 +57,25 @@ export default function RootLayout() {
       void SplashScreen.hideAsync();
     }
   }, [fontError, fontsLoaded, onboardingCompleted]);
+
+  useEffect(() => {
+    if (
+      handledInitialRoute.current ||
+      onboardingCompleted === null ||
+      (!fontsLoaded && !fontError)
+    ) {
+      return;
+    }
+
+    handledInitialRoute.current = true;
+    const isOnboarding = segments[0] === 'onboarding';
+
+    if (!onboardingCompleted && !isOnboarding) {
+      router.replace('/onboarding');
+    } else if (onboardingCompleted && isOnboarding) {
+      router.replace('/(tabs)');
+    }
+  }, [fontError, fontsLoaded, onboardingCompleted, router, segments]);
 
   if ((!fontsLoaded && !fontError) || onboardingCompleted === null) return null;
 
