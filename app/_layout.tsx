@@ -8,9 +8,10 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { CompletionUndoProvider } from '../src/components/CompletionUndoProvider';
+import { loadOnboardingCompleted } from '../src/services/onboardingStorage';
 import { AiPrivacyStoreProvider } from '../src/store/AiPrivacyStore';
 import { AuthStoreProvider } from '../src/store/AuthStore';
 import { CloudBackupStoreProvider } from '../src/store/CloudBackupStore';
@@ -21,6 +22,9 @@ import { colors, typography } from '../src/theme/tokens';
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(
+    null,
+  );
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -31,12 +35,27 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    let active = true;
+    void loadOnboardingCompleted().then(
+      (completed) => {
+        if (active) setOnboardingCompleted(completed);
+      },
+      () => {
+        if (active) setOnboardingCompleted(false);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && onboardingCompleted !== null) {
       void SplashScreen.hideAsync();
     }
-  }, [fontError, fontsLoaded]);
+  }, [fontError, fontsLoaded, onboardingCompleted]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if ((!fontsLoaded && !fontError) || onboardingCompleted === null) return null;
 
   return (
     <AuthStoreProvider>
@@ -47,6 +66,7 @@ export default function RootLayout() {
               <ReminderStoreProvider>
                 <StatusBar style="dark" />
                 <Stack
+                  initialRouteName={onboardingCompleted ? '(tabs)' : 'onboarding'}
                   screenOptions={{
                     contentStyle: { backgroundColor: colors.background },
                     headerStyle: { backgroundColor: colors.background },
@@ -55,6 +75,7 @@ export default function RootLayout() {
                     headerTitleStyle: { fontFamily: typography.heading },
                   }}
                 >
+                  <Stack.Screen name="onboarding" options={{ headerShown: false }} />
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                   <Stack.Screen
                     name="auth/callback"
