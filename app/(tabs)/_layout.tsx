@@ -75,6 +75,10 @@ export default function TabLayout() {
         name="profile"
         options={{ tabBarAccessibilityLabel: 'Profile tab', title: 'Profile' }}
       />
+      <Tabs.Screen
+        name="notifications"
+        options={{ href: null, title: 'Notifications' }}
+      />
     </Tabs>
   );
 }

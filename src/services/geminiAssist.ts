@@ -31,7 +31,7 @@ export class GeminiAssistError extends Error {
   }
 }
 
-function createRequestId() {
+export function createGeminiAssistRequestId() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
     const random = Math.floor(Math.random() * 16);
     const value = character === 'x' ? random : (random & 0x3) | 0x8;
@@ -55,11 +55,12 @@ function isAllowance(value: unknown): value is AiAllowance {
 
 export async function requestGeminiAssistance(
   supabase: SupabaseClient,
+  requestId: string,
   ocrText: string,
   signal?: AbortSignal,
 ): Promise<GeminiAssistResult> {
   const { data, error } = await supabase.functions.invoke('gemini-extract', {
-    body: { requestId: createRequestId(), ocrText },
+    body: { requestId, ocrText },
     signal,
     timeout: 30_000,
   });
@@ -104,4 +105,16 @@ export async function requestGeminiAssistance(
   }
 
   return { extraction: data.extraction, allowance: data.allowance };
+}
+
+export async function cancelGeminiAssistance(
+  supabase: SupabaseClient,
+  requestId: string,
+) {
+  const { data, error } = await supabase.functions.invoke('gemini-extract', {
+    body: { action: 'cancel', requestId },
+    timeout: 10_000,
+  });
+
+  return !error && isRecord(data) && data.cancelled === true;
 }

@@ -15,6 +15,7 @@ type TaskEditorHeroProps = {
   imageUri?: string;
   onBack?: () => void;
   title: string;
+  variant?: 'dark' | 'light';
 };
 
 export function TaskEditorHero({
@@ -23,23 +24,27 @@ export function TaskEditorHero({
   imageUri,
   onBack,
   title,
+  variant = 'dark',
 }: TaskEditorHeroProps) {
+  const light = variant === 'light';
+
   return (
-    <View style={styles.hero}>
+    <View style={[styles.hero, light && styles.heroLight]}>
       <View style={styles.topRow}>
         {onBack && (
           <Pressable
-            accessibilityLabel="Back to image review"
+            accessibilityLabel="Go back"
             accessibilityRole="button"
             onPress={onBack}
             style={({ pressed }) => [
               styles.backButton,
+              light && styles.backButtonLight,
               pressed && styles.pressed,
             ]}
           >
             <Ionicons
               accessibilityElementsHidden
-              color={colors.surface}
+              color={light ? colors.text : colors.surface}
               name="chevron-back"
               size={22}
             />
@@ -48,11 +53,13 @@ export function TaskEditorHero({
         <View style={styles.badge}>
           <Ionicons
             accessibilityElementsHidden
-            color="#D4D9FF"
+            color={light ? colors.primary : '#D4D9FF'}
             name={imageUri ? 'camera-outline' : 'create-outline'}
             size={15}
           />
-          <Text style={styles.eyebrow}>{eyebrow}</Text>
+          <Text style={[styles.eyebrow, light && styles.eyebrowLight]}>
+            {eyebrow}
+          </Text>
         </View>
       </View>
 
@@ -66,10 +73,15 @@ export function TaskEditorHero({
           />
         )}
         <View style={styles.copy}>
-          <Text accessibilityRole="header" style={styles.title}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.title, light && styles.titleLight]}
+          >
             {title}
           </Text>
-          <Text style={styles.description}>{description}</Text>
+          <Text style={[styles.description, light && styles.descriptionLight]}>
+            {description}
+          </Text>
         </View>
       </View>
     </View>
@@ -83,6 +95,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: radius.xl,
     backgroundColor: colors.navy,
+  },
+  heroLight: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    borderRadius: 0,
+    backgroundColor: colors.background,
   },
   topRow: {
     minHeight: 34,
@@ -99,6 +120,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: '#15172B',
   },
+  backButtonLight: { backgroundColor: colors.primarySoft },
   badge: {
     minHeight: 32,
     flexDirection: 'row',
@@ -115,6 +137,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.7,
     textTransform: 'uppercase',
   },
+  eyebrowLight: { color: colors.primary },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -135,6 +158,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 30,
   },
+  titleLight: { color: colors.text },
   description: {
     marginTop: spacing.xs,
     color: '#CDD3FF',
@@ -142,5 +166,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 23,
   },
+  descriptionLight: { color: colors.textMuted },
   pressed: { opacity: 0.7 },
 });

@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
+import { useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenShell } from '../../src/components/ScreenShell';
+import { SubjectManagerModal } from '../../src/components/SubjectManagerModal';
 import { REMINDER_OPTIONS } from '../../src/domain/reminder';
 import { useAiPrivacy } from '../../src/store/AiPrivacyStore';
 import { useAuth } from '../../src/store/AuthStore';
@@ -16,6 +19,7 @@ import {
 } from '../../src/theme/tokens';
 
 export default function ProfileScreen() {
+  const [showSubjectManager, setShowSubjectManager] = useState(false);
   const {
     status,
     user,
@@ -80,7 +84,11 @@ export default function ProfileScreen() {
     status === 'authenticated' &&
     typeof user?.user_metadata.full_name === 'string' &&
     user.user_metadata.full_name.trim().length > 0
-      ? user.user_metadata.full_name.trim()
+      ? user.user_metadata.full_name
+          .trim()
+          .split(/\s+/)
+          .map((part: string) => `${part.charAt(0).toLocaleUpperCase()}${part.slice(1).toLocaleLowerCase()}`)
+          .join(' ')
       : 'Your profile';
 
   function enableNotifications() {
@@ -146,7 +154,8 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScreenShell scroll>
+    <>
+      <ScreenShell scroll>
       <View style={styles.header}>
         <View style={styles.avatar}>
           <Image
@@ -166,21 +175,21 @@ export default function ProfileScreen() {
         <View style={styles.cardHeading}>
           <Ionicons name="notifications-outline" size={24} color={colors.primary} />
           <View style={styles.headingCopy}>
-            <Text style={styles.cardTitle}>Task notifications</Text>
+            <Text style={styles.cardTitle}>Default reminder schedule</Text>
             <Text style={styles.cardBody}>{permissionLabel}</Text>
           </View>
+          {!permission.granted && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={permission.canAskAgain ? enableNotifications : () => void openSettings()}
+              style={({ pressed }) => [styles.permissionAction, pressed && styles.secondaryActionPressed]}
+            >
+              <Text style={styles.permissionActionText}>
+                {permission.canAskAgain ? 'Enable' : 'Settings'}
+              </Text>
+            </Pressable>
+          )}
         </View>
-        {!permission.granted && (
-          <Pressable
-            accessibilityRole="button"
-            onPress={permission.canAskAgain ? enableNotifications : () => void openSettings()}
-            style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
-          >
-            <Text style={styles.actionText}>
-              {permission.canAskAgain ? 'Enable notifications' : 'Open device settings'}
-            </Text>
-          </Pressable>
-        )}
         {permission.status === 'denied' && !permission.canAskAgain && (
           <Text style={styles.recovery}>
             Reminders remain saved with your tasks. Allow notifications in Android settings to receive them.
@@ -189,12 +198,7 @@ export default function ProfileScreen() {
         {!!schedulingError && (
           <Text accessibilityRole="alert" style={styles.error}>{schedulingError}</Text>
         )}
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.eyebrow}>DEFAULT SCHEDULE</Text>
-        <Text style={styles.cardTitle}>Default reminder</Text>
-        <Text style={styles.cardBody}>
+        <Text style={styles.scheduleHint}>
           This is preselected for new tasks with a deadline. You can change it per task.
         </Text>
         <View accessibilityRole="radiogroup" style={styles.options}>
@@ -508,7 +512,94 @@ export default function ProfileScreen() {
           </Pressable>
         )}
       </View>
-    </ScreenShell>
+      <View style={styles.card}>
+        <Text style={styles.eyebrow}>APP SETTINGS</Text>
+        <SettingRow
+          icon="library-outline"
+          label="Manage subjects"
+          onPress={() => setShowSubjectManager(true)}
+          value="Create, rename, or remove subjects"
+        />
+        <View style={styles.settingDivider} />
+        <SettingRow
+          icon="language-outline"
+          label="Language"
+          value="English (Philippines)"
+        />
+        <View style={styles.settingDivider} />
+        <SettingRow
+          icon="help-circle-outline"
+          label="Help & feedback"
+          onPress={() =>
+            Alert.alert(
+              'Help & feedback',
+              'For this internal preview, share the screen and steps that caused the issue with the Duely beta team. Do not include assignment images or personal information.',
+            )
+          }
+          value="Report a problem safely"
+        />
+        <View style={styles.settingDivider} />
+        <SettingRow
+          icon="information-circle-outline"
+          label="Duely version"
+          value={Constants.expoConfig?.version ?? 'Internal preview'}
+        />
+      </View>
+      </ScreenShell>
+      <SubjectManagerModal
+        onClose={() => setShowSubjectManager(false)}
+        visible={showSubjectManager}
+      />
+    </>
+  );
+}
+
+type SettingRowProps = {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  value: string;
+  onPress?: () => void;
+};
+
+function SettingRow({ icon, label, value, onPress }: SettingRowProps) {
+  const content = (
+    <>
+      <View style={styles.settingIcon}>
+        <Ionicons
+          accessibilityElementsHidden
+          color={colors.primary}
+          name={icon}
+          size={21}
+        />
+      </View>
+      <View style={styles.settingCopy}>
+        <Text style={styles.settingLabel}>{label}</Text>
+        <Text style={styles.settingValue}>{value}</Text>
+      </View>
+      {onPress && (
+        <Ionicons
+          accessibilityElementsHidden
+          color={colors.textMuted}
+          name="chevron-forward"
+          size={20}
+        />
+      )}
+    </>
+  );
+
+  if (!onPress) return <View style={styles.settingRow}>{content}</View>;
+  return (
+    <Pressable
+      accessibilityLabel={`${label}. ${value}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.settingRow,
+        pressed && styles.secondaryActionPressed,
+      ]}
+    >
+      {content}
+    </Pressable>
   );
 }
 
@@ -572,6 +663,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
+  scheduleHint: {
+    color: colors.textMuted,
+    fontFamily: typography.body,
+    fontSize: 13,
+    lineHeight: 19,
+  },
   action: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderRadius: radius.md, backgroundColor: colors.primary },
   actionPressed: { backgroundColor: colors.primaryPressed },
   actionDisabled: { opacity: 0.6 },
@@ -579,6 +676,20 @@ const styles = StyleSheet.create({
   secondaryAction: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
   secondaryActionPressed: { backgroundColor: colors.surfaceSubtle },
   secondaryActionText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 16 },
+  permissionAction: {
+    minWidth: 68,
+    minHeight: minimumTouchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceSubtle,
+  },
+  permissionActionText: {
+    color: colors.primary,
+    fontFamily: typography.bodyBold,
+    fontSize: 13,
+  },
   signOutAction: {
     borderColor: colors.dangerSoft,
     backgroundColor: colors.dangerSoft,
@@ -614,4 +725,33 @@ const styles = StyleSheet.create({
   optionSelected: { borderColor: colors.primary, backgroundColor: colors.surfaceSubtle },
   optionText: { color: colors.text, fontFamily: typography.body, fontSize: 15 },
   optionTextSelected: { color: colors.primary, fontFamily: typography.bodySemibold },
+  settingRow: {
+    minHeight: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+  },
+  settingIcon: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+  },
+  settingCopy: { flex: 1, minWidth: 0 },
+  settingLabel: {
+    color: colors.text,
+    fontFamily: typography.bodySemibold,
+    fontSize: 16,
+  },
+  settingValue: {
+    marginTop: 2,
+    color: colors.textMuted,
+    fontFamily: typography.body,
+    fontSize: 13,
+  },
+  settingDivider: { height: 1, backgroundColor: colors.border },
 });

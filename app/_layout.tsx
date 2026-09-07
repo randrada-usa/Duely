@@ -66,7 +66,7 @@ export default function RootLayout() {
                   />
                   <Stack.Screen
                     name="task/[id]"
-                    options={{ title: 'Task details' }}
+                    options={{ headerShown: false }}
                   />
                   <Stack.Screen
                     name="ocr-evaluation"

@@ -135,7 +135,7 @@ export function TaskCard({ task }: { task: Task }) {
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: 112,
+    minHeight: 96,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,

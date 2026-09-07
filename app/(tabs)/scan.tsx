@@ -43,6 +43,8 @@ import {
   type OcrRun,
 } from '../../src/services/ocr';
 import {
+  cancelGeminiAssistance,
+  createGeminiAssistRequestId,
   GeminiAssistError,
   requestGeminiAssistance,
   type AiAllowance,
@@ -118,7 +120,10 @@ export default function ScanScreen() {
   const [savedTaskId, setSavedTaskId] = useState<string | null>(null);
   const activeImageUri = useRef<string | null>(null);
   const activeOcrRun = useRef<OcrRun | null>(null);
-  const activeAiRun = useRef<AbortController | null>(null);
+  const activeAiRun = useRef<{
+    controller: AbortController;
+    requestId: string;
+  } | null>(null);
   const isMounted = useRef(true);
   const focusedScanFlow = permissionIssue !== null || image !== null || scanStage !== 'image';
 
@@ -194,7 +199,10 @@ export default function ScanScreen() {
     return () => {
       isMounted.current = false;
       activeOcrRun.current?.cancel();
-      activeAiRun.current?.abort();
+      const aiRun = activeAiRun.current;
+      aiRun?.controller.abort();
+      const supabase = getSupabaseClient();
+      if (aiRun && supabase) void cancelGeminiAssistance(supabase, aiRun.requestId);
       deleteTemporaryScanImage(activeImageUri.current);
     };
   }, [acceptPickerResult]);
@@ -419,17 +427,19 @@ export default function ScanScreen() {
     }
 
     const controller = new AbortController();
-    activeAiRun.current?.abort();
-    activeAiRun.current = controller;
+    const requestId = createGeminiAssistRequestId();
+    activeAiRun.current?.controller.abort();
+    activeAiRun.current = { controller, requestId };
     setError(null);
     setScanStage('ai-processing');
     try {
       const result = await requestGeminiAssistance(
         supabase,
+        requestId,
         localExtraction.rawText,
         controller.signal,
       );
-      if (!isMounted.current || activeAiRun.current !== controller) return;
+      if (!isMounted.current || activeAiRun.current?.controller !== controller) return;
       if (result.extraction.hasMultipleAssignments) {
         setScanStage('multiple');
         return;
@@ -438,7 +448,7 @@ export default function ScanScreen() {
       setAiAllowance(result.allowance);
       setScanStage('review');
     } catch (caughtError) {
-      if (!isMounted.current || activeAiRun.current !== controller) return;
+      if (!isMounted.current || activeAiRun.current?.controller !== controller) return;
       if (!controller.signal.aborted) {
         setError(
           caughtError instanceof GeminiAssistError
@@ -448,7 +458,7 @@ export default function ScanScreen() {
       }
       setScanStage('review');
     } finally {
-      if (activeAiRun.current === controller) activeAiRun.current = null;
+      if (activeAiRun.current?.controller === controller) activeAiRun.current = null;
     }
   }
 
@@ -476,9 +486,11 @@ export default function ScanScreen() {
   }
 
   function cancelAiAssistance() {
-    const controller = activeAiRun.current;
+    const run = activeAiRun.current;
     activeAiRun.current = null;
-    controller?.abort();
+    run?.controller.abort();
+    const supabase = getSupabaseClient();
+    if (run && supabase) void cancelGeminiAssistance(supabase, run.requestId);
     setError(null);
     setScanStage('review');
   }
@@ -875,6 +887,7 @@ export default function ScanScreen() {
                 imageUri={image.uri}
                 onBack={confirmReturnToImage}
                 title="Review extraction"
+                variant="light"
               />
               {reviewExtraction.needsAssignmentConfirmation && (
                 <View accessibilityRole="alert" style={styles.warningCard}>
