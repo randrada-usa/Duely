@@ -77,4 +77,4 @@ Assignment images and on-device OCR are sensitive. Optional cloud AI requires se
 
 ## License
 
-An open-source license has **not yet been selected or added**. The repository should not be described as open-source licensed until the project owner chooses a license and adds a root `LICENSE` file.
+Duely is available under the [MIT License](LICENSE). See the license file for the copyright and reuse terms.
