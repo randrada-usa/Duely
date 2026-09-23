@@ -59,6 +59,8 @@ npm run verify:supabase-migration
 
 The repository also has a synthetic Android OCR evaluation harness (`npm run evaluate:ocr-images:android`). Its results describe controlled fixtures, **not** real-student accuracy or a public pilot. Do not add real assignment photos, OCR output, student details, credentials, or private exports to test fixtures.
 
+For a privacy-safe app walkthrough and submission checks, see the [Shipaton demo guide](docs/shipaton-demo.md).
+
 ## Repository map
 
 | Path | Purpose |
@@ -69,11 +71,11 @@ The repository also has a synthetic Android OCR evaluation harness (`npm run eva
 | `supabase/` | Versioned database migrations and the AI Edge Function |
 | `evaluation/` | Synthetic OCR fixtures and evaluation material |
 | `docs/` | Focused setup and architecture notes |
-| `roadmap.md`, `ui-ux-plan.md`, `AGENTS.md` | Current scope, product behavior, and contribution guardrails |
+| `Roadmap.md`, `ui-ux-plan.md`, `AGENTS.md` | Current scope, product behavior, and contribution guardrails |
 
 ## Privacy and current limits
 
-Assignment images and on-device OCR are sensitive. Optional cloud AI requires separate consent, and dataset/model-improvement participation is separate and off by default. The student reviews every scan before saving a task. Account deletion/export and broader real-world OCR evaluation remain beta work; do not treat the current build as a finished public service. See the [roadmap](roadmap.md) for the remaining gates.
+Assignment images and on-device OCR are sensitive. Optional cloud AI requires separate consent, and dataset/model-improvement participation is separate and off by default. The student reviews every scan before saving a task. Account deletion/export and broader real-world OCR evaluation remain beta work; do not treat the current build as a finished public service. See the [roadmap](Roadmap.md) for the remaining gates.
 
 ## License
 
