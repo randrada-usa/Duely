@@ -173,6 +173,59 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      {status !== 'authenticated' && status !== 'loading' && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Your Duely account</Text>
+          {status === 'guest' ? (
+            <>
+              <Text style={styles.cardBody}>Sign in to use Duely Plus and optional cloud backup. Your local tasks stay on this phone until you choose to back them up.</Text>
+              <Pressable
+                accessibilityLabel={isAuthActionPending ? 'Google sign-in in progress' : 'Sign in with Google'}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: isAuthActionPending }}
+                disabled={isAuthActionPending}
+                onPress={() => void startGoogleSignIn()}
+                style={({ pressed }) => [
+                  styles.googleAction,
+                  pressed && styles.secondaryActionPressed,
+                  isAuthActionPending && styles.actionDisabled,
+                ]}
+              >
+                <Ionicons accessibilityElementsHidden name="logo-google" size={22} color={colors.text} />
+                <Text style={styles.googleActionText}>{isAuthActionPending ? 'Please wait…' : 'Sign in with Google'}</Text>
+              </Pressable>
+            </>
+          ) : (
+            <Text style={styles.cardBody} accessibilityRole="alert">
+              {status === 'unconfigured'
+                ? 'Account sign-in is unavailable in this build. Cloud configuration is missing; ask the Duely beta team for an updated build.'
+                : authError}
+            </Text>
+          )}
+          {!!authActionError && <Text accessibilityRole="alert" style={styles.error}>{authActionError}</Text>}
+          {status === 'error' && (
+            <PrimaryButton label="Retry account check" onPress={retry} />
+          )}
+        </View>
+      )}
+      {status === 'authenticated' && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isSigningOut }}
+          disabled={isSigningOut}
+          onPress={confirmSignOut}
+          style={({ pressed }) => [
+            styles.secondaryAction,
+            styles.signOutAction,
+            pressed && styles.secondaryActionPressed,
+          ]}
+        >
+          <Text style={styles.signOutActionText}>
+            {isSigningOut ? 'Signing out…' : 'Sign out'}
+          </Text>
+        </Pressable>
+      )}
+
       {plusSandboxEnabled && (
         <PrimaryButton label="Duely Plus · Test Store" onPress={() => router.push('/plus-sandbox')} />
       )}
@@ -335,48 +388,8 @@ export default function ProfileScreen() {
                 ? 'You are signed in. After your first backup, this phone remains the source of truth and confirmed changes are mirrored to your account.'
                 : status === 'error'
                   ? authError
-                  : 'Continue with Google, or keep using Duely as a guest. Signing in keeps your local tasks on this device.'}
+                  : 'Sign in with Google above, or keep using Duely as a guest. Signing in keeps your local tasks on this device.'}
         </Text>
-        {status === 'guest' && (
-          <Pressable
-            accessibilityLabel={
-              isAuthActionPending ? 'Google sign-in in progress' : 'Continue with Google'
-            }
-            accessibilityRole="button"
-            accessibilityState={{ disabled: isAuthActionPending }}
-            disabled={isAuthActionPending}
-            onPress={() => void startGoogleSignIn()}
-            style={({ pressed }) => [
-              styles.googleAction,
-              pressed && styles.secondaryActionPressed,
-              isAuthActionPending && styles.actionDisabled,
-            ]}
-          >
-            <Ionicons
-              accessibilityElementsHidden
-              name="logo-google"
-              size={22}
-              color={colors.text}
-            />
-            <Text style={styles.googleActionText}>
-              {isAuthActionPending ? 'Please wait…' : 'Continue with Google'}
-            </Text>
-          </Pressable>
-        )}
-        {!!authActionError && (
-          <Text accessibilityRole="alert" style={styles.error}>
-            {authActionError}
-          </Text>
-        )}
-        {status === 'error' && (
-          <Pressable
-            accessibilityRole="button"
-            onPress={retry}
-            style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
-          >
-            <Text style={styles.actionText}>Retry account check</Text>
-          </Pressable>
-        )}
         {status === 'authenticated' && shouldOfferBackup && (
           <View style={styles.backupPanel}>
             <View style={styles.cardHeading}>
@@ -500,23 +513,6 @@ export default function ProfileScreen() {
               </>
             )}
           </View>
-        )}
-        {status === 'authenticated' && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: isSigningOut }}
-            disabled={isSigningOut}
-            onPress={confirmSignOut}
-            style={({ pressed }) => [
-              styles.secondaryAction,
-              styles.signOutAction,
-              pressed && styles.secondaryActionPressed,
-            ]}
-          >
-            <Text style={styles.signOutActionText}>
-              {isSigningOut ? 'Signing out…' : 'Sign out'}
-            </Text>
-          </Pressable>
         )}
       </View>
       <View style={styles.card}>
