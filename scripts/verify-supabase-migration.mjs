@@ -29,6 +29,12 @@ const aiLedgerDenialSql = readFileSync(
   ),
   'utf8',
 ).toLowerCase();
+const verifiedPlusSql = readFileSync(
+  resolve(
+    'supabase/migrations/20260923145008_verified_plus_ai_allowance.sql',
+  ),
+  'utf8',
+).toLowerCase();
 const tables = [
   'profiles',
   'subjects',
@@ -152,6 +158,21 @@ assert(
     aiLedgerDenialSql.includes('using (false)') &&
     aiLedgerDenialSql.includes('with check (false)'),
   'the AI request ledger must explicitly deny every client operation',
+);
+assert(
+  verifiedPlusSql.includes('drop constraint ai_allowances_check1') &&
+    verifiedPlusSql.includes('create function public.set_verified_ai_allowance_limit') &&
+    verifiedPlusSql.includes('p_allowance_limit not in (5, 20)') &&
+    verifiedPlusSql.includes('set allowance_limit = excluded.allowance_limit') &&
+    !verifiedPlusSql.includes('set used_count = 0'),
+  'a verified Plus downgrade must preserve historical usage',
+);
+assert(
+  verifiedPlusSql.includes('revoke all on function public.set_verified_ai_allowance_limit') &&
+    verifiedPlusSql.includes('from public, anon, authenticated') &&
+    verifiedPlusSql.includes('to service_role') &&
+    !verifiedPlusSql.includes('security definer'),
+  'verified Plus allowance changes must remain server-only',
 );
 
 console.log(`Verified secure migration structure for ${tables.length} tables.`);
