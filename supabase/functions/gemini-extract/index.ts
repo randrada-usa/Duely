@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.112.4';
+import { verifiedAiScanLimit } from '../_shared/plusAllowance.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
@@ -196,6 +197,33 @@ Deno.serve(async (request) => {
     return jsonResponse(503, {
       code: 'server_not_configured',
       message: 'AI-assisted extraction is not configured.',
+    });
+  }
+
+  // The client never supplies a tier. A server-only RevenueCat key verifies the
+  // entitlement attached to this authenticated Supabase user on every request.
+  let verifiedLimit: number;
+  try {
+    verifiedLimit = await verifiedAiScanLimit(
+      userData.user.id,
+      Deno.env.get('REVENUECAT_SECRET_API_KEY'),
+      Deno.env.get('REVENUECAT_PLUS_ENTITLEMENT_ID') || 'duely_plus',
+    );
+  } catch {
+    return jsonResponse(503, {
+      code: 'allowance_unavailable',
+      message: 'Duely could not verify the AI scan allowance. On-device scanning is still available.',
+    });
+  }
+
+  const { error: limitError } = await admin.rpc('set_verified_ai_allowance_limit', {
+    p_user_id: userData.user.id,
+    p_allowance_limit: verifiedLimit,
+  });
+  if (limitError) {
+    return jsonResponse(503, {
+      code: 'allowance_unavailable',
+      message: 'Duely could not check the AI scan allowance.',
     });
   }
 
