@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { SubjectManagerModal } from '../../src/components/SubjectManagerModal';
+import { PrimaryButton } from '../../src/components/PrimaryButton';
+import { plusSandboxEnabled } from '../../src/services/plusSandbox';
 import { REMINDER_OPTIONS } from '../../src/domain/reminder';
 import { useAiPrivacy } from '../../src/store/AiPrivacyStore';
 import { useAuth } from '../../src/store/AuthStore';
@@ -169,6 +172,10 @@ export default function ProfileScreen() {
           <Text style={styles.subtitle}>{profileSubtitle}</Text>
         </View>
       </View>
+
+      {plusSandboxEnabled && (
+        <PrimaryButton label="Duely Plus · Test Store" onPress={() => router.push('/plus-sandbox')} />
+      )}
 
       <View style={styles.card}>
         <Text style={styles.eyebrow}>NOTIFICATIONS</Text>
