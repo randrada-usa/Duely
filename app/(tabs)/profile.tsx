@@ -208,24 +208,6 @@ export default function ProfileScreen() {
           )}
         </View>
       )}
-      {status === 'authenticated' && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: isSigningOut }}
-          disabled={isSigningOut}
-          onPress={confirmSignOut}
-          style={({ pressed }) => [
-            styles.secondaryAction,
-            styles.signOutAction,
-            pressed && styles.secondaryActionPressed,
-          ]}
-        >
-          <Text style={styles.signOutActionText}>
-            {isSigningOut ? 'Signing out…' : 'Sign out'}
-          </Text>
-        </Pressable>
-      )}
-
       {plusSandboxEnabled && (
         <PrimaryButton label="Duely Plus · Test Store" onPress={() => router.push('/plus-sandbox')} />
       )}
@@ -548,6 +530,23 @@ export default function ProfileScreen() {
           value={Constants.expoConfig?.version ?? 'Internal preview'}
         />
       </View>
+      {status === 'authenticated' && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isSigningOut }}
+          disabled={isSigningOut}
+          onPress={confirmSignOut}
+          style={({ pressed }) => [
+            styles.secondaryAction,
+            styles.signOutAction,
+            pressed && styles.secondaryActionPressed,
+          ]}
+        >
+          <Text style={styles.signOutActionText}>
+            {isSigningOut ? 'Signing out…' : 'Sign out'}
+          </Text>
+        </Pressable>
+      )}
       </ScreenShell>
       <SubjectManagerModal
         onClose={() => setShowSubjectManager(false)}
