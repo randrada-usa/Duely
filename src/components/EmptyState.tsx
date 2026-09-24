@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, typography } from '../theme/tokens';
+import { colors, radius, spacing, typography } from '../theme/tokens';
 
 type EmptyStateProps = {
   title: string;
@@ -32,7 +32,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.md,
-    paddingBottom: 80,
+    padding: spacing.xl,
+    paddingVertical: spacing.xxl,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
   },
   mascot: {
     width: 112,

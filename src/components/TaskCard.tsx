@@ -9,6 +9,7 @@ import {
   minimumTouchTarget,
   radius,
   spacing,
+  surfaces,
   typography,
 } from '../theme/tokens';
 import { priorityColors } from '../theme/priority';
@@ -81,11 +82,10 @@ export function TaskCard({ task }: { task: Task }) {
         />
       </View>
       <View style={styles.content}>
-        <Text numberOfLines={1} style={styles.subject}>
+        <Text style={styles.subject}>
           {subjectName}
         </Text>
         <Text
-          numberOfLines={2}
           style={[styles.title, task.status === 'completed' && styles.completedTitle]}
         >
           {task.title}
@@ -100,7 +100,7 @@ export function TaskCard({ task }: { task: Task }) {
           >
             {overdue ? 'Overdue' : priorityLabels[task.priority]}
           </Text>
-          <Text numberOfLines={1} style={styles.metadata}>
+          <Text style={styles.metadata}>
             {formatDueDate(task.dueAt)}
           </Text>
         </View>
@@ -118,16 +118,18 @@ export function TaskCard({ task }: { task: Task }) {
           event.stopPropagation();
           toggleTaskCompletion(task);
         }}
-        style={[styles.checkbox, task.status === 'completed' && styles.checked]}
+        style={styles.checkboxTarget}
       >
-        {task.status === 'completed' && (
-          <Ionicons
-            accessibilityElementsHidden
-            name="checkmark"
-            size={21}
-            color={colors.surface}
-          />
-        )}
+        <View style={[styles.checkbox, task.status === 'completed' && styles.checked]}>
+          {task.status === 'completed' && (
+            <Ionicons
+              accessibilityElementsHidden
+              name="checkmark"
+              size={21}
+              color={colors.surface}
+            />
+          )}
+        </View>
       </Pressable>
     </Pressable>
   );
@@ -135,28 +137,30 @@ export function TaskCard({ task }: { task: Task }) {
 
 const styles = StyleSheet.create({
   card: {
+    ...surfaces.card,
     minHeight: 96,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    elevation: 2,
+    padding: spacing.lg,
   },
   pressed: { opacity: 0.82, transform: [{ scale: 0.995 }] },
   typeIcon: {
-    width: 54,
-    height: 54,
+    width: 40,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,
   },
-  checkbox: {
+  checkboxTarget: {
     width: minimumTouchTarget,
-    height: minimumTouchTarget,
+    minHeight: minimumTouchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkbox: {
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -164,25 +168,25 @@ const styles = StyleSheet.create({
     borderRadius: minimumTouchTarget / 2,
   },
   checked: { backgroundColor: colors.success, borderColor: colors.success },
-  content: { flex: 1, minWidth: 0, gap: 3 },
+  content: { flex: 1, minWidth: 0, gap: spacing.sm },
   subject: {
     color: colors.primary,
     fontFamily: typography.bodyBold,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
-  title: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 15 },
+  title: { color: colors.text, fontFamily: typography.bodySemibold, fontSize: 16, lineHeight: 23 },
   completedTitle: { color: colors.textSubtle, textDecorationLine: 'line-through' },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  metadata: { flex: 1, color: colors.textMuted, fontFamily: typography.body, fontSize: 11 },
+  metaRow: { alignItems: 'flex-start', gap: spacing.sm },
+  metadata: { color: colors.textMuted, fontFamily: typography.body, fontSize: 13, lineHeight: 19 },
   priority: {
     overflow: 'hidden',
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: radius.full,
     fontFamily: typography.bodySemibold,
-    fontSize: 10,
+    fontSize: 12,
   },
   highPriority: {
     color: priorityColors.high.foreground,

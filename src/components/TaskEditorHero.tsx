@@ -50,7 +50,7 @@ export function TaskEditorHero({
             />
           </Pressable>
         )}
-        <View style={styles.badge}>
+        <View style={[styles.badge, light && styles.badgeLight]}>
           <Ionicons
             accessibilityElementsHidden
             color={light ? colors.primary : '#D4D9FF'}
@@ -91,19 +91,13 @@ export function TaskEditorHero({
 const styles = StyleSheet.create({
   hero: {
     gap: spacing.md,
-    padding: spacing.lg,
+    padding: spacing.xl,
     overflow: 'hidden',
     borderRadius: radius.xl,
     backgroundColor: colors.navy,
   },
   heroLight: {
-    paddingHorizontal: 0,
-    paddingTop: 0,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    borderRadius: 0,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   topRow: {
     minHeight: 34,
@@ -137,6 +131,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.7,
     textTransform: 'uppercase',
   },
+  badgeLight: { backgroundColor: colors.primarySoft },
   eyebrowLight: { color: colors.primary },
   titleRow: {
     flexDirection: 'row',

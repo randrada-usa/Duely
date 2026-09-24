@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -76,6 +77,8 @@ export function TaskForm({
   header,
   initialSubjectName = '',
 }: TaskFormProps) {
+  const { fontScale, width } = useWindowDimensions();
+  const stackedFields = fontScale >= 1.3 || width < 360;
   const formRef = useRef<ScrollView>(null);
   const { addSubject, subjects } = useTasks();
   const parts = deadlineParts(initial.dueAt);
@@ -355,7 +358,7 @@ export function TaskForm({
 
       {Platform.OS === 'android' ? (
         <>
-          <View style={styles.row}>
+          <View style={[styles.row, stackedFields && styles.stackedRow]}>
             <View style={styles.flex}>
               <Text style={styles.label}>Due date</Text>
               <Pressable
@@ -384,7 +387,7 @@ export function TaskForm({
                 </Text>
               </Pressable>
             </View>
-            <View style={styles.time}>
+            <View style={[styles.time, stackedFields && styles.fullWidth]}>
               <Text style={styles.label}>Time</Text>
               <Pressable
                 accessibilityLabel={
@@ -435,7 +438,7 @@ export function TaskForm({
           )}
         </>
       ) : (
-        <View style={styles.row}>
+        <View style={[styles.row, stackedFields && styles.stackedRow]}>
           <View style={styles.flex}>
             <Field
               keyboardType="numbers-and-punctuation"
@@ -448,7 +451,7 @@ export function TaskForm({
               value={date}
             />
           </View>
-          <View style={styles.time}>
+          <View style={[styles.time, stackedFields && styles.fullWidth]}>
             <Field
               keyboardType="numbers-and-punctuation"
               label="Time"
@@ -683,7 +686,7 @@ const styles = StyleSheet.create({
   form: {
     padding: spacing.lg,
     paddingBottom: spacing.xl,
-    gap: spacing.lg,
+    gap: spacing.xl,
     backgroundColor: colors.background,
   },
   field: { gap: spacing.sm },
@@ -701,7 +704,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   input: {
-    minHeight: minimumTouchTarget,
+    minHeight: 56,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
@@ -710,7 +714,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: typography.body,
     fontSize: 16,
-    elevation: 1,
   },
   attentionControl: {
     borderColor: colors.warning,
@@ -759,7 +762,8 @@ const styles = StyleSheet.create({
   },
   saveSubjectText: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 15 },
   inputButton: {
-    minHeight: minimumTouchTarget,
+    minHeight: 56,
+    paddingVertical: spacing.md,
     justifyContent: 'center',
     marginTop: spacing.sm,
     paddingHorizontal: spacing.lg,
@@ -780,6 +784,8 @@ const styles = StyleSheet.create({
   clearDeadlineText: { color: colors.primary, fontFamily: typography.bodySemibold, fontSize: 14 },
   multiline: { minHeight: 112, paddingTop: spacing.md, textAlignVertical: 'top' },
   row: { flexDirection: 'row', gap: spacing.md },
+  stackedRow: { flexDirection: 'column' },
+  fullWidth: { width: '100%' },
   flex: { flex: 1 },
   time: { width: 132 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -810,7 +816,8 @@ const styles = StyleSheet.create({
   priorityTextSelected: { fontFamily: typography.bodyBold },
   reminderOptions: { gap: spacing.sm },
   reminder: {
-    minHeight: minimumTouchTarget,
+    minHeight: 56,
+    paddingVertical: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -824,7 +831,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     backgroundColor: colors.surfaceSubtle,
   },
-  reminderText: { color: colors.text, fontFamily: typography.body, fontSize: 16 },
+  reminderText: { flex: 1, color: colors.text, fontFamily: typography.body, fontSize: 16 },
   reminderTextSelected: { color: colors.primary, fontFamily: typography.bodySemibold },
   radioDot: {
     width: 18,
@@ -846,7 +853,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     elevation: 8,
   },
-  submitButton: { minHeight: 56, borderRadius: radius.lg },
+  submitButton: { minHeight: 56, borderRadius: radius.full },
   fieldNotice: {
     flexDirection: 'row',
     alignItems: 'flex-start',

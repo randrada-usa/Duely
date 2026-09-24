@@ -20,7 +20,7 @@ import {
   type TaskType,
 } from '../domain/task';
 import { priorityColors } from '../theme/priority';
-import { colors, minimumTouchTarget, radius, spacing } from '../theme/tokens';
+import { colors, minimumTouchTarget, radius, spacing, surfaces, typography } from '../theme/tokens';
 
 type ViewOptionPatch = Pick<
   TaskQuery,
@@ -236,8 +236,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   headerCopy: { flex: 1 },
-  title: { color: colors.text, fontSize: 24, fontWeight: '800' },
+  title: { color: colors.text, fontSize: 24, fontFamily: typography.headingStrong },
   subtitle: {
+    fontFamily: typography.body,
     marginTop: spacing.xs,
     color: colors.textMuted,
     fontSize: 14,
@@ -252,17 +253,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.surfaceSubtle,
   },
-  headerButtonText: { color: colors.primary, fontSize: 15, fontWeight: '800' },
+  headerButtonText: { color: colors.primary, fontSize: 15, fontFamily: typography.bodyBold },
   content: { padding: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxl },
   group: {
+    ...surfaces.card,
     padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
   },
-  groupTitle: { color: colors.text, fontSize: 17, fontWeight: '800' },
+  groupTitle: { color: colors.text, fontSize: 20, fontFamily: typography.heading },
   groupDescription: {
+    fontFamily: typography.body,
     marginTop: spacing.xs,
     color: colors.textMuted,
     fontSize: 14,
@@ -270,6 +269,7 @@ const styles = StyleSheet.create({
   },
   options: { marginTop: spacing.md, gap: spacing.sm },
   option: {
+    paddingVertical: spacing.md,
     minHeight: minimumTouchTarget,
     flexDirection: 'row',
     alignItems: 'center',
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     backgroundColor: colors.surfaceSubtle,
   },
-  optionText: { flex: 1, color: colors.text, fontSize: 16, fontWeight: '700' },
+  optionText: { flex: 1, color: colors.text, fontSize: 16, fontFamily: typography.bodySemibold },
   optionTextSelected: { color: colors.primaryPressed },
   radio: {
     width: 22,
@@ -313,6 +313,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.surface,
   },
-  resetButtonText: { color: colors.primary, fontSize: 15, fontWeight: '800' },
+  resetButtonText: { color: colors.primary, fontSize: 16, fontFamily: typography.bodyBold },
   pressed: { opacity: 0.65 },
 });
