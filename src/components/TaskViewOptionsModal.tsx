@@ -198,7 +198,7 @@ function OptionRow({ label, selected, onPress, priority }: OptionRowProps) {
         style={[
           styles.optionText,
           selected && styles.optionTextSelected,
-          palette && { color: palette.foreground },
+          selected && palette && { color: palette.foreground },
         ]}
       >
         {label}
@@ -207,7 +207,7 @@ function OptionRow({ label, selected, onPress, priority }: OptionRowProps) {
         style={[
           styles.radio,
           selected && styles.radioSelected,
-          palette && { borderColor: palette.accent },
+          selected && palette && { borderColor: palette.accent },
         ]}
       >
         {selected && (

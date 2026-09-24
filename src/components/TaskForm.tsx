@@ -495,14 +495,16 @@ export function TaskForm({
               }}
               style={[
                 styles.priority,
-                { borderColor: palette.accent },
-                selected && { backgroundColor: palette.background },
+                selected && {
+                  borderColor: palette.accent,
+                  backgroundColor: palette.background,
+                },
               ]}
             >
               <Text
                 style={[
                   styles.priorityText,
-                  { color: palette.foreground },
+                  selected && { color: palette.foreground },
                   selected && styles.priorityTextSelected,
                 ]}
               >

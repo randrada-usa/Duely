@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   heroSubject: { color: '#C9D0FF', fontFamily: typography.bodyBold, fontSize: 12, textTransform: 'uppercase' },
   heroTitle: { color: colors.surface, fontFamily: typography.headingStrong, fontSize: 28, lineHeight: 35 },
   heroStatus: { alignSelf: 'flex-start', overflow: 'hidden', paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, fontFamily: typography.bodySemibold, fontSize: 12, textTransform: 'capitalize' },
-  completedStatus: { color: priorityColors.low.foreground, backgroundColor: priorityColors.low.background },
+  completedStatus: { color: '#176B3A', backgroundColor: colors.successSoft },
   detailsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg },
   detailCard: { ...surfaces.card, minHeight: 96, flexBasis: '45%', flexGrow: 1, gap: spacing.sm, padding: spacing.lg },
   label: { color: colors.textMuted, fontFamily: typography.bodyBold, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
