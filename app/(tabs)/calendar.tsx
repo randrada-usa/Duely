@@ -156,8 +156,17 @@ export default function CalendarScreen() {
                         {count > 0 && (
                           <View
                             accessibilityElementsHidden
-                            style={[styles.taskDot, selected && styles.selectedDot]}
-                          />
+                            importantForAccessibility="no-hide-descendants"
+                            pointerEvents="none"
+                            style={styles.taskDots}
+                          >
+                            {Array.from({ length: Math.min(count, 3) }, (_, index) => (
+                              <View
+                                key={index}
+                                style={[styles.taskDot, selected && styles.selectedDot]}
+                              />
+                            ))}
+                          </View>
                         )}
                       </Pressable>
                     </View>
@@ -356,10 +365,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   selectedText: { color: colors.surface },
+  taskDots: {
+    // Keep task presence from changing the centered date number's position.
+    position: 'absolute',
+    bottom: 4,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 3,
+  },
   taskDot: {
     width: 5,
     height: 5,
-    marginTop: 4,
     borderRadius: 3,
     backgroundColor: colors.primary,
   },
