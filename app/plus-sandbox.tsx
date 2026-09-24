@@ -7,7 +7,7 @@ import { ScreenShell } from '../src/components/ScreenShell';
 import { purchaseWasCancelled } from '../src/domain/plus';
 import { getSandbox, isSandboxPlus, loadSandbox, sandboxSetupError } from '../src/services/plusSandbox';
 import { useAuth } from '../src/store/AuthStore';
-import { colors, spacing, typography } from '../src/theme/tokens';
+import { colors, spacing, surfaces, typography } from '../src/theme/tokens';
 
 export default function PlusSandboxScreen() {
   const { user, status, startGoogleSignIn, isAuthActionPending, authActionError } = useAuth();
@@ -106,6 +106,6 @@ export default function PlusSandboxScreen() {
 const styles = StyleSheet.create({
   title: { fontFamily: typography.headingStrong, fontSize: 28, color: colors.text },
   body: { fontFamily: typography.body, fontSize: 16, lineHeight: 24, color: colors.text },
-  card: { backgroundColor: colors.surface, borderRadius: 18, padding: spacing.lg, gap: spacing.lg },
+  card: { ...surfaces.card, padding: spacing.xl, gap: spacing.lg },
   button: { paddingVertical: spacing.md },
 });

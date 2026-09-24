@@ -6,7 +6,7 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { sortBySmartPriority } from '../../src/domain/task';
 import { useTasks } from '../../src/store/TaskStore';
-import { colors, radius, spacing, typography } from '../../src/theme/tokens';
+import { colors, radius, spacing, surfaces, typography } from '../../src/theme/tokens';
 
 function relativeDeadline(dueAt: string) {
   const due = new Date(dueAt);
@@ -85,7 +85,7 @@ export default function NotificationsScreen() {
                 </View>
                 <View style={styles.copy}>
                   <View style={styles.noticeHeader}>
-                    <Text numberOfLines={1} style={styles.noticeTitle}>
+                    <Text style={styles.noticeTitle}>
                       {task.title}
                     </Text>
                     <Text style={styles.time}>{relativeDeadline(task.dueAt!)}</Text>
@@ -122,16 +122,12 @@ const styles = StyleSheet.create({
   markRead: { color: colors.primary, fontFamily: typography.bodySemibold, fontSize: 14 },
   list: { gap: spacing.md },
   notice: {
+    ...surfaces.card,
     minHeight: 88,
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    elevation: 2,
+    padding: spacing.lg,
   },
   unreadNotice: { borderColor: '#FFD3D7', backgroundColor: '#FFF9F9' },
   iconFrame: {
@@ -143,9 +139,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerSoft,
   },
   copy: { flex: 1, minWidth: 0, gap: spacing.xs },
-  noticeHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  noticeTitle: { flex: 1, color: colors.text, fontFamily: typography.bodyBold, fontSize: 15 },
-  time: { color: colors.textMuted, fontFamily: typography.body, fontSize: 11 },
+  noticeHeader: { alignItems: 'flex-start', gap: spacing.sm },
+  noticeTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 16 },
+  time: { color: colors.textMuted, fontFamily: typography.body, fontSize: 13 },
   unreadDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary },
   body: { color: colors.textMuted, fontFamily: typography.body, fontSize: 14, lineHeight: 20 },
   pressed: { opacity: 0.7 },

@@ -1,6 +1,6 @@
 # Duely Development Roadmap
 
-Last updated: 2026-09-23
+Last updated: 2026-09-24
 
 This is the living execution plan for the Duely Android beta. Update it whenever a milestone begins, finishes, changes scope, or becomes blocked. Product behavior remains governed by `ui-ux-plan.md`; ownership and required reviews remain governed by `roles.md` and `AGENTS.md`.
 
@@ -37,6 +37,19 @@ Google sign-in and Guest remain the beta choices; school-email login is deferred
 Next recommended task: verify the RevenueCat server secret and 5/20 allowance
 using a synthetic signed-in test account, then finish the Android purchase
 failure, cancellation, expiry, and offline checks before recording the demo.
+
+### September 24 visual refresh checkpoint
+
+- [x] Apply the approved reference-inspired visual direction while retaining Duely's palette, mascot, Nunito/Inter, content, and five destinations. Shared rounded surfaces, buttons, task cards, forms, settings, and tab styling are updated; no backend or payment behavior changed.
+- [x] Inspect Home, empty Tasks, Calendar, Scan intake, and Profile on Pixel 7 at default text size. Inspect Home, empty Tasks, Add Task, Scan intake, and bottom-of-Profile Sign out at 150% text size. Restore emulator text size to 100% afterward. No tasks were saved and no account actions were performed.
+- [x] Correct Scan's tab-bar restoration to use the shared safe-area-aware style. Stack editor date/time fields at large text sizes and add bottom safe-area protection to Add Task.
+- [x] TypeScript and 31 test files / 168 tests pass during this refresh.
+- [~] Final visual acceptance: review populated task cards/details, the full scan-review flow, onboarding, smaller phones, and physical-device behavior. The final Add Task bottom inset and extra Scan viewfinder padding need another visual check. Earlier screenshots do not certify these last adjustments or every state.
+
+Rey approved publishing the refresh to the feature branch only, without merging.
+Next: review the new appearance and complete the remaining visual checks before
+requesting merge or release approval.
+The September 23 backend checkpoint and its remaining Plus checks still apply.
 
 ## Locked Product Decisions
 

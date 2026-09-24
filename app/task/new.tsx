@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { ScreenShell } from '../../src/components/ScreenShell';
@@ -52,6 +53,7 @@ export default function NewTaskScreen() {
   }
 
   return (
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.editor}>
     <TaskForm
       defaultReminder={defaultReminder}
       header={
@@ -72,10 +74,12 @@ export default function NewTaskScreen() {
         router.back();
       }}
     />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  editor: { flex: 1, backgroundColor: colors.surface },
   unavailable: { gap: spacing.lg },
   unavailableTitle: { color: colors.text, fontSize: 22, fontWeight: '800' },
   unavailableText: { color: colors.textMuted, fontSize: 16, lineHeight: 23 },

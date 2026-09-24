@@ -377,13 +377,14 @@ function FilterChip({ label, selected, role, onPress }: FilterChipProps) {
 
 const styles = StyleSheet.create({
   header: {
+    marginBottom: spacing.xl,
     minHeight: minimumTouchTarget,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
   },
-  title: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 26 },
+  title: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 30 },
   addButton: {
     minHeight: minimumTouchTarget,
     flexDirection: 'row',
@@ -396,9 +397,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   addButtonText: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 14 },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   searchBox: {
-    minHeight: minimumTouchTarget,
+    minHeight: 56,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: radius.lg,
+    borderRadius: radius.full,
     backgroundColor: colors.surface,
   },
   search: {
@@ -443,7 +444,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginTop: spacing.sm,
   },
-  sectionTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 14 },
+  sectionTitle: { color: colors.text, fontFamily: typography.heading, fontSize: 18 },
   manageButton: {
     minHeight: minimumTouchTarget,
     justifyContent: 'center',
