@@ -51,7 +51,7 @@ const slides: Array<{
   },
 ];
 
-export default function OnboardingScreen() {
+export default function OnboardingScreen({ authOnly = false }: { authOnly?: boolean } = {}) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const {
@@ -61,7 +61,7 @@ export default function OnboardingScreen() {
     startGoogleSignIn,
   } = useAuth();
   const [slideIndex, setSlideIndex] = useState(0);
-  const [showAuthChoice, setShowAuthChoice] = useState(false);
+  const [showAuthChoice, setShowAuthChoice] = useState(authOnly);
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
 
@@ -217,10 +217,9 @@ export default function OnboardingScreen() {
         </Pressable>
       </View>
 
-      <View
-        accessible
-        accessibilityLabel={`Step ${slideIndex + 1} of ${slides.length}. ${slide.title}. ${slide.body}`}
-        style={styles.slideContent}
+      <ScrollView
+        contentContainerStyle={styles.slideContent}
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.illustrationCard}>
           <View style={styles.orbitLarge} />
@@ -252,7 +251,7 @@ export default function OnboardingScreen() {
             <Text style={styles.detailText}>{slide.detail}</Text>
           </View>
         </View>
-      </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <View
@@ -336,14 +335,14 @@ const styles = StyleSheet.create({
     fontFamily: typography.bodySemibold,
     fontSize: 15,
   },
-  slideContent: { flex: 1, justifyContent: 'center', gap: spacing.xxl },
+  slideContent: { flexGrow: 1, justifyContent: 'center', gap: spacing.xxl, paddingVertical: spacing.xl },
   illustrationCard: {
     minHeight: 270,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     borderRadius: radius.xl,
-    backgroundColor: colors.primaryFaint,
+    backgroundColor: colors.primarySoft,
   },
   orbitLarge: {
     position: 'absolute',
@@ -459,7 +458,8 @@ const styles = StyleSheet.create({
   authCopy: { alignItems: 'center', gap: spacing.md, marginBottom: spacing.xxl },
   authActions: { gap: spacing.md },
   googleButton: {
-    minHeight: minimumTouchTarget,
+    minHeight: 56,
+    paddingVertical: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -471,9 +471,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   googleButtonText: {
+    flexShrink: 1,
     color: colors.text,
     fontFamily: typography.bodyBold,
-    fontSize: 15,
+    fontSize: 16,
   },
   guestExplanation: {
     color: colors.textMuted,

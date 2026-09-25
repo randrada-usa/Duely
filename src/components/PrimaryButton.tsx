@@ -38,15 +38,16 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: minimumTouchTarget,
+    minHeight: Math.max(56, minimumTouchTarget),
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
     borderRadius: radius.full,
     backgroundColor: colors.primary,
     elevation: 2,
   },
   pressed: { backgroundColor: colors.primaryPressed },
   disabled: { opacity: 0.45 },
-  label: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 15 },
+  label: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 16, textAlign: 'center' },
 });

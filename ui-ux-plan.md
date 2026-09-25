@@ -162,6 +162,7 @@ Include:
 - Help and feedback.
 - Application version.
 - Sign out for authenticated users.
+- Successful explicit sign-out replaces the main tabs with the Google/Guest choice screen, without replaying onboarding or deleting local tasks. Failed sign-out stays on Profile with retry feedback. Guest entry requires choosing Continue without an account.
 
 Defer school-email authentication, the verified-school badge, Google Calendar sync, academic-calendar integration, study-hour planning, weekly goals, and general AI coach settings.
 
@@ -238,6 +239,15 @@ Design and implement:
 - General feedback and report-a-problem flow.
 
 ## Accessibility Requirements
+
+Tasks filter presentation: keep Search, one filter button with an active-option
+badge, and All/Open/Completed pills on the main screen. Put the complete status,
+No deadline, subject, priority, task type, sorting, and grouping controls in a
+centered popup with wrapping pills, neutral unselected states, and indigo selected
+states with checkmarks. The popup scrolls internally; Reset and Done stay visible.
+Selections apply immediately; Done, Android Back, or tapping outside closes it.
+Reset restores filter/sort/group defaults while preserving the search text.
+Manage subjects remains available from Profile.
 
 - Meet WCAG AA contrast for meaningful text, icons, controls, borders, and focus states.
 - Do not use color alone for priority, deadline state, subject, completion, errors, or selection.

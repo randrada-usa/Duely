@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Subject } from '../domain/subject';
 import { useTasks } from '../store/TaskStore';
-import { colors, minimumTouchTarget, radius, spacing } from '../theme/tokens';
+import { colors, minimumTouchTarget, radius, spacing, typography } from '../theme/tokens';
 
 type SubjectManagerModalProps = {
   visible: boolean;
@@ -292,8 +292,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   headerCopy: { flex: 1 },
-  title: { color: colors.text, fontSize: 24, fontWeight: '800' },
+  title: { color: colors.text, fontSize: 24, fontFamily: typography.headingStrong },
   subtitle: {
+    fontFamily: typography.body,
     marginTop: spacing.xs,
     color: colors.textMuted,
     fontSize: 14,
@@ -308,7 +309,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.surfaceSubtle,
   },
-  headerButtonText: { color: colors.primary, fontSize: 15, fontWeight: '800' },
+  headerButtonText: { color: colors.primary, fontSize: 15, fontFamily: typography.bodyBold },
   content: { padding: spacing.xl, gap: spacing.md },
   createCard: {
     gap: spacing.sm,
@@ -318,10 +319,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
   },
-  label: { color: colors.text, fontSize: 14, fontWeight: '800' },
+  label: { color: colors.text, fontSize: 14, fontFamily: typography.bodyBold },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   input: {
-    minHeight: minimumTouchTarget,
+    minHeight: 56,
+    fontFamily: typography.body,
     flex: 1,
     paddingHorizontal: spacing.lg,
     borderWidth: 1,
@@ -351,8 +353,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   subjectCopy: { minWidth: 140, flex: 1 },
-  subjectName: { color: colors.text, fontSize: 16, fontWeight: '800' },
-  subjectCount: { marginTop: 2, color: colors.textMuted, fontSize: 13 },
+  subjectName: { color: colors.text, fontSize: 16, fontFamily: typography.bodyBold },
+  subjectCount: { marginTop: 4, color: colors.textMuted, fontSize: 14, fontFamily: typography.body },
   actionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   actionButton: {
     minHeight: minimumTouchTarget,
@@ -364,7 +366,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.primary,
   },
-  actionButtonText: { color: colors.surface, fontSize: 14, fontWeight: '800' },
+  actionButtonText: { color: colors.surface, fontSize: 14, fontFamily: typography.bodyBold },
   secondaryButton: { backgroundColor: colors.surface },
   secondaryButtonText: { color: colors.primary },
   destructiveButton: { borderColor: colors.danger, backgroundColor: colors.surface },
@@ -378,8 +380,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
   },
-  emptyTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  emptyTitle: { color: colors.text, fontSize: 16, fontFamily: typography.bodyBold },
   emptyDescription: {
+    fontFamily: typography.body,
     marginTop: spacing.xs,
     color: colors.textMuted,
     fontSize: 14,

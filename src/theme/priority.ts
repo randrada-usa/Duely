@@ -1,8 +1,8 @@
 export const priorityColors = {
   low: {
-    accent: '#249E58',
-    background: '#E5F8EC',
-    foreground: '#176B3A',
+    accent: '#5275B8',
+    background: '#EAF0FB',
+    foreground: '#34558D',
   },
   medium: {
     accent: '#B98200',

@@ -13,7 +13,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { bottomTabBarStyle } from '../../src/theme/navigation';
 
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { ScreenShell } from '../../src/components/ScreenShell';
@@ -94,6 +95,7 @@ const pickerOptions: ImagePicker.ImagePickerOptions = {
 };
 
 export default function ScanScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { status: authStatus } = useAuth();
   const {
@@ -129,10 +131,10 @@ export default function ScanScreen() {
 
   useEffect(() => {
     navigation.setOptions({
-      tabBarStyle: focusedScanFlow ? { display: 'none' } : undefined,
+      tabBarStyle: focusedScanFlow ? { display: 'none' } : bottomTabBarStyle(insets.bottom),
     });
-    return () => navigation.setOptions({ tabBarStyle: undefined });
-  }, [focusedScanFlow, navigation]);
+    return () => navigation.setOptions({ tabBarStyle: bottomTabBarStyle(insets.bottom) });
+  }, [focusedScanFlow, insets.bottom, navigation]);
 
   const acceptPickerResult = useCallback(
     async (
@@ -583,7 +585,7 @@ export default function ScanScreen() {
 
   if (scanStage === 'saved' && savedTaskId) {
     return (
-      <ScreenShell scroll>
+      <ScreenShell scroll safeBottom={focusedScanFlow}>
         <View style={styles.successState}>
           <View style={styles.successIcon}>
             <Ionicons
@@ -622,7 +624,7 @@ export default function ScanScreen() {
       permissionIssue.source === 'camera' ? 'gallery' : 'camera';
 
     return (
-      <ScreenShell scroll>
+      <ScreenShell scroll safeBottom={focusedScanFlow}>
         <View style={styles.header}>
           <Text accessibilityRole="header" style={styles.title}>
             {sourceLabel} access needed
@@ -679,7 +681,7 @@ export default function ScanScreen() {
   if (image && scanStage === 'processing') {
     const organizing = ocrProgressStep === 'organizing';
     return (
-      <ScreenShell scroll>
+      <ScreenShell scroll safeBottom={focusedScanFlow}>
         <View
           accessibilityLabel="Reading assignment"
           accessibilityLiveRegion="polite"
@@ -724,7 +726,7 @@ export default function ScanScreen() {
 
   if (image && scanStage === 'ai-processing') {
     return (
-      <ScreenShell scroll>
+      <ScreenShell scroll safeBottom={focusedScanFlow}>
         <View
           accessibilityLabel="Improving assignment details with cloud AI"
           accessibilityLiveRegion="polite"
@@ -746,7 +748,7 @@ export default function ScanScreen() {
 
   if (image && scanStage === 'ai-choice' && extraction) {
     return (
-      <ScreenShell scroll>
+      <ScreenShell scroll safeBottom={focusedScanFlow}>
         <View style={styles.header}>
           <Text accessibilityRole="header" style={styles.title}>
             On-device result ready
@@ -807,7 +809,7 @@ export default function ScanScreen() {
           : error ?? 'Check the image and try again.';
 
     return (
-      <ScreenShell scroll>
+      <ScreenShell scroll safeBottom={focusedScanFlow}>
         <View style={styles.recoveryState}>
           <Ionicons
             accessibilityElementsHidden
@@ -866,7 +868,7 @@ export default function ScanScreen() {
     };
 
     return (
-      <SafeAreaView style={styles.reviewSafeArea}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.reviewSafeArea}>
         <TaskForm
           defaultReminder={defaultReminder}
           fieldNotices={reviewExtraction.issues}
@@ -940,7 +942,7 @@ export default function ScanScreen() {
     const sourceLabel = image.source === 'camera' ? 'Camera' : 'Gallery';
 
     return (
-      <ScreenShell scroll>
+      <ScreenShell scroll safeBottom={focusedScanFlow}>
         <View style={styles.header}>
           <Text accessibilityRole="header" style={styles.title}>
             Check your image
@@ -1023,7 +1025,7 @@ export default function ScanScreen() {
   }
 
   return (
-    <ScreenShell scroll>
+    <ScreenShell scroll safeBottom={focusedScanFlow}>
       <View style={styles.header}>
         <Text accessibilityRole="header" style={styles.title}>
           Scan Assignment
@@ -1256,15 +1258,16 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   viewfinder: {
-    minHeight: 310,
+    minHeight: 280,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.xl,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: 56,
     overflow: 'hidden',
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: '#2C3154',
-    backgroundColor: '#111322',
+    borderColor: colors.navy,
+    backgroundColor: colors.navy,
   },
   viewfinderTitle: {
     marginTop: spacing.md,
@@ -1306,9 +1309,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#EBEEF5',
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
+    elevation: 1,
   },
   sourceIcon: {
     width: 52,
@@ -1331,7 +1335,7 @@ const styles = StyleSheet.create({
   privacyCopy: { flex: 1 },
   privacyTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 16 },
   cardTitle: { color: colors.text, fontFamily: typography.heading, fontSize: 18, textAlign: 'center' },
-  cardBody: { marginTop: spacing.xs, color: colors.textMuted, fontFamily: typography.body, fontSize: 15, lineHeight: 22 },
+  cardBody: { marginTop: spacing.sm, color: colors.textMuted, fontFamily: typography.body, fontSize: 16, lineHeight: 24 },
   fileRule: { color: colors.textMuted, fontFamily: typography.body, fontSize: 13, lineHeight: 20, textAlign: 'center' },
   permissionCard: {
     alignItems: 'center',

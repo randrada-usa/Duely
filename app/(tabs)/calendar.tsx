@@ -27,6 +27,7 @@ import {
   minimumTouchTarget,
   radius,
   spacing,
+  surfaces,
   typography,
 } from '../../src/theme/tokens';
 
@@ -155,8 +156,17 @@ export default function CalendarScreen() {
                         {count > 0 && (
                           <View
                             accessibilityElementsHidden
-                            style={[styles.taskDot, selected && styles.selectedDot]}
-                          />
+                            importantForAccessibility="no-hide-descendants"
+                            pointerEvents="none"
+                            style={styles.taskDots}
+                          >
+                            {Array.from({ length: Math.min(count, 3) }, (_, index) => (
+                              <View
+                                key={index}
+                                style={[styles.taskDot, selected && styles.selectedDot]}
+                              />
+                            ))}
+                          </View>
                         )}
                       </Pressable>
                     </View>
@@ -278,21 +288,20 @@ const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xxl, gap: spacing.md },
   header: {
     minHeight: minimumTouchTarget,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'stretch',
     justifyContent: 'space-between',
     gap: spacing.md,
     paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   headerLargeText: { alignItems: 'stretch', flexDirection: 'column' },
   title: {
     color: colors.text,
     fontFamily: typography.headingStrong,
-    fontSize: 26,
+    fontSize: 30,
   },
   monthControls: {
+    justifyContent: 'space-between',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
@@ -303,7 +312,7 @@ const styles = StyleSheet.create({
     minWidth: 116,
     color: colors.text,
     fontFamily: typography.bodyBold,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
   iconButton: {
@@ -315,7 +324,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
   },
   calendarCard: {
-    paddingVertical: spacing.sm,
+    ...surfaces.card,
+    paddingVertical: spacing.lg,
   },
   weekdayRow: {
     flexDirection: 'row',
@@ -344,7 +354,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
-    borderRadius: radius.md,
+    borderRadius: radius.full,
   },
   today: { borderColor: colors.primary },
   selectedDay: { borderColor: colors.primary, backgroundColor: colors.primary },
@@ -355,10 +365,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   selectedText: { color: colors.surface },
+  taskDots: {
+    // Keep task presence from changing the centered date number's position.
+    position: 'absolute',
+    bottom: 4,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 3,
+  },
   taskDot: {
     width: 5,
     height: 5,
-    marginTop: 4,
     borderRadius: 3,
     backgroundColor: colors.primary,
   },
@@ -386,10 +405,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
     borderRadius: radius.full,
-    backgroundColor: colors.dangerSoft,
+    backgroundColor: colors.primarySoft,
   },
   todayButtonText: {
-    color: colors.danger,
+    color: colors.primary,
     fontFamily: typography.bodyBold,
     fontSize: 14,
   },
@@ -430,13 +449,13 @@ const styles = StyleSheet.create({
   },
   taskList: { gap: spacing.md },
   addButton: {
-    minHeight: minimumTouchTarget,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
-    borderRadius: radius.lg,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
     elevation: 2,
   },

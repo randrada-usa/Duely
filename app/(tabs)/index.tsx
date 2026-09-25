@@ -23,6 +23,7 @@ import {
   minimumTouchTarget,
   radius,
   spacing,
+  surfaces,
   typography,
 } from '../../src/theme/tokens';
 
@@ -59,7 +60,7 @@ function nextTaskSummary(task: Task | undefined) {
 }
 
 export default function HomeScreen() {
-  const { fontScale } = useWindowDimensions();
+  const { fontScale, width } = useWindowDimensions();
   const { user } = useAuth();
   const { canEditTasks, isHydrated, tasks } = useTasks();
   const [view, setView] = useState<HomeView>('today');
@@ -95,7 +96,7 @@ export default function HomeScreen() {
         </View>
         <View style={styles.greeting}>
           <Text style={styles.eyebrow}>WELCOME BACK · {dateLabel.toUpperCase()}</Text>
-          <Text accessibilityRole="header" numberOfLines={1} style={styles.title}>
+          <Text accessibilityRole="header" style={styles.title}>
             {name ?? 'Good day!'}
           </Text>
         </View>
@@ -130,7 +131,7 @@ export default function HomeScreen() {
               : `${heroCount} ${heroCount === 1 ? 'task needs' : 'tasks need'} attention`}
           </Text>
         </View>
-        <Text numberOfLines={2} style={styles.heroBody}>
+        <Text style={styles.heroBody}>
           {nextTaskSummary(recommended)}
         </Text>
       </View>
@@ -182,7 +183,7 @@ export default function HomeScreen() {
       <View
         style={[
           styles.sectionHeader,
-          fontScale >= 1.4 && styles.sectionHeaderLargeText,
+          (fontScale >= 1.2 || width < 430) && styles.sectionHeaderLargeText,
         ]}
       >
         <Text style={styles.sectionTitle}>Today's schedule</Text>
@@ -197,7 +198,7 @@ export default function HomeScreen() {
                 onPress={() => setView(option)}
                 style={[
                   styles.segment,
-                  fontScale >= 1.4 && styles.segmentLargeText,
+                  (fontScale >= 1.2 || width < 430) && styles.segmentLargeText,
                   selected && styles.segmentSelected,
                 ]}
               >
@@ -242,17 +243,17 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   avatarFrame: {
-    width: 46,
-    height: 46,
+    width: 56,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 23,
+    borderRadius: 28,
     backgroundColor: colors.primaryFaint,
   },
-  avatar: { width: 42, height: 42, resizeMode: 'contain' },
+  avatar: { width: 50, height: 50, resizeMode: 'contain' },
   greeting: { flex: 1, minWidth: 0 },
   eyebrow: {
     color: colors.textMuted,
@@ -260,7 +261,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.2,
   },
-  title: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 20 },
+  title: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 24 },
   headerAction: {
     width: minimumTouchTarget,
     height: minimumTouchTarget,
@@ -286,9 +287,9 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.45 },
   hero: {
-    minHeight: 148,
+    minHeight: 192,
     overflow: 'hidden',
-    padding: spacing.lg,
+    padding: spacing.xl,
     borderRadius: radius.xl,
     backgroundColor: colors.primary,
   },
@@ -303,9 +304,9 @@ const styles = StyleSheet.create({
   },
   heroEyebrow: {
     marginBottom: spacing.sm,
-    color: '#C9D0FF',
+    color: colors.surface,
     fontFamily: typography.bodyBold,
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 1.2,
   },
   heroTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
@@ -325,27 +326,22 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.surface,
     fontFamily: typography.headingStrong,
-    fontSize: 21,
-    lineHeight: 26,
+    fontSize: 26,
+    lineHeight: 32,
   },
   heroBody: {
-    marginTop: spacing.sm,
-    marginLeft: 62,
-    color: '#DCE0FF',
+    marginTop: spacing.lg,
+    color: colors.surface,
     fontFamily: typography.body,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 16,
+    lineHeight: 24,
   },
   statsRow: { flexDirection: 'row', gap: spacing.md },
   statCard: {
+    ...surfaces.card,
     flex: 1,
     minHeight: 112,
     padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    elevation: 2,
   },
   alertStatCard: { borderColor: '#FFD4D8', backgroundColor: '#FFF9F9' },
   statLabel: { color: colors.textMuted, fontFamily: typography.body, fontSize: 13 },
@@ -357,17 +353,14 @@ const styles = StyleSheet.create({
     lineHeight: 36,
   },
   alertStatValue: { color: colors.danger },
-  statHint: { color: colors.textSubtle, fontFamily: typography.body, fontSize: 11 },
+  statHint: { color: colors.textMuted, fontFamily: typography.body, fontSize: 12 },
   scanCard: {
+    ...surfaces.card,
     minHeight: 76,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+    padding: spacing.lg,
   },
   scanIcon: {
     width: 48,
@@ -378,8 +371,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   scanCopy: { flex: 1, gap: 2 },
-  scanTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 15 },
-  scanBody: { color: colors.textMuted, fontFamily: typography.body, fontSize: 12 },
+  scanTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 16 },
+  scanBody: { color: colors.textMuted, fontFamily: typography.body, fontSize: 14, lineHeight: 21 },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -393,7 +386,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 20 },
   segmentedControl: {
     flexDirection: 'row',
-    padding: 3,
+    padding: spacing.xs,
     borderRadius: radius.full,
     backgroundColor: colors.surfaceSubtle,
   },
@@ -407,7 +400,7 @@ const styles = StyleSheet.create({
   },
   segmentLargeText: { flex: 1 },
   segmentSelected: { backgroundColor: colors.primary },
-  segmentText: { color: colors.textMuted, fontFamily: typography.bodySemibold, fontSize: 12 },
+  segmentText: { color: colors.textMuted, fontFamily: typography.bodySemibold, fontSize: 14 },
   segmentTextSelected: { color: colors.surface },
   loading: { minHeight: 180, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   loadingText: { color: colors.textMuted, fontFamily: typography.body, fontSize: 15 },

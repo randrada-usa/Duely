@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, minimumTouchTarget, typography } from '../../src/theme/tokens';
+import { bottomTabBarStyle } from '../../src/theme/navigation';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 const icons: Record<string, { active: IconName; inactive: IconName }> = {
@@ -14,6 +16,7 @@ const icons: Record<string, { active: IconName; inactive: IconName }> = {
 };
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   return (
     <Tabs screenOptions={({ route }) => ({
       headerShown: false,
@@ -28,30 +31,20 @@ export default function TabLayout() {
           {children}
         </Text>
       ),
-      tabBarStyle: {
-        height: 74,
-        paddingBottom: 7,
-        paddingTop: 7,
-        borderTopColor: colors.border,
-        backgroundColor: colors.surface,
-        elevation: 14,
-      },
+      tabBarStyle: bottomTabBarStyle(insets.bottom),
       tabBarItemStyle: { minHeight: minimumTouchTarget },
       tabBarIcon: ({ color, focused, size }) => {
         const icon = icons[route.name] ?? icons.index;
         return (
-          <Ionicons
-            accessibilityElementsHidden
-            allowFontScaling={false}
-            color={route.name === 'scan' ? colors.surface : color}
-            name={focused ? icon.active : icon.inactive}
-            size={route.name === 'scan' ? 25 : size}
-            style={
-              route.name === 'scan'
-                ? styles.scanIcon
-                : undefined
-            }
-          />
+          <View style={route.name === 'scan' ? styles.scanIcon : [styles.iconPill, focused && styles.activeIconPill]}>
+            <Ionicons
+              accessibilityElementsHidden
+              allowFontScaling={false}
+              color={route.name === 'scan' ? colors.surface : color}
+              name={focused ? icon.active : icon.inactive}
+              size={route.name === 'scan' ? 25 : size}
+            />
+          </View>
         );
       },
     })}>
@@ -92,10 +85,12 @@ const styles = StyleSheet.create({
     borderColor: colors.background,
     borderRadius: 27,
     overflow: 'hidden',
-    textAlign: 'center',
-    textAlignVertical: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.primary,
     elevation: 8,
   },
-  tabLabel: { fontFamily: typography.bodySemibold, fontSize: 11 },
+  iconPill: { width: 48, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  activeIconPill: { backgroundColor: colors.primarySoft },
+  tabLabel: { fontFamily: typography.bodySemibold, fontSize: 11, marginTop: 4 },
 });

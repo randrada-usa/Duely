@@ -8,6 +8,7 @@ import { ScreenShell } from '../../src/components/ScreenShell';
 import { SubjectManagerModal } from '../../src/components/SubjectManagerModal';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { plusSandboxEnabled } from '../../src/services/plusSandbox';
+import { signOutToChoice } from '../../src/services/signOutFlow';
 import { REMINDER_OPTIONS } from '../../src/domain/reminder';
 import { useAiPrivacy } from '../../src/store/AiPrivacyStore';
 import { useAuth } from '../../src/store/AuthStore';
@@ -114,14 +115,16 @@ export default function ProfileScreen() {
         {
           text: 'Sign out',
           onPress: () =>
-            void signOut().then((signedOut) => {
-              if (!signedOut) {
+            void signOutToChoice(
+              signOut,
+              () => router.replace('/sign-in'),
+              () => {
                 Alert.alert(
                   'Could not sign out',
                   'Check your connection and try again.',
                 );
-              }
-            }),
+              },
+            ),
         },
       ],
     );
@@ -209,7 +212,7 @@ export default function ProfileScreen() {
         </View>
       )}
       {plusSandboxEnabled && (
-        <PrimaryButton label="Duely Plus · Test Store" onPress={() => router.push('/plus-sandbox')} />
+        <PrimaryButton label="Discover Duely Plus" onPress={() => router.push('/plus-sandbox')} />
       )}
 
       <View style={styles.card}>
@@ -610,9 +613,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingVertical: spacing.sm,
   },
   avatar: {
     width: 64,
@@ -630,7 +631,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontFamily: typography.headingStrong,
-    fontSize: 22,
+    fontSize: 28,
   },
   subtitle: {
     color: colors.textMuted,
@@ -638,10 +639,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   card: {
-    gap: spacing.md,
-    padding: spacing.lg,
+    gap: spacing.lg,
+    padding: spacing.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#EBEEF5',
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     elevation: 1,
@@ -662,8 +663,8 @@ const styles = StyleSheet.create({
   cardBody: {
     color: colors.textMuted,
     fontFamily: typography.body,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
   },
   scheduleHint: {
     color: colors.textMuted,
@@ -721,14 +722,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   optionSelected: { borderColor: colors.primary, backgroundColor: colors.surfaceSubtle },
-  optionText: { color: colors.text, fontFamily: typography.body, fontSize: 15 },
+  optionText: { flex: 1, color: colors.text, fontFamily: typography.body, fontSize: 16 },
   optionTextSelected: { color: colors.primary, fontFamily: typography.bodySemibold },
   settingRow: {
-    minHeight: 60,
+    minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -736,11 +739,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   settingIcon: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     backgroundColor: colors.primarySoft,
   },
   settingCopy: { flex: 1, minWidth: 0 },

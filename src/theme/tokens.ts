@@ -31,9 +31,9 @@ export const spacing = {
 
 export const radius = {
   sm: 8,
-  md: 12,
-  lg: 18,
-  xl: 26,
+  md: 16,
+  lg: 24,
+  xl: 32,
   full: 999,
 } as const;
 
@@ -47,3 +47,18 @@ export const typography = {
 } as const;
 
 export const minimumTouchTarget = 48;
+
+// Decorative surfaces stay quiet; interactive field outlines retain colors.border.
+export const surfaces = {
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: '#EBEEF5',
+    shadowColor: colors.navy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 1,
+  },
+} as const;
