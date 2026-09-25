@@ -5,13 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../theme/tokens';
 
-type ScreenShellProps = PropsWithChildren<{ scroll?: boolean; safeBottom?: boolean }>;
+type ScreenShellProps = PropsWithChildren<{ scroll?: boolean; safeBottom?: boolean; safeTop?: boolean }>;
 
-export function ScreenShell({ children, scroll = false, safeBottom = false }: ScreenShellProps) {
+export function ScreenShell({ children, scroll = false, safeBottom = false, safeTop = true }: ScreenShellProps) {
   const segments = useSegments();
   const inTabs = segments[0] === '(tabs)';
   return (
-    <SafeAreaView edges={inTabs && !safeBottom ? ['top', 'left', 'right'] : undefined} style={styles.safeArea}>
+    <SafeAreaView edges={[...(safeTop ? ['top' as const] : []), 'left', 'right', ...(!inTabs || safeBottom ? ['bottom' as const] : [])]} style={styles.safeArea}>
       {scroll ? (
         <ScrollView
           contentContainerStyle={styles.scrollContent}
