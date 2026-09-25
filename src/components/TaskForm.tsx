@@ -291,6 +291,19 @@ export function TaskForm({
         />
         <FieldNotice message={noticeFor('title')} />
 
+        <Field
+          attention={Boolean(noticeFor('notes'))}
+          label="Instructions & notes"
+          multiline
+          onChangeText={(value) => {
+            setNotes(value);
+            acknowledgeNotice('notes');
+          }}
+          placeholder="Instructions or details"
+          value={notes}
+        />
+        <FieldNotice message={noticeFor('notes')} />
+
       <View style={styles.sectionHeader}>
         <Text style={styles.label}>Subject / course</Text>
         <Pressable
@@ -566,18 +579,6 @@ export function TaskForm({
         <Text style={styles.helper}>Add a due date to choose a reminder.</Text>
       )}
 
-      <Field
-        attention={Boolean(noticeFor('notes'))}
-        label="Instructions & notes"
-        multiline
-        onChangeText={(value) => {
-          setNotes(value);
-          acknowledgeNotice('notes');
-        }}
-        placeholder="Instructions or details"
-        value={notes}
-      />
-      <FieldNotice message={noticeFor('notes')} />
         {!!error && (
           <Text accessibilityRole="alert" style={styles.error}>
             {error}

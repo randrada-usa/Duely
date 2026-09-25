@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { ScreenShell } from '../../src/components/ScreenShell';
-import { TaskEditorHero } from '../../src/components/TaskEditorHero';
 import { TaskForm } from '../../src/components/TaskForm';
 import { TaskStorageWarning } from '../../src/components/TaskStorageWarning';
 import { dueAtForLocalDate } from '../../src/domain/calendar';
@@ -56,14 +55,6 @@ export default function NewTaskScreen() {
     <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.editor}>
     <TaskForm
       defaultReminder={defaultReminder}
-      header={
-        <TaskEditorHero
-          description="Add the details you need to recognize and finish this assignment."
-          eyebrow="Manual task"
-          title="Create a new task"
-          variant="light"
-        />
-      }
       initial={initial}
       onDirtyChange={setHasUnsavedChanges}
       submitLabel="Save task"

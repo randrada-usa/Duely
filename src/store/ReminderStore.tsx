@@ -45,7 +45,7 @@ export function ReminderStoreProvider({ children }: PropsWithChildren) {
   const { tasks, isHydrated: tasksHydrated } = useTasks();
   const needsStartupReschedule = useRef(true);
   const [defaultReminder, setDefaultReminderState] =
-    useState<ReminderMinutes | null>(60);
+    useState<ReminderMinutes | null>(1440);
   const [permission, setPermission] = useState(initialPermission);
   const [isReady, setIsReady] = useState(false);
   const [schedulingError, setSchedulingError] = useState<string | null>(null);
