@@ -51,7 +51,7 @@ const slides: Array<{
   },
 ];
 
-export default function OnboardingScreen() {
+export default function OnboardingScreen({ authOnly = false }: { authOnly?: boolean } = {}) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const {
@@ -61,7 +61,7 @@ export default function OnboardingScreen() {
     startGoogleSignIn,
   } = useAuth();
   const [slideIndex, setSlideIndex] = useState(0);
-  const [showAuthChoice, setShowAuthChoice] = useState(false);
+  const [showAuthChoice, setShowAuthChoice] = useState(authOnly);
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
 

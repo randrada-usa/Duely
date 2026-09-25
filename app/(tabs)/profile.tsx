@@ -8,6 +8,7 @@ import { ScreenShell } from '../../src/components/ScreenShell';
 import { SubjectManagerModal } from '../../src/components/SubjectManagerModal';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { plusSandboxEnabled } from '../../src/services/plusSandbox';
+import { signOutToChoice } from '../../src/services/signOutFlow';
 import { REMINDER_OPTIONS } from '../../src/domain/reminder';
 import { useAiPrivacy } from '../../src/store/AiPrivacyStore';
 import { useAuth } from '../../src/store/AuthStore';
@@ -114,14 +115,16 @@ export default function ProfileScreen() {
         {
           text: 'Sign out',
           onPress: () =>
-            void signOut().then((signedOut) => {
-              if (!signedOut) {
+            void signOutToChoice(
+              signOut,
+              () => router.replace('/sign-in'),
+              () => {
                 Alert.alert(
                   'Could not sign out',
                   'Check your connection and try again.',
                 );
-              }
-            }),
+              },
+            ),
         },
       ],
     );
@@ -209,7 +212,7 @@ export default function ProfileScreen() {
         </View>
       )}
       {plusSandboxEnabled && (
-        <PrimaryButton label="Duely Plus · Test Store" onPress={() => router.push('/plus-sandbox')} />
+        <PrimaryButton label="Discover Duely Plus" onPress={() => router.push('/plus-sandbox')} />
       )}
 
       <View style={styles.card}>
