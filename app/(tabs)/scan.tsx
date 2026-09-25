@@ -868,7 +868,7 @@ export default function ScanScreen() {
     };
 
     return (
-      <SafeAreaView style={styles.reviewSafeArea}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.reviewSafeArea}>
         <TaskForm
           defaultReminder={defaultReminder}
           fieldNotices={reviewExtraction.issues}

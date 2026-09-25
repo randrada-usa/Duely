@@ -52,7 +52,7 @@ export default function NewTaskScreen() {
   }
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.editor}>
+    <SafeAreaView edges={['left', 'right']} style={styles.editor}>
     <TaskForm
       defaultReminder={defaultReminder}
       initial={initial}

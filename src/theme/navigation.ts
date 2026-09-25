@@ -1,6 +1,10 @@
 import type { ViewStyle } from 'react-native';
 
-import { colors } from './tokens';
+import { colors, spacing } from './tokens';
+
+export function bottomActionBarPadding(bottomInset: number) {
+  return Math.max(bottomInset, spacing.md);
+}
 
 // Scan temporarily hides the bar, then restores this same safe-area-aware style.
 export function bottomTabBarStyle(bottomInset: number): ViewStyle {

@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { deadlineParts, parseLocalDeadline, pickerDate } from '../domain/deadline';
 import { REMINDER_OPTIONS } from '../domain/reminder';
@@ -31,6 +32,7 @@ import {
   type TaskFormSnapshot,
 } from '../domain/taskForm';
 import { useTasks } from '../store/TaskStore';
+import { bottomActionBarPadding } from '../theme/navigation';
 import { priorityColors } from '../theme/priority';
 import {
   colors,
@@ -78,6 +80,7 @@ export function TaskForm({
   initialSubjectName = '',
 }: TaskFormProps) {
   const { fontScale, width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const stackedFields = fontScale >= 1.3 || width < 360;
   const formRef = useRef<ScrollView>(null);
   const { addSubject, subjects } = useTasks();
@@ -585,7 +588,12 @@ export function TaskForm({
           </Text>
         )}
       </ScrollView>
-      <View style={styles.actionBar}>
+      <View
+        style={[
+          styles.actionBar,
+          { paddingBottom: bottomActionBarPadding(insets.bottom) },
+        ]}
+      >
         <PrimaryButton
           label={submitLabel}
           onPress={submit}
@@ -850,7 +858,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.surface,

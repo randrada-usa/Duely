@@ -77,7 +77,7 @@ export default function TaskDetailsScreen() {
 
   if (isEditing) {
     return (
-      <SafeAreaView style={styles.screen}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
         <TaskForm
           footer={
             <Pressable
@@ -268,7 +268,15 @@ const styles = StyleSheet.create({
   editButtonText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 15 },
   completeButton: { minWidth: 180, minHeight: minimumTouchTarget, flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: radius.lg, backgroundColor: colors.primary, elevation: 2 },
   completeButtonText: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 15 },
-  cancelEdit: { minHeight: minimumTouchTarget, alignItems: 'center', justifyContent: 'center' },
+  cancelEdit: {
+    minHeight: minimumTouchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceSubtle,
+  },
   cancelEditText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 15 },
   pressed: { opacity: 0.7 },
 });
