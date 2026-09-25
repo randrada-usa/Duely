@@ -51,6 +51,18 @@ Next: review the new appearance and complete the remaining visual checks before
 requesting merge or release approval.
 The September 23 backend checkpoint and its remaining Plus checks still apply.
 
+### September 24 sign-out navigation check
+
+Successful explicit sign-out now replaces the tabs with a dedicated sign-in route
+that reuses onboarding's Google/Guest choices without replaying its slides.
+Local tasks and Supabase's existing current-device sign-out scope are unchanged.
+Failures stay on Profile. Three new tests cover delayed success, failure, and
+unexpected errors; TypeScript and all 171 tests pass. Live Pixel 7 verification
+passed confirmed sign-out, Google/Guest choice visibility, Back leaving the app
+instead of exposing old tabs, returning to the choice screen, and explicit Guest
+continuation to Home. Google reauthentication was not repeated in this check.
+These navigation changes are local and await push approval.
+
 ## Locked Product Decisions
 
 - Android-first React Native application using Expo and TypeScript.
