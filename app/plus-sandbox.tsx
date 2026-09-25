@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 import { PrimaryButton } from '../src/components/PrimaryButton';
 import { ScreenShell } from '../src/components/ScreenShell';
@@ -11,6 +11,7 @@ import { useAuth } from '../src/store/AuthStore';
 import { colors, minimumTouchTarget, radius, spacing, surfaces, typography } from '../src/theme/tokens';
 
 export default function PlusSandboxScreen() {
+  const { height, fontScale } = useWindowDimensions();
   const { user, status, startGoogleSignIn, isAuthActionPending, authActionError } = useAuth();
   const userId = user?.id;
   const [monthly, setMonthly] = useState<PurchasesPackage | null>(null);
@@ -22,6 +23,7 @@ export default function PlusSandboxScreen() {
   currentUserId.current = userId;
   const locked = useRef(false);
   const setupError = sandboxSetupError();
+  const compact = height < 760 || fontScale > 1.1;
 
   async function run(action: 'refresh' | 'purchase' | 'restore') {
     if (locked.current || setupError || !userId) return;
@@ -83,102 +85,112 @@ export default function PlusSandboxScreen() {
   }, [userId]);
 
   return (
-    <ScreenShell scroll safeTop={false}>
+    <ScreenShell safeTop={false}>
       <Stack.Screen options={{ title: 'Duely Plus' }} />
-      <View style={styles.hero}>
-        <View style={styles.heroTop}>
+      <View style={[styles.page, compact && styles.pageCompact]}>
+        <View style={[styles.intro, compact && styles.introCompact]}>
           <View style={styles.brandPill}>
-            <Ionicons name="sparkles" size={16} color={colors.surface} accessibilityElementsHidden />
+            <Ionicons name="sparkles" size={15} color={colors.primary} accessibilityElementsHidden />
             <Text style={styles.brand}>DUELY PLUS</Text>
           </View>
-          <Image source={require('../assets/mascot.png')} style={styles.mascot} accessibilityLabel="Due, the Duely mascot" />
+          <Text accessibilityRole="header" style={[styles.heroTitle, compact && styles.heroTitleCompact]}>Unlock more with Duely Plus</Text>
+          <Text style={styles.heroBody}>More AI-assisted scans, with every suggested detail still yours to review.</Text>
         </View>
-        <Text accessibilityRole="header" style={styles.heroTitle}>More room for your assignments.</Text>
-        <Text style={styles.heroBody}>A little extra help turning assignment text into tasks you can review and make your own.</Text>
-      </View>
 
-      <View style={styles.card}>
-        <Text accessibilityRole="header" style={styles.sectionTitle}>A little more, with Plus</Text>
-        <View style={styles.benefit}>
-          <View style={styles.icon}><Ionicons name="scan-outline" size={24} color={colors.primary} accessibilityElementsHidden /></View>
-          <View style={styles.copy}>
-            <Text style={styles.benefitTitle}>20 AI-assisted scans per month</Text>
-            <Text style={styles.secondary}>More room than the free plan’s 5 monthly AI-assisted scans.</Text>
+        <View style={[styles.planCard, compact && styles.planCardCompact]}>
+          <View style={styles.planHeading}>
+            <View>
+              <Text style={styles.billingLabel}>Planned monthly price</Text>
+              <Text style={styles.price}>US$5<Text style={styles.period}> / month</Text></Text>
+            </View>
+            {active === true && <Text style={styles.activeBadge}>✓ Active</Text>}
+          </View>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.divider} />
+            <Text style={styles.included}>Included</Text>
+            <View style={styles.divider} />
+          </View>
+
+          <View style={[styles.features, compact && styles.featuresCompact]}>
+            <Feature text="20 AI-assisted scans each month" />
+            <Feature text="Review and edit every suggested detail" />
+            <Feature text="Manual tasks and on-device scanning stay free" />
+          </View>
+
+          <View style={styles.checkoutInfo}>
+            {monthly ? (
+              <Text style={styles.checkoutText}>Preview checkout price: {monthly.product.priceString} / month</Text>
+            ) : (
+              <Text style={styles.checkoutText}>{busy ? 'Loading plan details…' : userId ? 'Plan details are currently unavailable.' : 'Sign in to see checkout details.'}</Text>
+            )}
+            <Text style={styles.previewNote}>Preview only · Purchases are simulated. No real money is charged.</Text>
           </View>
         </View>
-        <View style={styles.benefit}>
-          <View style={styles.icon}><Ionicons name="create-outline" size={24} color={colors.primary} accessibilityElementsHidden /></View>
-          <View style={styles.copy}>
-            <Text style={styles.benefitTitle}>Your review comes first</Text>
-            <Text style={styles.secondary}>AI suggests the details. You edit and confirm before saving.</Text>
-          </View>
-        </View>
-        <Text style={styles.freeNote}>Manual tasks and on-device scanning stay free. You always review extracted details, on either plan.</Text>
-      </View>
 
-      <View style={styles.planCard}>
-        <View style={styles.planHeading}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>Duely Plus</Text>
-          {active === true && <Text style={styles.activeBadge}>✓ Active</Text>}
+        <View style={styles.actions}>
+          {!userId ? (
+            <PrimaryButton label={isAuthActionPending ? 'Signing in…' : 'Continue with Google'} disabled={isAuthActionPending || status === 'loading' || status === 'unconfigured'} onPress={() => void startGoogleSignIn()} />
+          ) : (
+            <PrimaryButton label={busy ? 'Please wait…' : active === true ? 'Duely Plus is active' : 'Get Duely Plus'} disabled={busy || !!setupError || !monthly || active === true} onPress={() => void run('purchase')} />
+          )}
+          {!!authActionError && <Text style={styles.feedback} accessibilityLiveRegion="polite">{authActionError}</Text>}
+          <View style={styles.links}>
+            <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || !!setupError || !userId }} disabled={busy || !!setupError || !userId} onPress={() => void run('restore')} style={({ pressed }) => [styles.link, (busy || !!setupError || !userId) && styles.disabled, pressed && styles.pressed]}>
+              <Text style={styles.linkText}>Restore purchases</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || !!setupError || !userId }} disabled={busy || !!setupError || !userId} onPress={() => void run('refresh')} style={({ pressed }) => [styles.link, (busy || !!setupError || !userId) && styles.disabled, pressed && styles.pressed]}>
+              <Text style={styles.linkText}>Refresh plan</Text>
+            </Pressable>
+          </View>
+          {!!(setupError || message) && <Text numberOfLines={2} style={styles.feedback} accessibilityLiveRegion="polite">{setupError ? 'Duely Plus is unavailable in this build. You can still use free features.' : message}</Text>}
         </View>
-        <Text style={styles.billingLabel}>Planned monthly price</Text>
-        <Text style={styles.price}>US$5<Text style={styles.period}> / month</Text></Text>
-        {monthly ? (
-          <Text style={styles.secondary}>Preview checkout price: {monthly.product.priceString} / month</Text>
-        ) : (
-          <Text style={styles.secondary}>{busy ? 'Loading plan details…' : userId ? 'Plan details are currently unavailable.' : 'Sign in to see your plan and pricing.'}</Text>
-        )}
-        <Text style={styles.previewNote}>Preview checkout · Purchases are simulated. No real money is charged.</Text>
-        {!userId && <Text style={styles.secondary}>{status === 'loading' ? 'Checking your account…' : 'Connect your Google account to keep Plus linked to you.'}</Text>}
-        {!userId ? (
-          <PrimaryButton label={isAuthActionPending ? 'Signing in…' : 'Continue with Google'} disabled={isAuthActionPending || status === 'loading' || status === 'unconfigured'} onPress={() => void startGoogleSignIn()} />
-        ) : (
-          <PrimaryButton label={busy ? 'Please wait…' : active === true ? 'Duely Plus is active' : 'Get Duely Plus'} disabled={busy || !!setupError || !monthly || active === true} onPress={() => void run('purchase')} />
-        )}
-        {!!authActionError && <Text style={styles.feedback} accessibilityLiveRegion="polite">{authActionError}</Text>}
-        <View style={styles.links}>
-          <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || !!setupError || !userId }} disabled={busy || !!setupError || !userId} onPress={() => void run('restore')} style={({ pressed }) => [styles.link, (busy || !!setupError || !userId) && styles.disabled, pressed && styles.pressed]}>
-            <Text style={styles.linkText}>Restore purchases</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || !!setupError || !userId }} disabled={busy || !!setupError || !userId} onPress={() => void run('refresh')} style={({ pressed }) => [styles.link, (busy || !!setupError || !userId) && styles.disabled, pressed && styles.pressed]}>
-            <Text style={styles.linkText}>Refresh plan</Text>
-          </Pressable>
-        </View>
-        {!!(setupError || message) && <Text style={styles.feedback} accessibilityLiveRegion="polite">{setupError ? 'Duely Plus is unavailable in this build. You can still use free features.' : message}</Text>}
       </View>
-      <Text style={styles.footer}>Optional cloud AI processes recognized text, not your assignment image. Your permission is always required.</Text>
     </ScreenShell>
   );
 }
 
+function Feature({ text }: { text: string }) {
+  return (
+    <View style={styles.feature}>
+      <Ionicons name="checkmark-circle-outline" size={22} color={colors.primary} accessibilityElementsHidden />
+      <Text style={styles.featureText}>{text}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  hero: { padding: spacing.xl, gap: spacing.lg, borderRadius: radius.xl, backgroundColor: colors.primary },
-  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
-  brandPill: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: radius.full, backgroundColor: 'rgba(255,255,255,0.14)' },
-  brand: { fontFamily: typography.bodyBold, fontSize: 12, letterSpacing: 1, color: colors.surface },
-  mascot: { width: 64, height: 64, resizeMode: 'contain' },
-  heroTitle: { fontFamily: typography.headingStrong, fontSize: 30, lineHeight: 37, color: colors.surface },
-  heroBody: { fontFamily: typography.body, fontSize: 16, lineHeight: 24, color: colors.surface },
-  card: { ...surfaces.card, padding: spacing.xl, gap: spacing.xl },
-  sectionTitle: { fontFamily: typography.headingStrong, fontSize: 22, color: colors.text, flexShrink: 1 },
-  benefit: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  icon: { width: 48, height: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft },
-  copy: { flex: 1, gap: spacing.xs },
-  benefitTitle: { fontFamily: typography.bodySemibold, fontSize: 16, lineHeight: 24, color: colors.text },
-  secondary: { fontFamily: typography.body, fontSize: 15, lineHeight: 23, color: colors.textMuted },
-  freeNote: { fontFamily: typography.body, fontSize: 14, lineHeight: 21, color: colors.textMuted },
-  planCard: { ...surfaces.card, borderColor: colors.primary, padding: spacing.xl, gap: spacing.lg },
+  page: { flex: 1, justifyContent: 'space-between', gap: spacing.lg, paddingBottom: spacing.md },
+  pageCompact: { gap: spacing.md, paddingBottom: spacing.sm },
+  intro: { alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg },
+  introCompact: { gap: spacing.xs },
+  brandPill: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full, backgroundColor: colors.primarySoft },
+  brand: { fontFamily: typography.bodyBold, fontSize: 12, letterSpacing: 1, color: colors.primary },
+  heroTitle: { maxWidth: 360, fontFamily: typography.headingStrong, fontSize: 30, lineHeight: 36, color: colors.text, textAlign: 'center' },
+  heroTitleCompact: { fontSize: 26, lineHeight: 31 },
+  heroBody: { maxWidth: 360, fontFamily: typography.body, fontSize: 15, lineHeight: 21, color: colors.textMuted, textAlign: 'center' },
+  planCard: { ...surfaces.card, borderWidth: 2, borderColor: colors.primarySoft, padding: spacing.xl, gap: spacing.lg },
+  planCardCompact: { padding: spacing.lg, gap: spacing.md },
   planHeading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   activeBadge: { fontFamily: typography.bodySemibold, fontSize: 14, color: colors.primary, backgroundColor: colors.primarySoft, padding: spacing.sm, borderRadius: radius.full },
-  billingLabel: { fontFamily: typography.bodySemibold, fontSize: 16, color: colors.text },
+  billingLabel: { fontFamily: typography.bodySemibold, fontSize: 14, color: colors.textMuted },
   price: { fontFamily: typography.headingStrong, fontSize: 32, color: colors.text },
   period: { fontFamily: typography.body, fontSize: 16, color: colors.textMuted },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  divider: { flex: 1, height: 1, backgroundColor: colors.border },
+  included: { fontFamily: typography.bodySemibold, fontSize: 14, color: colors.textMuted },
+  features: { gap: spacing.md },
+  featuresCompact: { gap: spacing.sm },
+  feature: { minHeight: 32, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  featureText: { flex: 1, fontFamily: typography.bodyMedium, fontSize: 15, lineHeight: 21, color: colors.text },
+  checkoutInfo: { gap: spacing.xs, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
+  checkoutText: { fontFamily: typography.bodySemibold, fontSize: 13, lineHeight: 18, color: colors.text },
   previewNote: { fontFamily: typography.body, fontSize: 13, lineHeight: 20, color: colors.textMuted },
-  links: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  link: { minHeight: minimumTouchTarget, justifyContent: 'center', paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
+  actions: { gap: spacing.xs },
+  links: { flexDirection: 'row', justifyContent: 'center', gap: spacing.lg },
+  link: { minHeight: minimumTouchTarget, justifyContent: 'center', paddingHorizontal: spacing.sm },
   linkText: { fontFamily: typography.bodySemibold, fontSize: 14, color: colors.primary },
-  feedback: { fontFamily: typography.body, fontSize: 15, lineHeight: 23, color: colors.text },
-  footer: { fontFamily: typography.body, fontSize: 13, lineHeight: 20, color: colors.textMuted, textAlign: 'center' },
+  feedback: { fontFamily: typography.body, fontSize: 13, lineHeight: 18, color: colors.text, textAlign: 'center' },
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.7 },
 });

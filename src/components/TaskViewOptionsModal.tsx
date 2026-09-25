@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Subject } from '../domain/subject';
@@ -20,7 +21,18 @@ export function TaskViewOptionsModal({ visible, value, subjects, onChange, onClo
       <SafeAreaView style={styles.overlay}>
         <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={onClose} />
         <View accessibilityViewIsModal style={styles.popup}>
-          <Text accessibilityRole="header" style={styles.title}>Filter and arrange</Text>
+          <View style={styles.header}>
+            <Text accessibilityRole="header" style={styles.title}>Filter and arrange</Text>
+            <Pressable
+              accessibilityLabel="Close filters"
+              accessibilityRole="button"
+              hitSlop={4}
+              onPress={onClose}
+              style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
+            >
+              <Ionicons accessibilityElementsHidden name="close" size={24} color={colors.text} />
+            </Pressable>
+          </View>
           <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <Group title="Status">
               {TASK_STATE_FILTER_OPTIONS.map((o) => <Pill key={o.value} label={o.label} selected={value.state === o.value} onPress={() => onChange({ state: o.value })} />)}
@@ -75,7 +87,9 @@ function Pill({ label, selected, onPress, checkbox = false }: { label: string; s
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, backgroundColor: 'rgba(30,32,54,0.4)' },
   popup: { width: '100%', maxWidth: 480, maxHeight: '75%', borderRadius: radius.xl, backgroundColor: colors.surface, overflow: 'hidden', elevation: 12 },
-  title: { paddingHorizontal: spacing.xl, paddingVertical: spacing.lg, color: colors.text, fontFamily: typography.headingStrong, fontSize: 22 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingLeft: spacing.xl, paddingRight: spacing.md, paddingVertical: spacing.sm },
+  title: { flex: 1, color: colors.text, fontFamily: typography.headingStrong, fontSize: 22 },
+  closeButton: { width: minimumTouchTarget, height: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full, backgroundColor: colors.surfaceSubtle },
   scroll: { flexShrink: 1 },
   content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, gap: spacing.lg },
   group: { gap: spacing.sm },
