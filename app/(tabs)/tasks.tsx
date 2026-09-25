@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   Pressable,
   ScrollView,
   SectionList,
@@ -14,15 +15,12 @@ import {
 
 import { EmptyState } from '../../src/components/EmptyState';
 import { ScreenShell } from '../../src/components/ScreenShell';
-import { SubjectManagerModal } from '../../src/components/SubjectManagerModal';
 import { TaskCard } from '../../src/components/TaskCard';
 import { TaskStorageWarning } from '../../src/components/TaskStorageWarning';
 import { TaskViewOptionsModal } from '../../src/components/TaskViewOptionsModal';
-import { taskTypeLabel } from '../../src/domain/task';
 import {
   ALL_SUBJECTS,
   DEFAULT_TASK_QUERY,
-  hasActiveTaskFilters,
   TASK_GROUPING_OPTIONS,
   TASK_SORT_OPTIONS,
   TASK_STATE_FILTER_OPTIONS,
@@ -42,7 +40,6 @@ import {
 export default function TasksScreen() {
   const { canEditTasks, isHydrated, subjects, tasks } = useTasks();
   const [taskQuery, setTaskQuery] = useState<TaskQuery>(DEFAULT_TASK_QUERY);
-  const [showSubjectManager, setShowSubjectManager] = useState(false);
   const [showViewOptions, setShowViewOptions] = useState(false);
 
   useEffect(() => {
@@ -63,7 +60,10 @@ export default function TasksScreen() {
     () => sections.reduce((count, section) => count + section.data.length, 0),
     [sections],
   );
-  const filtered = hasActiveTaskFilters(taskQuery);
+  const activeOptionCount = Number(taskQuery.state === 'overdue') +
+    Number(taskQuery.noDeadline) + Number(taskQuery.subject !== ALL_SUBJECTS) +
+    Number(taskQuery.taskType !== null) + Number(taskQuery.priority !== null) +
+    Number(taskQuery.sort !== 'smart') + Number(taskQuery.grouping !== 'none');
 
   const sortLabel =
     TASK_SORT_OPTIONS.find((option) => option.value === taskQuery.sort)?.label ??
@@ -72,40 +72,10 @@ export default function TasksScreen() {
     TASK_GROUPING_OPTIONS.find(
       (option) => option.value === taskQuery.grouping,
     )?.label ?? 'None';
-  const selectedSubjectLabel =
-    taskQuery.subject === UNASSIGNED_SUBJECTS
-      ? 'Unassigned'
-      : (subjects.find((subject) => subject.id === taskQuery.subject)?.name ??
-        null);
-  const activeFilterLabels = [
-    taskQuery.state === 'all'
-      ? null
-      : (TASK_STATE_FILTER_OPTIONS.find(
-          (option) => option.value === taskQuery.state,
-        )?.label ?? null),
-    taskQuery.noDeadline ? 'No deadline' : null,
-    selectedSubjectLabel,
-    taskQuery.taskType ? taskTypeLabel(taskQuery.taskType) : null,
-    taskQuery.priority
-      ? `${taskQuery.priority[0].toLocaleUpperCase()}${taskQuery.priority.slice(1)} priority`
-      : null,
-  ].filter((label): label is string => label !== null);
-
   function updateQuery(patch: Partial<TaskQuery>) {
     setTaskQuery((current) => ({ ...current, ...patch }));
   }
 
-  function clearFilters() {
-    setTaskQuery((current) => ({
-      ...current,
-      search: '',
-      state: 'all',
-      noDeadline: false,
-      subject: ALL_SUBJECTS,
-      taskType: null,
-      priority: null,
-    }));
-  }
 
   return (
     <>
@@ -157,14 +127,14 @@ export default function TasksScreen() {
             />
           </View>
           <Pressable
-            accessibilityLabel={`Filters and view options. Sorted by ${sortLabel}. Grouped by ${groupingLabel}.`}
+            accessibilityLabel={`Filters and view options. ${activeOptionCount} active options. Sorted by ${sortLabel}. Grouped by ${groupingLabel}.`}
             accessibilityRole="button"
-            onPress={() => setShowViewOptions(true)}
+            onPress={() => { Keyboard.dismiss(); setShowViewOptions(true); }}
             style={({ pressed }) => [styles.filterButton, pressed && styles.pressed]}
           >
             <Ionicons name="options-outline" size={21} color={colors.primary} />
-            {(filtered || taskQuery.sort !== 'smart' || taskQuery.grouping !== 'none') && (
-              <View style={styles.filterIndicator} />
+            {activeOptionCount > 0 && (
+              <View style={styles.filterIndicator}><Text style={styles.filterCount}>{activeOptionCount}</Text></View>
             )}
           </Pressable>
         </View>
@@ -175,7 +145,7 @@ export default function TasksScreen() {
           showsHorizontalScrollIndicator={false}
           style={styles.chipScroller}
         >
-          {TASK_STATE_FILTER_OPTIONS.map((option) => (
+          {TASK_STATE_FILTER_OPTIONS.filter((option) => option.value !== 'overdue').map((option) => (
             <FilterChip
               key={option.value}
               label={option.label}
@@ -184,107 +154,7 @@ export default function TasksScreen() {
               selected={taskQuery.state === option.value}
             />
           ))}
-          <FilterChip
-            label="No deadline"
-            onPress={() => updateQuery({ noDeadline: !taskQuery.noDeadline })}
-            role="checkbox"
-            selected={taskQuery.noDeadline}
-          />
         </ScrollView>
-
-        <View style={styles.subjectHeader}>
-          <Text style={styles.sectionTitle}>Subjects</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !canEditTasks }}
-            disabled={!canEditTasks}
-            onPress={() => setShowSubjectManager(true)}
-            style={({ pressed }) => [
-              styles.manageButton,
-              pressed && styles.pressed,
-              !canEditTasks && styles.disabled,
-            ]}
-          >
-            <Text style={styles.manageButtonText}>Manage</Text>
-          </Pressable>
-        </View>
-
-        <ScrollView
-          accessibilityRole="radiogroup"
-          contentContainerStyle={styles.chipRow}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipScroller}
-        >
-          <FilterChip
-            label="All"
-            onPress={() => updateQuery({ subject: ALL_SUBJECTS })}
-            role="radio"
-            selected={taskQuery.subject === ALL_SUBJECTS}
-          />
-          <FilterChip
-            label="Unassigned"
-            onPress={() => updateQuery({ subject: UNASSIGNED_SUBJECTS })}
-            role="radio"
-            selected={taskQuery.subject === UNASSIGNED_SUBJECTS}
-          />
-          {subjects.map((subject) => (
-            <FilterChip
-              key={subject.id}
-              label={subject.name}
-              onPress={() => updateQuery({ subject: subject.id })}
-              role="radio"
-              selected={taskQuery.subject === subject.id}
-            />
-          ))}
-        </ScrollView>
-
-        {(filtered ||
-          taskQuery.sort !== 'smart' ||
-          taskQuery.grouping !== 'none') && (
-          <View style={styles.activeViewBar}>
-            <Pressable
-              accessibilityLabel={`View options. Sorted by ${sortLabel}. Grouped by ${groupingLabel}.${
-                activeFilterLabels.length > 0
-                  ? ` Active filters: ${activeFilterLabels.join(', ')}.`
-                  : ''
-              }`}
-              accessibilityRole="button"
-              onPress={() => setShowViewOptions(true)}
-              style={({ pressed }) => [
-                styles.activeViewCopy,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Ionicons
-                accessibilityElementsHidden
-                color={colors.primary}
-                name="options-outline"
-                size={18}
-              />
-              <Text numberOfLines={1} style={styles.activeViewSummary}>
-                {activeFilterLabels.length > 0
-                  ? activeFilterLabels.join(' · ')
-                  : `${sortLabel} · ${
-                      groupingLabel === 'None' ? 'No grouping' : groupingLabel
-                    }`}
-              </Text>
-            </Pressable>
-            {filtered && (
-              <Pressable
-                accessibilityLabel="Clear task filters"
-                accessibilityRole="button"
-                onPress={clearFilters}
-                style={({ pressed }) => [
-                  styles.clearButton,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Text style={styles.clearButtonText}>Clear</Text>
-              </Pressable>
-            )}
-          </View>
-        )}
 
         {!isHydrated ? (
           <View
@@ -328,11 +198,8 @@ export default function TasksScreen() {
         )}
       </ScreenShell>
 
-      <SubjectManagerModal
-        onClose={() => setShowSubjectManager(false)}
-        visible={showSubjectManager}
-      />
       <TaskViewOptionsModal
+        subjects={subjects}
         onChange={updateQuery}
         onClose={() => setShowViewOptions(false)}
         value={taskQuery}
@@ -430,29 +297,17 @@ const styles = StyleSheet.create({
   },
   filterIndicator: {
     position: 'absolute',
-    right: 8,
-    top: 8,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: colors.danger,
-  },
-  subjectHeader: {
-    flexDirection: 'row',
+    right: -4,
+    top: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 3,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    marginTop: spacing.sm,
-  },
-  sectionTitle: { color: colors.text, fontFamily: typography.heading, fontSize: 18 },
-  manageButton: {
-    minHeight: minimumTouchTarget,
     justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceSubtle,
+    borderRadius: 9,
+    backgroundColor: colors.primary,
   },
-  manageButtonText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 14 },
+  filterCount: { color: colors.surface, fontSize: 10, fontFamily: typography.bodyBold },
   chipRow: { gap: spacing.sm, paddingVertical: spacing.sm },
   chipScroller: { flexGrow: 0 },
   chip: {
@@ -471,39 +326,6 @@ const styles = StyleSheet.create({
   },
   chipText: { color: colors.text, fontFamily: typography.bodySemibold, fontSize: 14 },
   chipTextSelected: { color: colors.surface },
-  activeViewBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-    paddingLeft: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primaryFaint,
-  },
-  activeViewCopy: {
-    minHeight: minimumTouchTarget,
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    justifyContent: 'center',
-  },
-  activeViewSummary: {
-    flex: 1,
-    color: colors.primary,
-    fontFamily: typography.bodySemibold,
-    fontSize: 13,
-  },
-  clearButton: {
-    minWidth: 64,
-    minHeight: minimumTouchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceSubtle,
-  },
-  clearButtonText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 14 },
   listContainer: { flex: 1 },
   list: { paddingTop: spacing.sm, paddingBottom: spacing.xxl },
   sectionHeader: {
