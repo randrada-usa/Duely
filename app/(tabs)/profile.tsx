@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AccountAvatar } from '../../src/components/AccountAvatar';
 import { ScreenShell } from '../../src/components/ScreenShell';
@@ -214,7 +214,46 @@ export default function ProfileScreen() {
         </View>
       )}
       {plusSandboxEnabled && (
-        <PrimaryButton label="Discover Duely Plus" onPress={() => router.push('/plus-sandbox')} />
+        <Pressable
+          accessibilityHint="Opens the Duely Plus plan preview"
+          accessibilityLabel="Discover Duely Plus. 20 AI-assisted scans each month."
+          accessibilityRole="button"
+          onPress={() => router.push('/plus-sandbox')}
+          style={({ pressed }) => [
+            styles.plusBanner,
+            pressed && styles.plusBannerPressed,
+          ]}
+        >
+          <ImageBackground
+            imageStyle={styles.plusBannerImage}
+            resizeMode="cover"
+            source={require('../../assets/duely-plus-banner.png')}
+            style={styles.plusBannerBackground}
+          >
+            <View style={styles.plusBannerCopy}>
+              <View style={styles.plusBannerEyebrow}>
+                <Ionicons
+                  accessibilityElementsHidden
+                  color={colors.surface}
+                  name="sparkles"
+                  size={14}
+                />
+                <Text style={styles.plusBannerEyebrowText}>DUELY PLUS</Text>
+              </View>
+              <Text style={styles.plusBannerTitle}>More help for busy weeks</Text>
+              <Text style={styles.plusBannerBody}>20 AI-assisted scans each month</Text>
+              <View style={styles.plusBannerCta}>
+                <Text style={styles.plusBannerCtaText}>Explore Plus</Text>
+                <Ionicons
+                  accessibilityElementsHidden
+                  color={colors.surface}
+                  name="arrow-forward"
+                  size={16}
+                />
+              </View>
+            </View>
+          </ImageBackground>
+        </Pressable>
       )}
 
       <View style={styles.card}>
@@ -629,6 +668,47 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   avatarImage: { width: 58, height: 58, borderRadius: radius.full },
+  plusBanner: {
+    minHeight: 132,
+    overflow: 'hidden',
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary,
+    elevation: 3,
+  },
+  plusBannerPressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
+  plusBannerBackground: { minHeight: 132, justifyContent: 'center' },
+  plusBannerImage: { borderRadius: radius.lg },
+  plusBannerCopy: {
+    width: '62%',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  plusBannerEyebrow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  plusBannerEyebrowText: {
+    color: colors.surface,
+    fontFamily: typography.bodyBold,
+    fontSize: 11,
+    letterSpacing: 0.8,
+  },
+  plusBannerTitle: {
+    color: colors.surface,
+    fontFamily: typography.headingStrong,
+    fontSize: 20,
+    lineHeight: 24,
+  },
+  plusBannerBody: {
+    color: '#E8EBFF',
+    fontFamily: typography.bodyMedium,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  plusBannerCta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  plusBannerCtaText: {
+    color: colors.surface,
+    fontFamily: typography.bodyBold,
+    fontSize: 13,
+  },
   headerCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
   title: {
     color: colors.text,
