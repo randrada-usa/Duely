@@ -98,9 +98,9 @@ Do not add archive, trash, nested folders, shared folders, or multi-subject memb
 
 ## Scan Flow
 
-1. Choose Camera or Gallery.
-2. Request permission when needed, with a clear explanation.
-3. Capture/select one image.
+1. Open directly into the live camera, with Gallery as a secondary action and an in-view flash control.
+2. Request camera or Gallery permission when needed, with a clear explanation.
+3. Capture or select one image.
 4. Crop and rotate.
 5. Run on-device ML Kit OCR.
 6. If appropriate and authorized, use a Gemini-assisted scan.
