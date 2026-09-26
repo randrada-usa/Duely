@@ -15,6 +15,7 @@ import { loadOnboardingCompleted } from '../src/services/onboardingStorage';
 import { AiPrivacyStoreProvider } from '../src/store/AiPrivacyStore';
 import { AuthStoreProvider } from '../src/store/AuthStore';
 import { CloudBackupStoreProvider } from '../src/store/CloudBackupStore';
+import { NotificationStoreProvider } from '../src/store/NotificationStore';
 import { ReminderStoreProvider } from '../src/store/ReminderStore';
 import { TaskStoreProvider } from '../src/store/TaskStore';
 import { colors, typography } from '../src/theme/tokens';
@@ -86,8 +87,9 @@ export default function RootLayout() {
           <CloudBackupStoreProvider>
             <CompletionUndoProvider>
               <ReminderStoreProvider>
-                <StatusBar style="dark" />
-                <Stack
+                <NotificationStoreProvider>
+                  <StatusBar style="dark" />
+                  <Stack
                   initialRouteName={onboardingCompleted ? '(tabs)' : 'onboarding'}
                   screenOptions={{
                     contentStyle: { backgroundColor: colors.background },
@@ -116,7 +118,8 @@ export default function RootLayout() {
                     name="ocr-evaluation"
                     options={{ title: 'OCR evaluation' }}
                   />
-                </Stack>
+                  </Stack>
+                </NotificationStoreProvider>
               </ReminderStoreProvider>
             </CompletionUndoProvider>
           </CloudBackupStoreProvider>

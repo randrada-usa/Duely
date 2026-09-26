@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EmptyState } from '../../src/components/EmptyState';
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { sortBySmartPriority } from '../../src/domain/task';
+import { useNotificationStore } from '../../src/store/NotificationStore';
 import { useTasks } from '../../src/store/TaskStore';
 import { colors, radius, spacing, surfaces, typography } from '../../src/theme/tokens';
 
@@ -24,6 +25,7 @@ function relativeDeadline(dueAt: string) {
 
 export default function NotificationsScreen() {
   const { getSubjectName, tasks } = useTasks();
+  const { isReady, isUnread, markAllRead, markRead } = useNotificationStore();
   const notices = useMemo(
     () =>
       sortBySmartPriority(tasks)
@@ -31,8 +33,7 @@ export default function NotificationsScreen() {
         .slice(0, 12),
     [tasks],
   );
-  const [readIds, setReadIds] = useState<Set<string>>(() => new Set());
-  const unreadCount = notices.filter((task) => !readIds.has(task.id)).length;
+  const unreadCount = isReady ? notices.filter(isUnread).length : 0;
 
   return (
     <ScreenShell scroll>
@@ -46,7 +47,7 @@ export default function NotificationsScreen() {
         {unreadCount > 0 && (
           <Pressable
             accessibilityRole="button"
-            onPress={() => setReadIds(new Set(notices.map((task) => task.id)))}
+            onPress={() => markAllRead(notices)}
             style={({ pressed }) => pressed && styles.pressed}
           >
             <Text style={styles.markRead}>Mark all read</Text>
@@ -62,13 +63,13 @@ export default function NotificationsScreen() {
       ) : (
         <View style={styles.list}>
           {notices.map((task) => {
-            const unread = !readIds.has(task.id);
+            const unread = isReady && isUnread(task);
             return (
               <Pressable
                 accessibilityLabel={`${task.title}. ${relativeDeadline(task.dueAt!)}. ${unread ? 'Unread' : 'Read'}.`}
                 accessibilityRole="button"
                 key={task.id}
-                onPress={() => setReadIds((current) => new Set(current).add(task.id))}
+                onPress={() => markRead(task)}
                 style={({ pressed }) => [
                   styles.notice,
                   unread && styles.unreadNotice,

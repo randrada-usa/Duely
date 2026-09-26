@@ -18,6 +18,7 @@ import { TaskCard } from '../../src/components/TaskCard';
 import { TaskStorageWarning } from '../../src/components/TaskStorageWarning';
 import { isOverdue, sortBySmartPriority, type Task } from '../../src/domain/task';
 import { useAuth } from '../../src/store/AuthStore';
+import { useNotificationStore } from '../../src/store/NotificationStore';
 import { useTasks } from '../../src/store/TaskStore';
 import {
   colors,
@@ -63,6 +64,7 @@ function nextTaskSummary(task: Task | undefined) {
 export default function HomeScreen() {
   const { fontScale, width } = useWindowDimensions();
   const { user } = useAuth();
+  const { isReady: notificationsReady, isUnread } = useNotificationStore();
   const { canEditTasks, isHydrated, tasks } = useTasks();
   const [view, setView] = useState<HomeView>('today');
   const now = new Date();
@@ -83,6 +85,9 @@ export default function HomeScreen() {
   const visibleTasks = view === 'today' ? [...overdueTasks, ...todayTasks] : upcomingTasks;
   const recommended = openTasks[0];
   const heroCount = overdueTasks.length + todayTasks.length;
+  const hasUnreadNotices =
+    notificationsReady &&
+    openTasks.some((task) => task.dueAt && isUnread(task));
 
   return (
     <ScreenShell scroll>
@@ -111,7 +116,7 @@ export default function HomeScreen() {
           ]}
         >
           <Ionicons name="notifications-outline" size={22} color={colors.text} />
-          {openTasks.some((task) => task.dueAt) && <View style={styles.notificationDot} />}
+          {hasUnreadNotices && <View style={styles.notificationDot} />}
         </Pressable>
       </View>
 
@@ -254,7 +259,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     backgroundColor: colors.primaryFaint,
   },
-  avatar: { width: 50, height: 50 },
+  avatar: { width: 56, height: 56 },
   greeting: { flex: 1, minWidth: 0 },
   eyebrow: {
     color: colors.textMuted,
