@@ -1460,7 +1460,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '17%',
     right: spacing.xl,
-    bottom: '34%',
+    bottom: '30%',
     left: spacing.xl,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.16)',
