@@ -10,6 +10,8 @@ export type PickedImageCandidate = {
   height: number;
 };
 
+export type ScanImageAsset = PickedImageCandidate & { uri: string };
+
 export type PreparedScanImage = {
   uri: string;
   width: number;

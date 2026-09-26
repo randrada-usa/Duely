@@ -5,12 +5,11 @@ import {
   type ImageManipulatorContext,
   type ImageRef,
 } from 'expo-image-manipulator';
-import type { ImagePickerAsset } from 'expo-image-picker';
-
 import {
   pickedImageError,
   scanImageQualityWarning,
   scanImageResize,
+  type ScanImageAsset,
   type PreparedScanImage,
   type ScanImageSource,
 } from '../domain/scanImage';
@@ -71,7 +70,7 @@ function cleanupPickerCacheFiles() {
 }
 
 export async function prepareScanImage(
-  asset: ImagePickerAsset,
+  asset: ScanImageAsset,
   source: ScanImageSource,
 ): Promise<PreparedScanImage> {
   const validationError = pickedImageError([asset]);

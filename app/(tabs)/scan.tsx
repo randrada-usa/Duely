@@ -1,6 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import {
+  CameraView,
+  type CameraCapturedPicture,
+  type FlashMode,
+  useCameraPermissions,
+} from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { router, useNavigation } from 'expo-router';
+import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -97,6 +103,8 @@ const pickerOptions: ImagePicker.ImagePickerOptions = {
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const [cameraPermission, requestCameraPermission, getCameraPermission] =
+    useCameraPermissions();
   const { status: authStatus } = useAuth();
   const {
     featureEnabled: aiAssistEnabled,
@@ -120,6 +128,10 @@ export default function ScanScreen() {
     useState<GeminiScanExtraction | null>(null);
   const [aiAllowance, setAiAllowance] = useState<AiAllowance | null>(null);
   const [savedTaskId, setSavedTaskId] = useState<string | null>(null);
+  const [flashMode, setFlashMode] = useState<FlashMode>('off');
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+  const cameraRef = useRef<CameraView>(null);
   const activeImageUri = useRef<string | null>(null);
   const activeOcrRun = useRef<OcrRun | null>(null);
   const activeAiRun = useRef<{
@@ -127,7 +139,18 @@ export default function ScanScreen() {
     requestId: string;
   } | null>(null);
   const isMounted = useRef(true);
-  const focusedScanFlow = permissionIssue !== null || image !== null || scanStage !== 'image';
+  const focusedScanFlow =
+    isCameraActive || permissionIssue !== null || image !== null || scanStage !== 'image';
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsCameraActive(true);
+      return () => {
+        setIsCameraActive(false);
+        setIsCameraReady(false);
+      };
+    }, []),
+  );
 
   useEffect(() => {
     navigation.setOptions({
@@ -181,6 +204,45 @@ export default function ScanScreen() {
     [],
   );
 
+  const acceptCapturedPicture = useCallback(
+    async (picture: CameraCapturedPicture) => {
+      try {
+        const prepared = await prepareScanImage(
+          {
+            uri: picture.uri,
+            width: picture.width,
+            height: picture.height,
+            type: 'image',
+            mimeType: `image/${picture.format}`,
+          },
+          'camera',
+        );
+        if (!isMounted.current) {
+          deleteTemporaryScanImage(prepared.uri);
+          return;
+        }
+
+        deleteTemporaryScanImage(activeImageUri.current);
+        activeImageUri.current = prepared.uri;
+        setImage(prepared);
+        setScanStage('image');
+        setExtraction(null);
+        setGeminiExtraction(null);
+        setAiAllowance(null);
+        setSavedTaskId(null);
+        setPermissionIssue(null);
+        setError(null);
+      } catch (caughtError) {
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : 'Duely could not prepare this photo. Please try again.',
+        );
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     isMounted.current = true;
 
@@ -209,21 +271,14 @@ export default function ScanScreen() {
     };
   }, [acceptPickerResult]);
 
-  async function launchSource(source: IntakeSource) {
+  async function launchGallery() {
     setIsProcessing(true);
     setError(null);
     try {
-      const result =
-        source === 'camera'
-          ? await ImagePicker.launchCameraAsync(pickerOptions)
-          : await ImagePicker.launchImageLibraryAsync(pickerOptions);
-      await acceptPickerResult(result, source);
+      const result = await ImagePicker.launchImageLibraryAsync(pickerOptions);
+      await acceptPickerResult(result, 'gallery');
     } catch {
-      setError(
-        source === 'camera'
-          ? 'Duely could not open the camera. Try again or choose from Gallery.'
-          : 'Duely could not open Gallery. Try again or use the camera.',
-      );
+      setError('Duely could not open Gallery. Try again or use the camera.');
     } finally {
       if (isMounted.current) setIsProcessing(false);
     }
@@ -233,12 +288,12 @@ export default function ScanScreen() {
     try {
       const permission =
         source === 'camera'
-          ? await ImagePicker.requestCameraPermissionsAsync()
+          ? await requestCameraPermission()
           : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (permission.granted) {
         setPermissionIssue(null);
-        await launchSource(source);
+        if (source === 'gallery') await launchGallery();
         return;
       }
 
@@ -260,7 +315,7 @@ export default function ScanScreen() {
           { text: 'Not now', style: 'cancel' },
           {
             text: 'Choose image',
-            onPress: () => void launchSource('gallery'),
+            onPress: () => void launchGallery(),
           },
         ],
       );
@@ -270,11 +325,15 @@ export default function ScanScreen() {
     try {
       const permission =
         source === 'camera'
-          ? await ImagePicker.getCameraPermissionsAsync()
+          ? await getCameraPermission()
           : await ImagePicker.getMediaLibraryPermissionsAsync();
 
       if (permission.granted) {
-        await launchSource(source);
+        if (source === 'gallery') {
+          await launchGallery();
+        } else if (image) {
+          removeImage();
+        }
         return;
       }
 
@@ -301,13 +360,13 @@ export default function ScanScreen() {
     try {
       const permission =
         permissionIssue.source === 'camera'
-          ? await ImagePicker.getCameraPermissionsAsync()
+          ? await getCameraPermission()
           : await ImagePicker.getMediaLibraryPermissionsAsync();
 
       if (permission.granted) {
         const source = permissionIssue.source;
         setPermissionIssue(null);
-        await launchSource(source);
+        if (source === 'gallery') await launchGallery();
         return;
       }
 
@@ -318,6 +377,24 @@ export default function ScanScreen() {
     } catch {
       setPermissionIssue(null);
       setError('Duely could not check this permission. Please try again.');
+    }
+  }
+
+  async function captureAssignment() {
+    if (!cameraRef.current || !isCameraReady || isProcessing) return;
+    setIsProcessing(true);
+    setError(null);
+    try {
+      const picture = await cameraRef.current.takePictureAsync({
+        base64: false,
+        exif: false,
+        quality: 1,
+      });
+      await acceptCapturedPicture(picture);
+    } catch {
+      setError('Duely could not capture that photo. Hold steady and try again.');
+    } finally {
+      if (isMounted.current) setIsProcessing(false);
     }
   }
 
@@ -673,7 +750,7 @@ export default function ScanScreen() {
             void beginSource(alternateSource);
           }}
         />
-        <TextButton label="Back to choices" onPress={() => setPermissionIssue(null)} />
+        <TextButton label="Back to camera" onPress={() => setPermissionIssue(null)} />
       </ScreenShell>
     );
   }
@@ -1024,112 +1101,182 @@ export default function ScanScreen() {
     );
   }
 
+  if (!cameraPermission) {
+    return (
+      <SafeAreaView style={styles.cameraScreen}>
+        <ActivityIndicator accessibilityLabel="Checking camera access" color={colors.surface} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!cameraPermission.granted) {
+    return (
+      <SafeAreaView style={styles.cameraPermissionScreen}>
+        <View style={[styles.cameraTopBar, { top: insets.top }]}>
+          <CameraControl
+            icon="arrow-back"
+            label="Return Home"
+            onPress={() => router.replace('/')}
+          />
+          <Text accessibilityRole="header" style={styles.cameraHeaderTitle}>
+            Scan Assignment
+          </Text>
+          <View style={styles.cameraTopSpacer} />
+        </View>
+        <View style={styles.cameraPermissionContent}>
+          <View style={styles.cameraPermissionIcon}>
+            <Ionicons
+              accessibilityElementsHidden
+              color="#AAB5FF"
+              name="camera-outline"
+              size={40}
+            />
+          </View>
+          <Text style={styles.cameraPermissionTitle}>Camera access needed</Text>
+          <Text style={styles.cameraPermissionBody}>
+            Duely uses the camera only while you photograph one assignment. The image
+            stays on this phone during preparation.
+          </Text>
+          <PrimaryButton
+            label={cameraPermission.canAskAgain ? 'Enable camera' : 'Open device settings'}
+            onPress={() =>
+              cameraPermission.canAskAgain
+                ? void requestAndLaunch('camera')
+                : void Linking.openSettings()
+            }
+          />
+          <SecondaryButton
+            icon="images-outline"
+            label="Choose from Gallery"
+            onPress={() => void beginSource('gallery')}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <ScreenShell scroll safeBottom={focusedScanFlow}>
-      <View style={styles.header}>
-        <Text accessibilityRole="header" style={styles.title}>
+    <SafeAreaView style={styles.cameraScreen}>
+      <CameraView
+        facing="back"
+        flash={flashMode}
+        mode="picture"
+        onCameraReady={() => setIsCameraReady(true)}
+        onMountError={() => setError('The camera is unavailable. Try Gallery instead.')}
+        ref={cameraRef}
+        style={StyleSheet.absoluteFill}
+      />
+
+      <View pointerEvents="none" style={styles.cameraShadeTop} />
+      <View pointerEvents="none" style={styles.cameraShadeBottom} />
+
+      <View style={[styles.cameraTopBar, { top: insets.top }]}>
+        <CameraControl
+          icon="arrow-back"
+          label="Return Home"
+          onPress={() => router.replace('/')}
+        />
+        <Text accessibilityRole="header" style={styles.cameraHeaderTitle}>
           Scan Assignment
         </Text>
-        <Text style={styles.subtitle}>
-          Turn one clear assignment image into an editable task.
+        <View style={styles.cameraTopSpacer} />
+      </View>
+
+      <View pointerEvents="none" style={styles.cameraGuide}>
+        <View style={[styles.cameraCorner, styles.cameraCornerTopLeft]} />
+        <View style={[styles.cameraCorner, styles.cameraCornerTopRight]} />
+        <View style={[styles.cameraCorner, styles.cameraCornerBottomLeft]} />
+        <View style={[styles.cameraCorner, styles.cameraCornerBottomRight]} />
+      </View>
+
+      <View pointerEvents="none" style={styles.cameraInstruction}>
+        <Text style={styles.cameraInstructionTitle}>Point camera at your assignment</Text>
+        <Text style={styles.cameraInstructionBody}>
+          Images only · Keep the whole page inside the frame
         </Text>
       </View>
 
-      <View style={styles.viewfinder}>
-        <View style={[styles.corner, styles.cornerTopLeft]} />
-        <View style={[styles.corner, styles.cornerTopRight]} />
-        <Ionicons
-          accessibilityElementsHidden
-          color="#AAB5FF"
-          name="scan-outline"
-          size={62}
-        />
-        <View style={styles.scanLine} />
-        <Text style={styles.viewfinderTitle}>Keep the whole assignment in frame</Text>
-        <Text style={styles.viewfinderBody}>
-          Use bright, even light and avoid shadows over the text.
-        </Text>
-        <View style={[styles.corner, styles.cornerBottomLeft]} />
-        <View style={[styles.corner, styles.cornerBottomRight]} />
-      </View>
-
-      <View style={styles.choiceRow}>
-        <SourceCard
-          description="Take a new photo"
-          icon="camera-outline"
-          label="Camera"
-          onPress={() => void beginSource('camera')}
-        />
-        <SourceCard
-          description="Choose one image"
-          icon="images-outline"
-          label="Gallery"
-          onPress={() => void beginSource('gallery')}
-        />
-      </View>
-
-      {error && <ErrorMessage message={error} />}
-
-      {isProcessing && (
-        <View
-          accessibilityLabel="Restoring image selection"
-          accessibilityRole="progressbar"
-          style={styles.processingRow}
-        >
-          <ActivityIndicator color={colors.primary} />
-          <Text style={styles.helperText}>Preparing image locally…</Text>
+      {error && (
+        <View style={styles.cameraError}>
+          <Ionicons
+            accessibilityElementsHidden
+            color="#FFD5D8"
+            name="alert-circle-outline"
+            size={20}
+          />
+          <Text style={styles.cameraErrorText}>{error}</Text>
         </View>
       )}
 
-      <View style={styles.privacyCard}>
-        <Ionicons
-          accessibilityElementsHidden
-          color={colors.primary}
-          name="shield-checkmark-outline"
-          size={26}
+      <View style={[styles.cameraControls, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+        <CameraControl
+          icon="images-outline"
+          label="Gallery"
+          onPress={() => void beginSource('gallery')}
+          showLabel
         />
-        <View style={styles.privacyCopy}>
-          <Text style={styles.privacyTitle}>Private by default</Text>
-          <Text style={styles.cardBody}>
-            Image preparation is local. Nothing is uploaded during this flow.
-          </Text>
-        </View>
+        <Pressable
+          accessibilityLabel="Take assignment photo"
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !isCameraReady || isProcessing }}
+          disabled={!isCameraReady || isProcessing}
+          onPress={() => void captureAssignment()}
+          style={({ pressed }) => [
+            styles.shutterOuter,
+            pressed && styles.shutterPressed,
+            (!isCameraReady || isProcessing) && styles.disabled,
+          ]}
+        >
+          {isProcessing ? (
+            <ActivityIndicator color={colors.surface} />
+          ) : (
+            <View style={styles.shutterInner} />
+          )}
+        </Pressable>
+        <CameraControl
+          active={flashMode === 'on'}
+          icon={flashMode === 'on' ? 'flash' : 'flash-outline'}
+          label={flashMode === 'on' ? 'Flash on' : 'Flash off'}
+          onPress={() => setFlashMode((current) => (current === 'on' ? 'off' : 'on'))}
+          showLabel
+        />
       </View>
-
-      <Text style={styles.fileRule}>
-        Images only · One assignment at a time · PDFs and documents are not supported
-      </Text>
-    </ScreenShell>
+    </SafeAreaView>
   );
 }
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-function SourceCard({
-  description,
+function CameraControl({
+  active = false,
   icon,
   label,
   onPress,
+  showLabel = false,
 }: {
-  description: string;
+  active?: boolean;
   icon: IconName;
   label: string;
   onPress: () => void;
+  showLabel?: boolean;
 }) {
   return (
-    <Pressable
-      accessibilityHint={description}
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.sourceCard, pressed && styles.pressed]}
-    >
-      <View style={styles.sourceIcon}>
-        <Ionicons accessibilityElementsHidden color={colors.primary} name={icon} size={30} />
-      </View>
-      <Text style={styles.sourceTitle}>{label}</Text>
-      <Text style={styles.sourceDescription}>{description}</Text>
-    </Pressable>
+    <View style={styles.cameraControlGroup}>
+      <Pressable
+        accessibilityLabel={label}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.cameraControl,
+          active && styles.cameraControlActive,
+          pressed && styles.cameraControlPressed,
+        ]}
+      >
+        <Ionicons accessibilityElementsHidden color={colors.surface} name={icon} size={24} />
+      </Pressable>
+      {showLabel && <Text style={styles.cameraControlLabel}>{label}</Text>}
+    </View>
   );
 }
 
@@ -1257,73 +1404,191 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
-  viewfinder: {
-    minHeight: 280,
+  cameraScreen: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xxl,
-    paddingVertical: 56,
-    overflow: 'hidden',
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.navy,
-    backgroundColor: colors.navy,
+    backgroundColor: '#090A17',
   },
-  viewfinderTitle: {
-    marginTop: spacing.md,
+  cameraPermissionScreen: { flex: 1, backgroundColor: '#0D0F20' },
+  cameraPermissionContent: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl,
+  },
+  cameraPermissionIcon: {
+    width: 76,
+    height: 76,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(91, 111, 232, 0.18)',
+  },
+  cameraPermissionTitle: {
+    color: colors.surface,
+    fontFamily: typography.headingStrong,
+    fontSize: 26,
+    textAlign: 'center',
+  },
+  cameraPermissionBody: {
+    color: '#CDD3E8',
+    fontFamily: typography.body,
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  cameraTopBar: {
+    position: 'absolute',
+    zIndex: 4,
+    top: 0,
+    right: 0,
+    left: 0,
+    minHeight: 86,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
+  cameraHeaderTitle: {
     color: colors.surface,
     fontFamily: typography.heading,
     fontSize: 18,
-    textAlign: 'center',
   },
-  viewfinderBody: {
-    marginTop: spacing.sm,
-    color: '#CDD3FF',
-    fontFamily: typography.body,
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  corner: {
+  cameraTopSpacer: { width: minimumTouchTarget, height: minimumTouchTarget },
+  cameraShadeTop: {
     position: 'absolute',
-    width: 34,
-    height: 34,
-    borderColor: '#8291FF',
+    top: 0,
+    right: 0,
+    left: 0,
+    height: '26%',
+    backgroundColor: 'rgba(3, 5, 18, 0.52)',
   },
-  cornerTopLeft: { top: 20, left: 20, borderTopWidth: 3, borderLeftWidth: 3 },
-  cornerTopRight: { top: 20, right: 20, borderTopWidth: 3, borderRightWidth: 3 },
-  cornerBottomLeft: { bottom: 20, left: 20, borderBottomWidth: 3, borderLeftWidth: 3 },
-  cornerBottomRight: { right: 20, bottom: 20, borderRightWidth: 3, borderBottomWidth: 3 },
-  scanLine: {
-    width: '76%',
-    height: 2,
-    marginTop: spacing.lg,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    opacity: 0.78,
+  cameraShadeBottom: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    left: 0,
+    height: '34%',
+    backgroundColor: 'rgba(3, 5, 18, 0.68)',
   },
-  choiceRow: { flexDirection: 'row', gap: spacing.md },
-  sourceCard: {
-    minHeight: 154,
-    flex: 1,
-    justifyContent: 'center',
-    padding: spacing.lg,
+  cameraGuide: {
+    position: 'absolute',
+    top: '17%',
+    right: spacing.xl,
+    bottom: '34%',
+    left: spacing.xl,
     borderWidth: 1,
-    borderColor: '#EBEEF5',
+    borderColor: 'rgba(255,255,255,0.16)',
     borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    elevation: 1,
   },
-  sourceIcon: {
+  cameraCorner: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    borderColor: '#7184FF',
+  },
+  cameraCornerTopLeft: { top: -1, left: -1, borderTopWidth: 3, borderLeftWidth: 3 },
+  cameraCornerTopRight: { top: -1, right: -1, borderTopWidth: 3, borderRightWidth: 3 },
+  cameraCornerBottomLeft: { bottom: -1, left: -1, borderBottomWidth: 3, borderLeftWidth: 3 },
+  cameraCornerBottomRight: { right: -1, bottom: -1, borderRightWidth: 3, borderBottomWidth: 3 },
+  cameraInstruction: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: 164,
+    left: spacing.lg,
+    alignItems: 'center',
+  },
+  cameraInstructionTitle: {
+    color: colors.surface,
+    fontFamily: typography.bodySemibold,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  cameraInstructionBody: {
+    marginTop: spacing.xs,
+    color: '#B9BED0',
+    fontFamily: typography.body,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  cameraError: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: 218,
+    left: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 173, 181, 0.45)',
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(91, 20, 31, 0.88)',
+  },
+  cameraErrorText: {
+    flex: 1,
+    color: '#FFF2F3',
+    fontFamily: typography.bodyMedium,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  cameraControls: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    left: 0,
+    minHeight: 142,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    backgroundColor: 'rgba(3, 5, 18, 0.78)',
+  },
+  cameraControlGroup: { width: 76, alignItems: 'center', gap: spacing.xs },
+  cameraControl: {
     width: 52,
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.lg,
-    backgroundColor: colors.surfaceSubtle,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(9, 10, 23, 0.74)',
   },
-  sourceTitle: { marginTop: spacing.md, color: colors.text, fontFamily: typography.bodyBold, fontSize: 17 },
-  sourceDescription: { marginTop: 2, color: colors.textMuted, fontFamily: typography.body, fontSize: 14, lineHeight: 20 },
+  cameraControlActive: {
+    borderColor: '#AAB5FF',
+    backgroundColor: colors.primary,
+  },
+  cameraControlPressed: { opacity: 0.72 },
+  cameraControlLabel: {
+    color: colors.surface,
+    fontFamily: typography.bodyMedium,
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  shutterOuter: {
+    width: 86,
+    height: 86,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 6,
+    borderColor: colors.surface,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  shutterInner: {
+    width: 62,
+    height: 62,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+  },
+  shutterPressed: { transform: [{ scale: 0.94 }] },
   privacyCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
