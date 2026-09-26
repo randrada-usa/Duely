@@ -1167,9 +1167,6 @@ export default function ScanScreen() {
         style={StyleSheet.absoluteFill}
       />
 
-      <View pointerEvents="none" style={styles.cameraShadeTop} />
-      <View pointerEvents="none" style={styles.cameraShadeBottom} />
-
       <View style={[styles.cameraTopBar, { top: insets.top }]}>
         <CameraControl
           icon="arrow-back"
@@ -1459,22 +1456,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   cameraTopSpacer: { width: minimumTouchTarget, height: minimumTouchTarget },
-  cameraShadeTop: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    left: 0,
-    height: 132,
-    backgroundColor: 'rgba(3, 5, 18, 0.52)',
-  },
-  cameraShadeBottom: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    left: 0,
-    height: '34%',
-    backgroundColor: 'rgba(3, 5, 18, 0.68)',
-  },
   cameraGuide: {
     position: 'absolute',
     top: '17%',
@@ -1497,10 +1478,16 @@ const styles = StyleSheet.create({
   cameraCornerBottomRight: { right: -1, bottom: -1, borderRightWidth: 3, borderBottomWidth: 3 },
   cameraInstruction: {
     position: 'absolute',
-    right: spacing.lg,
+    right: spacing.xl,
     bottom: 164,
-    left: spacing.lg,
+    left: spacing.xl,
     alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(9, 10, 23, 0.78)',
   },
   cameraInstructionTitle: {
     color: colors.surface,
