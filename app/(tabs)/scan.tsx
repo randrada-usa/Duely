@@ -1464,7 +1464,7 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     left: 0,
-    height: '26%',
+    height: 132,
     backgroundColor: 'rgba(3, 5, 18, 0.52)',
   },
   cameraShadeBottom: {
