@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { AccountAvatar } from '../../src/components/AccountAvatar';
 import { EmptyState } from '../../src/components/EmptyState';
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { TaskCard } from '../../src/components/TaskCard';
@@ -87,10 +88,10 @@ export default function HomeScreen() {
     <ScreenShell scroll>
       <View style={styles.header}>
         <View style={styles.avatarFrame}>
-          <Image
-            accessibilityIgnoresInvertColors
-            accessibilityLabel="Due, the Duely mascot"
-            source={require('../../assets/mascot.png')}
+          <AccountAvatar
+            displayName={name}
+            metadata={user?.user_metadata}
+            signedIn={!!user}
             style={styles.avatar}
           />
         </View>
@@ -253,7 +254,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     backgroundColor: colors.primaryFaint,
   },
-  avatar: { width: 50, height: 50, resizeMode: 'contain' },
+  avatar: { width: 50, height: 50 },
   greeting: { flex: 1, minWidth: 0 },
   eyebrow: {
     color: colors.textMuted,

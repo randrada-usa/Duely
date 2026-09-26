@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AccountAvatar } from '../../src/components/AccountAvatar';
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { SubjectManagerModal } from '../../src/components/SubjectManagerModal';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
@@ -164,9 +165,10 @@ export default function ProfileScreen() {
       <ScreenShell scroll>
       <View style={styles.header}>
         <View style={styles.avatar}>
-          <Image
-            accessibilityLabel="Due, the Duely mascot"
-            source={require('../../assets/mascot.png')}
+          <AccountAvatar
+            displayName={profileName}
+            metadata={user?.user_metadata}
+            signedIn={status === 'authenticated'}
             style={styles.avatarImage}
           />
         </View>
@@ -626,7 +628,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.surface,
   },
-  avatarImage: { width: 58, height: 58, resizeMode: 'contain' },
+  avatarImage: { width: 58, height: 58, borderRadius: radius.full },
   headerCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
   title: {
     color: colors.text,

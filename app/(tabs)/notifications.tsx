@@ -75,6 +75,7 @@ export default function NotificationsScreen() {
                   pressed && styles.pressed,
                 ]}
               >
+                {unread && <View accessibilityElementsHidden style={styles.unreadDot} />}
                 <View style={styles.iconFrame}>
                   <Ionicons
                     accessibilityElementsHidden
@@ -89,7 +90,6 @@ export default function NotificationsScreen() {
                       {task.title}
                     </Text>
                     <Text style={styles.time}>{relativeDeadline(task.dueAt!)}</Text>
-                    {unread && <View accessibilityElementsHidden style={styles.unreadDot} />}
                   </View>
                   <Text style={styles.body}>
                     {getSubjectName(task.subjectId)} · {task.reminderMinutesBefore === null
@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
   list: { gap: spacing.md },
   notice: {
     ...surfaces.card,
+    position: 'relative',
     minHeight: 88,
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
   noticeHeader: { alignItems: 'flex-start', gap: spacing.sm },
   noticeTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 16 },
   time: { color: colors.textMuted, fontFamily: typography.body, fontSize: 13 },
-  unreadDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary },
+  unreadDot: { position: 'absolute', top: spacing.lg, right: spacing.lg, width: 8, height: 8, borderRadius: radius.full, backgroundColor: colors.primary },
   body: { color: colors.textMuted, fontFamily: typography.body, fontSize: 14, lineHeight: 20 },
   pressed: { opacity: 0.7 },
 });
