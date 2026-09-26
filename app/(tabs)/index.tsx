@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
+  ImageBackground,
   Pressable,
   StyleSheet,
   Text,
@@ -122,25 +122,60 @@ export default function HomeScreen() {
 
       <TaskStorageWarning />
 
-      <View style={styles.hero}>
-        <View style={styles.heroGlow} />
-        <Text style={styles.heroEyebrow}>
-          {heroCount > 0 ? `${heroCount} NEED ATTENTION` : 'YOU’RE ON TRACK'}
-        </Text>
-        <View style={styles.heroTitleRow}>
-          <View style={styles.heroMascotFrame}>
-            <Image source={require('../../assets/mascot.png')} style={styles.heroMascot} />
+      <Pressable
+        accessibilityHint={recommended ? 'Opens your next task' : undefined}
+        accessibilityLabel={`${
+          heroCount === 0
+            ? 'No urgent tasks today'
+            : `${heroCount} ${heroCount === 1 ? 'task needs' : 'tasks need'} attention`
+        }. ${nextTaskSummary(recommended)}`}
+        accessibilityRole={recommended ? 'button' : undefined}
+        disabled={!recommended}
+        onPress={recommended ? () => router.push(`/task/${recommended.id}`) : undefined}
+        style={({ pressed }) => [styles.hero, pressed && styles.heroPressed]}
+      >
+        <ImageBackground
+          imageStyle={styles.heroImage}
+          resizeMode="cover"
+          source={require('../../assets/home-attention-banner.png')}
+          style={styles.heroBackground}
+        >
+          <View style={styles.heroCopy}>
+            <View style={styles.heroEyebrowPill}>
+              <Ionicons
+                accessibilityElementsHidden
+                color={colors.surface}
+                name={heroCount > 0 ? 'alert-circle' : 'checkmark-circle'}
+                size={14}
+              />
+              <Text style={styles.heroEyebrow}>
+                {heroCount > 0 ? `${heroCount} NEED ATTENTION` : 'YOU’RE ON TRACK'}
+              </Text>
+            </View>
+            <Text style={styles.heroTitle}>
+              {heroCount === 0
+                ? 'No urgent tasks today'
+                : `${heroCount} ${heroCount === 1 ? 'task needs' : 'tasks need'} attention`}
+            </Text>
+            <View style={styles.heroNext}>
+              <Text numberOfLines={2} style={styles.heroBody}>
+                {nextTaskSummary(recommended)}
+              </Text>
+              {recommended && (
+                <View style={styles.heroLink}>
+                  <Text style={styles.heroLinkText}>View task</Text>
+                  <Ionicons
+                    accessibilityElementsHidden
+                    color={colors.surface}
+                    name="arrow-forward"
+                    size={14}
+                  />
+                </View>
+              )}
+            </View>
           </View>
-          <Text style={styles.heroTitle}>
-            {heroCount === 0
-              ? 'No urgent tasks today'
-              : `${heroCount} ${heroCount === 1 ? 'task needs' : 'tasks need'} attention`}
-          </Text>
-        </View>
-        <Text style={styles.heroBody}>
-          {nextTaskSummary(recommended)}
-        </Text>
-      </View>
+        </ImageBackground>
+      </Pressable>
 
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
@@ -293,54 +328,60 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   disabled: { opacity: 0.45 },
   hero: {
-    minHeight: 192,
+    minHeight: 208,
     overflow: 'hidden',
-    padding: spacing.xl,
     borderRadius: radius.xl,
     backgroundColor: colors.primary,
+    elevation: 3,
   },
-  heroGlow: {
-    position: 'absolute',
-    right: -32,
-    top: -44,
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+  heroPressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
+  heroBackground: { minHeight: 208, justifyContent: 'center' },
+  heroImage: { borderRadius: radius.xl },
+  heroCopy: {
+    width: '64%',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
+  },
+  heroEyebrowPill: {
+    alignSelf: 'flex-start',
+    minHeight: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(10, 20, 91, 0.58)',
   },
   heroEyebrow: {
-    marginBottom: spacing.sm,
     color: colors.surface,
     fontFamily: typography.bodyBold,
-    fontSize: 12,
-    letterSpacing: 1.2,
+    fontSize: 10,
+    letterSpacing: 0.8,
   },
-  heroTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  heroMascotFrame: {
-    width: 50,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.5)',
-    borderRadius: 16,
-    backgroundColor: '#DCE2FF',
-  },
-  heroMascot: { width: 48, height: 48, resizeMode: 'contain' },
   heroTitle: {
-    flex: 1,
     color: colors.surface,
     fontFamily: typography.headingStrong,
-    fontSize: 26,
-    lineHeight: 32,
+    fontSize: 24,
+    lineHeight: 28,
+  },
+  heroNext: {
+    gap: spacing.xs,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(8, 15, 70, 0.5)',
   },
   heroBody: {
-    marginTop: spacing.lg,
-    color: colors.surface,
-    fontFamily: typography.body,
+    color: '#F0F2FF',
+    fontFamily: typography.bodyMedium,
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: 21,
+  },
+  heroLink: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  heroLinkText: {
+    color: colors.surface,
+    fontFamily: typography.bodyBold,
+    fontSize: 14,
   },
   statsRow: { flexDirection: 'row', gap: spacing.md },
   statCard: {
