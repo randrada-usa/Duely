@@ -8,9 +8,11 @@ import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { CompletionUndoProvider } from '../src/components/CompletionUndoProvider';
+import { LaunchScreen } from '../src/components/LaunchScreen';
 import { loadOnboardingCompleted } from '../src/services/onboardingStorage';
 import { AiPrivacyStoreProvider } from '../src/store/AiPrivacyStore';
 import { AuthStoreProvider } from '../src/store/AuthStore';
@@ -26,9 +28,11 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
   const handledInitialRoute = useRef(false);
+  const nativeSplashHidden = useRef(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(
     null,
   );
+  const [launchComplete, setLaunchComplete] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -54,14 +58,9 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if ((fontsLoaded || fontError) && onboardingCompleted !== null) {
-      void SplashScreen.hideAsync();
-    }
-  }, [fontError, fontsLoaded, onboardingCompleted]);
-
-  useEffect(() => {
     if (
       handledInitialRoute.current ||
+      !launchComplete ||
       onboardingCompleted === null ||
       (!fontsLoaded && !fontError)
     ) {
@@ -76,55 +75,79 @@ export default function RootLayout() {
     } else if (onboardingCompleted && isOnboarding) {
       router.replace('/(tabs)');
     }
-  }, [fontError, fontsLoaded, onboardingCompleted, router, segments]);
+  }, [
+    fontError,
+    fontsLoaded,
+    launchComplete,
+    onboardingCompleted,
+    router,
+    segments,
+  ]);
 
-  if ((!fontsLoaded && !fontError) || onboardingCompleted === null) return null;
+  const appReady = (fontsLoaded || !!fontError) && onboardingCompleted !== null;
+  const finishLaunch = useCallback(() => setLaunchComplete(true), []);
+  const revealLaunchScreen = useCallback(() => {
+    if (nativeSplashHidden.current) return;
+    nativeSplashHidden.current = true;
+    void SplashScreen.hideAsync();
+  }, []);
 
   return (
-    <AuthStoreProvider>
-      <AiPrivacyStoreProvider>
-        <TaskStoreProvider>
-          <CloudBackupStoreProvider>
-            <CompletionUndoProvider>
-              <ReminderStoreProvider>
-                <NotificationStoreProvider>
-                  <StatusBar style="dark" />
-                  <Stack
-                  initialRouteName={onboardingCompleted ? '(tabs)' : 'onboarding'}
-                  screenOptions={{
-                    contentStyle: { backgroundColor: colors.background },
-                    headerStyle: { backgroundColor: colors.background },
-                    headerShadowVisible: false,
-                    headerTintColor: colors.text,
-                    headerTitleStyle: { fontFamily: typography.heading },
-                  }}
-                >
-                  <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-                  <Stack.Screen name="sign-in" options={{ headerShown: false, gestureEnabled: false }} />
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen
-                    name="auth/callback"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="task/new"
-                    options={{ title: 'Add task', presentation: 'modal' }}
-                  />
-                  <Stack.Screen
-                    name="task/[id]"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="ocr-evaluation"
-                    options={{ title: 'OCR evaluation' }}
-                  />
-                  </Stack>
-                </NotificationStoreProvider>
-              </ReminderStoreProvider>
-            </CompletionUndoProvider>
-          </CloudBackupStoreProvider>
-        </TaskStoreProvider>
-      </AiPrivacyStoreProvider>
-    </AuthStoreProvider>
+    <View onLayout={revealLaunchScreen} style={styles.root}>
+      <StatusBar style="dark" />
+      {appReady && (
+        <AuthStoreProvider>
+          <AiPrivacyStoreProvider>
+            <TaskStoreProvider>
+              <CloudBackupStoreProvider>
+                <CompletionUndoProvider>
+                  <ReminderStoreProvider>
+                    <NotificationStoreProvider>
+                      <Stack
+                        initialRouteName={onboardingCompleted ? '(tabs)' : 'onboarding'}
+                        screenOptions={{
+                          contentStyle: { backgroundColor: colors.background },
+                          headerStyle: { backgroundColor: colors.background },
+                          headerShadowVisible: false,
+                          headerTintColor: colors.text,
+                          headerTitleStyle: { fontFamily: typography.heading },
+                        }}
+                      >
+                        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+                        <Stack.Screen name="sign-in" options={{ headerShown: false, gestureEnabled: false }} />
+                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                        <Stack.Screen
+                          name="auth/callback"
+                          options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                          name="task/new"
+                          options={{ title: 'Add task', presentation: 'modal' }}
+                        />
+                        <Stack.Screen
+                          name="task/[id]"
+                          options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                          name="ocr-evaluation"
+                          options={{ title: 'OCR evaluation' }}
+                        />
+                      </Stack>
+                    </NotificationStoreProvider>
+                  </ReminderStoreProvider>
+                </CompletionUndoProvider>
+              </CloudBackupStoreProvider>
+            </TaskStoreProvider>
+          </AiPrivacyStoreProvider>
+        </AuthStoreProvider>
+      )}
+      {!launchComplete && (
+        <LaunchScreen onFinished={finishLaunch} ready={appReady} />
+      )}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
+});
