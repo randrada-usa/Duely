@@ -99,17 +99,18 @@ Do not add archive, trash, nested folders, shared folders, or multi-subject memb
 ## Scan Flow
 
 1. Open directly into the live camera, with Gallery as a secondary action and an in-view flash control.
-2. Request camera or Gallery permission when needed, with a clear explanation.
-3. Capture or select one image.
-4. Crop and rotate.
-5. Run on-device ML Kit OCR.
-6. If appropriate and authorized, use a Gemini-assisted scan.
-7. Show progress with Cancel available.
-8. Present extracted fields for review.
-9. Highlight uncertain or missing fields individually.
-10. Student edits and confirms.
-11. Save the task and schedule reminders.
-12. Show success and open the saved task or return Home.
+2. Let the student choose OCR or AI Assist from the in-camera mode selector. OCR stays on-device. AI Assist still runs OCR first and sends only recognized text, never the assignment image, after authentication and explicit consent.
+3. Request camera or Gallery permission when needed, with a clear explanation.
+4. Capture or select one image.
+5. Crop and rotate.
+6. Run on-device ML Kit OCR.
+7. If AI Assist is selected and authorized, use Gemini to improve the extracted fields.
+8. Show progress with Cancel available.
+9. Present extracted fields for review.
+10. Highlight uncertain or missing fields individually.
+11. Student edits and confirms.
+12. Save the task and schedule reminders.
+13. Show success and open the saved task or return Home.
 
 Only one task is created per image in the beta. If multiple assignments are detected, ask the student to crop or select one.
 

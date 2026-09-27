@@ -42,6 +42,7 @@ import {
   type PreparedScanImage,
   type ScanImageSource,
 } from '../../src/domain/scanImage';
+import { resolveScanMode, type ScanMode } from '../../src/domain/scanMode';
 import { subjectNameKey } from '../../src/domain/subject';
 import type { TaskDraft } from '../../src/domain/task';
 import {
@@ -128,6 +129,7 @@ export default function ScanScreen() {
     useState<GeminiScanExtraction | null>(null);
   const [aiAllowance, setAiAllowance] = useState<AiAllowance | null>(null);
   const [savedTaskId, setSavedTaskId] = useState<string | null>(null);
+  const [scanMode, setScanMode] = useState<ScanMode>('ocr');
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isCameraReady, setIsCameraReady] = useState(false);
@@ -468,11 +470,20 @@ export default function ScanScreen() {
       setExtraction(parsed);
       setGeminiExtraction(null);
       setAiAllowance(null);
-      setScanStage(
-        aiAssistEnabled && authStatus === 'authenticated'
-          ? 'ai-choice'
-          : 'review',
-      );
+      const resolvedMode = resolveScanMode(scanMode, {
+        aiAssistEnabled,
+        authenticated: authStatus === 'authenticated',
+      });
+      if (resolvedMode.mode === 'ai') {
+        setScanStage('ai-choice');
+        chooseAiAssistance(parsed);
+        return;
+      }
+
+      if (resolvedMode.blocker) {
+        setError('AI assistance is unavailable. Continue with the on-device result.');
+      }
+      setScanStage('review');
     } catch (caughtError) {
       if (caughtError instanceof OcrCancelledError) {
         if (activeOcrRun.current === run) setScanStage('image');
@@ -541,10 +552,10 @@ export default function ScanScreen() {
     }
   }
 
-  function chooseAiAssistance() {
-    if (!extraction) return;
+  function chooseAiAssistance(localExtraction = extraction) {
+    if (!localExtraction) return;
     if (aiPrivacy.aiProcessing === 'granted') {
-      void runAiAssistance(extraction);
+      void runAiAssistance(localExtraction);
       return;
     }
 
@@ -557,10 +568,32 @@ export default function ScanScreen() {
           text: 'Allow and continue',
           onPress: () =>
             void setAiProcessingDecision('granted').then((saved) => {
-              if (saved && extraction) void runAiAssistance(extraction);
+              if (saved) void runAiAssistance(localExtraction);
             }),
         },
       ],
+    );
+  }
+
+  function selectScanMode(mode: ScanMode) {
+    const resolvedMode = resolveScanMode(mode, {
+      aiAssistEnabled,
+      authenticated: authStatus === 'authenticated',
+    });
+    if (!resolvedMode.blocker) {
+      setScanMode(resolvedMode.mode);
+      return;
+    }
+    if (resolvedMode.blocker === 'ai-disabled') {
+      Alert.alert(
+        'AI Assist unavailable',
+        'AI-assisted extraction is not enabled in this build. On-device OCR is still available.',
+      );
+      return;
+    }
+    Alert.alert(
+      'Sign in for AI Assist',
+      'Google sign-in is required before recognized OCR text can be sent to cloud AI. The assignment image always stays on this phone.',
     );
   }
 
@@ -859,7 +892,7 @@ export default function ScanScreen() {
         <PrimaryButton
           disabled={isAiPrivacyLoading || isAiPrivacySaving}
           label={isAiPrivacySaving ? 'Saving privacy choice…' : 'Improve with optional cloud AI'}
-          onPress={chooseAiAssistance}
+          onPress={() => chooseAiAssistance()}
         />
         <SecondaryButton label="Review on-device result" onPress={() => setScanStage('review')} />
       </ScreenShell>
@@ -1067,7 +1100,11 @@ export default function ScanScreen() {
 
         <PrimaryButton
           disabled={isProcessing}
-          label="Extract text on this device"
+          label={
+            scanMode === 'ai'
+              ? 'Extract with AI assistance'
+              : 'Extract text on this device'
+          }
           onPress={() => void startExtraction()}
         />
 
@@ -1186,11 +1223,25 @@ export default function ScanScreen() {
         <View style={[styles.cameraCorner, styles.cameraCornerBottomRight]} />
       </View>
 
-      <View pointerEvents="none" style={styles.cameraInstruction}>
-        <Text style={styles.cameraInstructionTitle}>Point camera at your assignment</Text>
-        <Text style={styles.cameraInstructionBody}>
-          Images only · Keep the whole page inside the frame
-        </Text>
+      <View
+        accessibilityLabel="Scan processing mode"
+        accessibilityRole="radiogroup"
+        style={styles.scanModePill}
+      >
+        <ScanModeOption
+          active={scanMode === 'ocr'}
+          hint="Keeps text extraction on this device"
+          icon="document-text-outline"
+          label="OCR"
+          onPress={() => selectScanMode('ocr')}
+        />
+        <ScanModeOption
+          active={scanMode === 'ai'}
+          hint="Uses on-device OCR first, then sends only recognized text to cloud AI after consent"
+          icon="sparkles"
+          label="AI Assist"
+          onPress={() => selectScanMode('ai')}
+        />
       </View>
 
       {error && (
@@ -1243,6 +1294,50 @@ export default function ScanScreen() {
 }
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
+
+function ScanModeOption({
+  active,
+  hint,
+  icon,
+  label,
+  onPress,
+}: {
+  active: boolean;
+  hint: string;
+  icon: IconName;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityHint={hint}
+      accessibilityLabel={label}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: active }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.scanModeOption,
+        active && styles.scanModeOptionActive,
+        pressed && styles.cameraControlPressed,
+      ]}
+    >
+      <Ionicons
+        accessibilityElementsHidden
+        color={active ? colors.surface : '#CDD3E8'}
+        name={icon}
+        size={18}
+      />
+      <Text
+        style={[
+          styles.scanModeOptionText,
+          active && styles.scanModeOptionTextActive,
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
 function CameraControl({
   active = false,
@@ -1476,33 +1571,36 @@ const styles = StyleSheet.create({
   cameraCornerTopRight: { top: -1, right: -1, borderTopWidth: 3, borderRightWidth: 3 },
   cameraCornerBottomLeft: { bottom: -1, left: -1, borderBottomWidth: 3, borderLeftWidth: 3 },
   cameraCornerBottomRight: { right: -1, bottom: -1, borderRightWidth: 3, borderBottomWidth: 3 },
-  cameraInstruction: {
+  scanModePill: {
     position: 'absolute',
     right: spacing.xl,
     bottom: 164,
     left: spacing.xl,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    minHeight: 58,
+    flexDirection: 'row',
+    padding: 4,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.22)',
     borderRadius: radius.full,
     backgroundColor: 'rgba(9, 10, 23, 0.78)',
   },
-  cameraInstructionTitle: {
-    color: colors.surface,
+  scanModeOption: {
+    minHeight: 48,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.full,
+  },
+  scanModeOptionActive: { backgroundColor: colors.primary },
+  scanModeOptionText: {
+    color: '#CDD3E8',
     fontFamily: typography.bodySemibold,
-    fontSize: 16,
-    textAlign: 'center',
+    fontSize: 14,
   },
-  cameraInstructionBody: {
-    marginTop: spacing.xs,
-    color: '#B9BED0',
-    fontFamily: typography.body,
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: 'center',
-  },
+  scanModeOptionTextActive: { color: colors.surface },
   cameraError: {
     position: 'absolute',
     right: spacing.lg,
