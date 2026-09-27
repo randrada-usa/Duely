@@ -6,7 +6,7 @@ import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 import { PrimaryButton } from '../src/components/PrimaryButton';
 import { ScreenShell } from '../src/components/ScreenShell';
 import { purchaseWasCancelled } from '../src/domain/plus';
-import { getSandbox, isSandboxPlus, loadSandbox, sandboxSetupError } from '../src/services/plusSandbox';
+import { getSandbox, isSandboxPlus, loadSandbox, plusTestStoreAvailable, sandboxSetupError } from '../src/services/plusSandbox';
 import { useAuth } from '../src/store/AuthStore';
 import { colors, minimumTouchTarget, radius, spacing, surfaces, typography } from '../src/theme/tokens';
 
@@ -91,7 +91,7 @@ export default function PlusSandboxScreen() {
         <View style={[styles.intro, compact && styles.introCompact]}>
           <View style={styles.brandPill}>
             <Ionicons name="sparkles" size={15} color={colors.primary} accessibilityElementsHidden />
-            <Text style={styles.brand}>DUELY PLUS</Text>
+            <Text style={styles.brand}>{plusTestStoreAvailable ? 'DUELY PLUS · TEST STORE' : 'DUELY PLUS PREVIEW'}</Text>
           </View>
           <Text accessibilityRole="header" style={[styles.heroTitle, compact && styles.heroTitleCompact]}>Unlock more with Duely Plus</Text>
           <Text style={styles.heroBody}>More AI-assisted scans, with every suggested detail still yours to review.</Text>
@@ -100,7 +100,7 @@ export default function PlusSandboxScreen() {
         <View style={[styles.planCard, compact && styles.planCardCompact]}>
           <View style={styles.planHeading}>
             <View>
-              <Text style={styles.billingLabel}>Planned monthly price</Text>
+              <Text style={styles.billingLabel}>Planned launch price</Text>
               <Text style={styles.price}>US$5<Text style={styles.period}> / month</Text></Text>
             </View>
             {active === true && <Text style={styles.activeBadge}>✓ Active</Text>}
@@ -120,11 +120,11 @@ export default function PlusSandboxScreen() {
 
           <View style={styles.checkoutInfo}>
             {monthly ? (
-              <Text style={styles.checkoutText}>Preview checkout price: {monthly.product.priceString} / month</Text>
+              <Text style={styles.checkoutText}>Test Store package: {monthly.product.priceString} / month</Text>
             ) : (
               <Text style={styles.checkoutText}>{busy ? 'Loading plan details…' : userId ? 'Plan details are currently unavailable.' : 'Sign in to see checkout details.'}</Text>
             )}
-            <Text style={styles.previewNote}>Preview only · Purchases are simulated. No real money is charged.</Text>
+            <Text style={styles.previewNote}>{plusTestStoreAvailable ? 'RevenueCat Test Store · Purchases are simulated. No real money is charged.' : 'Preview only · Checkout is disabled in this build.'}</Text>
           </View>
         </View>
 
@@ -143,7 +143,7 @@ export default function PlusSandboxScreen() {
               <Text style={styles.linkText}>Refresh plan</Text>
             </Pressable>
           </View>
-          {!!(setupError || message) && <Text numberOfLines={2} style={styles.feedback} accessibilityLiveRegion="polite">{setupError ? 'Duely Plus is unavailable in this build. You can still use free features.' : message}</Text>}
+          {!!(setupError || message) && <Text numberOfLines={2} style={styles.feedback} accessibilityLiveRegion="polite">{setupError ? 'This build is preview-only. Use the Shipaton development build for the RevenueCat Test Store demo.' : message}</Text>}
         </View>
       </View>
     </ScreenShell>

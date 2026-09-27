@@ -7,7 +7,7 @@ This internal Android screen tests purchases, restoration, and the exact Plus en
 1. In RevenueCat Test Store, attach the monthly product to the intended Duely Plus entitlement. Copy its **identifier**, not its display name.
 2. Add that product as the **monthly package** in the current offering.
 3. In ignored `.env.local`, set `EXPO_PUBLIC_REVENUECAT_SANDBOX_ENABLED=true`, `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY` to the public `test_` SDK key, and `EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID` to the exact identifier. Never supply a secret API key.
-4. Rebuild Android with `npm run android`; an old installed native build or Expo Go cannot establish this purchase verification. Use a **debug build** with the Test Store key. RevenueCat closes a release build that uses a Test Store key.
+4. Rebuild Android with `npm run android`; an old installed native build or Expo Go cannot establish this purchase verification. Use a **debug build** with the Test Store key. Duely blocks Test Store initialization outside development, because RevenueCat closes a release build that uses a Test Store key.
 5. Sign in with Google, then open Profile → Duely Plus · Test Store. The monthly price comes from RevenueCat, not a hardcoded amount.
 6. The `20260923145008_verified_plus_ai_allowance.sql` migration and updated `gemini-extract` function were deployed on September 23, 2026. Set the function's server-only `REVENUECAT_SECRET_API_KEY` to a RevenueCat **secret v1** API key with access to the Test Store customer, and optionally `REVENUECAT_PLUS_ENTITLEMENT_ID` (defaults to `duely_plus`). Never put the secret in `.env.local`, an Expo variable, or source control. Keep `GEMINI_REAL_DATA_ENABLED` disabled until Rey explicitly approves real-data AI processing.
 

@@ -5,11 +5,24 @@ been submitted. Show a real Android build running on an emulator or phone. Use a
 fully synthetic assignment image; never record a student's actual assignment,
 account details, email address, API key, or private dashboard.
 
+## Next Gen judging target
+
+The official criteria ask whether the idea solves a real problem, whether the
+video and code show meaningful working progress, whether RevenueCat is used
+thoughtfully, and whether the project shows sound technical choices, product
+thinking, and care in presentation. For Duely, the clearest evidence is the
+complete image-to-editable-task flow, graceful on-device fallback, transparent
+Test Store paywall, and a polished task/reminder experience built specifically
+for students.
+
 ## Before recording
 
 1. Start a native Android development build. Expo Go cannot run Duely's native
    OCR or RevenueCat modules. Prepare a synthetic, clearly printed **single**
    assignment image in Gallery. Use invented names, subjects, and deadlines.
+   The `shipaton-demo` EAS profile enables the demo feature flags, but the
+   ignored Test Store key and entitlement still need to be supplied through the
+   build environment; never commit them.
 2. Decide whether to show Guest mode or a signed-in test account. Guest mode
    can demonstrate the core scan-to-task flow without showing personal account
    information. Hide notifications and other private overlays before recording.
@@ -49,11 +62,22 @@ verified. Do not describe the synthetic OCR evaluation as a real-student pilot.
 - [x] 1024×1024 app icon exists at `assets/icon.png`; confirm it is the file
       uploaded to Devpost.
 - [x] README describes what the Android beta does, how to run it, and its limits.
-- [ ] Capture at least one frameless app screenshot at 1179×2556 pixels for
-      Devpost. Do not substitute a Figma mockup for a working-app screenshot.
+- [x] RevenueCat Test Store is limited to development builds; release builds
+      show a safe preview and never configure the Test Store SDK.
+- [x] A verified frameless 1179×2556 working-app screenshot is available at
+      `docs/submission-assets/duely-plus-test-store-1179x2556.png`.
 - [ ] Record a working-app video under two minutes, upload it publicly to
       YouTube or Vimeo, and verify its link without a private login.
 - [ ] Add the video link, repository link, and accurate project story to Devpost.
+- [ ] Confirm active-student eligibility with a `.edu` or equivalent academic
+      email, and parent/guardian consent if the entrant is a minor.
+- [ ] Visually confirm the MIT license appears in the GitHub repository About
+      panel, not only as a tracked `LICENSE` file.
+- [ ] Verify the final video contains no unauthorized music, unrelated
+      third-party trademarks, real student work, personal notifications, or
+      private account information.
+- [ ] Complete the entrant-owned items in
+      `docs/shipaton-next-gen-checklist.md` before the live deadline.
 - [ ] Complete the category-specific eligibility, consent, and additional-info
       fields in Devpost; check the current official rules before final submission.
 - [ ] Preview the public project page and submit before the displayed deadline.

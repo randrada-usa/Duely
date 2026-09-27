@@ -61,6 +61,26 @@ The repository also has a synthetic Android OCR evaluation harness (`npm run eva
 
 For a privacy-safe app walkthrough and submission checks, see the [Shipaton demo guide](docs/shipaton-demo.md).
 
+## Shipaton Next Gen judge quick start
+
+Duely is entering the **Next Gen Award**. Judges can verify the core experience
+without private credentials or a store account:
+
+1. Follow **Run the Android app** above and choose **Continue as Guest**.
+2. Open **Scan**, keep **OCR** selected, and capture or choose one synthetic
+   single-assignment image.
+3. Review and edit the suggested task fields, save the task, and confirm it
+   appears in Tasks and Calendar.
+4. Create a manual task and verify its reminder, completion, and notification
+   states.
+
+The optional **AI Assist**, Google backup, and RevenueCat Test Store paths need
+separately configured development credentials. They are not required for the
+privacy-safe Guest flow. The Test Store is intentionally blocked from release
+builds; setup instructions are in [RevenueCat sandbox setup](docs/revenuecat-sandbox.md).
+The competition readiness matrix and remaining entrant actions are in the
+[Next Gen submission checklist](docs/shipaton-next-gen-checklist.md).
+
 ## Repository map
 
 | Path | Purpose |

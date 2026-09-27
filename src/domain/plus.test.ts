@@ -4,6 +4,9 @@ import { hasPlusEntitlement, purchaseWasCancelled, sandboxConfigurationError } f
 describe('Plus sandbox safeguards', () => {
   it('requires explicit opt-in, a test key and an exact entitlement ID', () => {
     expect(sandboxConfigurationError(false, 'test_example', 'plus')).toBeTruthy();
+    expect(sandboxConfigurationError(true, 'test_example', 'plus', false)).toBe(
+      'RevenueCat Test Store is available only in development builds.',
+    );
     expect(sandboxConfigurationError(true, 'goog_example', 'plus')).toBeTruthy();
     expect(sandboxConfigurationError(true, 'test_example', '')).toBeTruthy();
     expect(sandboxConfigurationError(true, 'test_example', 'plus')).toBeNull();

@@ -3,6 +3,10 @@ import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 import { hasPlusEntitlement, sandboxConfigurationError } from '../domain/plus';
 
 export const plusSandboxEnabled = process.env.EXPO_PUBLIC_REVENUECAT_SANDBOX_ENABLED === 'true';
+const developmentBuild = typeof __DEV__ !== 'undefined'
+  ? __DEV__
+  : process.env.NODE_ENV !== 'production';
+export const plusTestStoreAvailable = plusSandboxEnabled && developmentBuild;
 const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY ?? '';
 const entitlement = process.env.EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID ?? '';
 let initialization: Promise<typeof import('react-native-purchases').default> | undefined;
@@ -10,7 +14,7 @@ let identifiedUserId: string | undefined;
 let identityChange: Promise<void> = Promise.resolve();
 
 export async function getSandbox(userId: string) {
-  const error = sandboxConfigurationError(plusSandboxEnabled, apiKey, entitlement);
+  const error = sandboxConfigurationError(plusSandboxEnabled, apiKey, entitlement, developmentBuild);
   if (error) throw new Error(error);
   if (!userId) throw new Error('Sign in before testing a Duely Plus purchase.');
   if (Platform.OS !== 'android') throw new Error('Use an Android native build to test purchases.');
@@ -40,7 +44,7 @@ export async function getSandbox(userId: string) {
 }
 
 export function sandboxSetupError() {
-  return sandboxConfigurationError(plusSandboxEnabled, apiKey, entitlement);
+  return sandboxConfigurationError(plusSandboxEnabled, apiKey, entitlement, developmentBuild);
 }
 
 export function isSandboxPlus(info: CustomerInfo) {

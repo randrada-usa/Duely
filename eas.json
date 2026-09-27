@@ -11,6 +11,14 @@
         "EXPO_PUBLIC_GEMINI_ASSIST_ENABLED": "true"
       }
     },
+    "shipaton-demo": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_GEMINI_ASSIST_ENABLED": "true",
+        "EXPO_PUBLIC_REVENUECAT_SANDBOX_ENABLED": "true"
+      }
+    },
     "preview": {
       "distribution": "internal",
       "env": {

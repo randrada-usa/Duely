@@ -18,6 +18,7 @@ beforeEach(() => {
   vi.stubEnv('EXPO_PUBLIC_REVENUECAT_SANDBOX_ENABLED', 'true');
   vi.stubEnv('EXPO_PUBLIC_REVENUECAT_TEST_API_KEY', 'test_fixture');
   vi.stubEnv('EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID', 'plus');
+  vi.stubEnv('NODE_ENV', 'development');
 });
 
 describe('RevenueCat sandbox boundary', () => {
@@ -25,6 +26,14 @@ describe('RevenueCat sandbox boundary', () => {
     vi.stubEnv('EXPO_PUBLIC_REVENUECAT_SANDBOX_ENABLED', 'false');
     const { getSandbox } = await import('./plusSandbox');
     await expect(getSandbox('user-1')).rejects.toThrow('disabled');
+    expect(sdk.configure).not.toHaveBeenCalled();
+  });
+
+  it('never initializes the Test Store in a release build', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const { getSandbox, plusTestStoreAvailable } = await import('./plusSandbox');
+    expect(plusTestStoreAvailable).toBe(false);
+    await expect(getSandbox('user-1')).rejects.toThrow('development builds');
     expect(sdk.configure).not.toHaveBeenCalled();
   });
 
