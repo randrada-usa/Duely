@@ -87,6 +87,7 @@ verified. Do not describe the synthetic OCR evaluation as a real-student pilot.
 Duely is an Android beta, not an app-store release. Google sign-in and optional
 cloud backup require project configuration. Gemini-assisted extraction is
 consent-gated and may be disabled; the on-device review still works. RevenueCat
-Test Store purchase and restore were exercised on an emulator, but remaining
-cancel, failure, expiry, offline, accessibility, and deployed-server allowance
-checks are not yet complete. Account deletion and export are still beta work.
+Test Store purchase and restore were exercised on an emulator. The signed-in
+purchase, 20-scan server allowance, cold relaunch, and visible restore flow were
+verified end to end on September 27, 2026. Cancel, failure, expiry, offline, and
+accessibility checks remain. Account deletion and export are still beta work.

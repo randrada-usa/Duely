@@ -6,7 +6,10 @@ import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 import { PrimaryButton } from '../src/components/PrimaryButton';
 import { ScreenShell } from '../src/components/ScreenShell';
 import { purchaseWasCancelled } from '../src/domain/plus';
+import type { AiAllowance } from '../src/services/geminiAssist';
+import { syncPlusAllowance } from '../src/services/plusAllowance';
 import { getSandbox, isSandboxPlus, loadSandbox, plusTestStoreAvailable, sandboxSetupError } from '../src/services/plusSandbox';
+import { getSupabaseClient } from '../src/services/supabaseClient';
 import { useAuth } from '../src/store/AuthStore';
 import { colors, minimumTouchTarget, radius, spacing, surfaces, typography } from '../src/theme/tokens';
 
@@ -16,6 +19,7 @@ export default function PlusSandboxScreen() {
   const userId = user?.id;
   const [monthly, setMonthly] = useState<PurchasesPackage | null>(null);
   const [active, setActive] = useState<boolean | null>(null);
+  const [allowance, setAllowance] = useState<AiAllowance | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const mounted = useRef(false);
@@ -24,6 +28,41 @@ export default function PlusSandboxScreen() {
   const locked = useRef(false);
   const setupError = sandboxSetupError();
   const compact = height < 760 || fontScale > 1.1;
+
+  async function applyCustomerInfo(info: CustomerInfo, announce: boolean) {
+    const unlocked = isSandboxPlus(info);
+    if (!mounted.current || currentUserId.current !== userId) return;
+    setActive(unlocked);
+    if (!unlocked) {
+      setAllowance(null);
+      if (announce) setMessage('No active Duely Plus plan was found for this account.');
+      return;
+    }
+
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setAllowance(null);
+      setMessage('Duely Plus is active, but the scan allowance could not be synchronized in this build.');
+      return;
+    }
+
+    try {
+      const syncedAllowance = await syncPlusAllowance(supabase);
+      if (syncedAllowance.limit !== 20) {
+        throw new Error('The server did not confirm the Plus allowance.');
+      }
+      if (!mounted.current || currentUserId.current !== userId) return;
+      setAllowance(syncedAllowance);
+      if (announce) {
+        const remaining = Math.max(0, syncedAllowance.limit - syncedAllowance.usedCount);
+        setMessage(`Duely Plus is active. ${remaining} AI-assisted scans are available this month.`);
+      }
+    } catch {
+      if (!mounted.current || currentUserId.current !== userId) return;
+      setAllowance(null);
+      setMessage('Duely Plus is active, but its scan allowance could not be synchronized. Try Refresh plan.');
+    }
+  }
 
   async function run(action: 'refresh' | 'purchase' | 'restore') {
     if (locked.current || setupError || !userId) return;
@@ -35,7 +74,7 @@ export default function PlusSandboxScreen() {
         const result = await loadSandbox(userId);
         if (mounted.current && currentUserId.current === userId) {
           setMonthly(result.monthly);
-          setActive(isSandboxPlus(result.info));
+          await applyCustomerInfo(result.info, false);
           if (!result.monthly) setMessage('The monthly plan is unavailable right now. Please try again later.');
         }
       } else {
@@ -44,11 +83,7 @@ export default function PlusSandboxScreen() {
         const info = action === 'restore'
           ? await sdk.restorePurchases()
           : (await sdk.purchasePackage(monthly!)).customerInfo;
-        if (mounted.current && currentUserId.current === userId) {
-          const unlocked = isSandboxPlus(info);
-          setActive(unlocked);
-          setMessage(unlocked ? 'You’re on Duely Plus. Your scan allowance is checked securely when you use cloud AI.' : 'No active Duely Plus plan was found for this account.');
-        }
+        await applyCustomerInfo(info, true);
       }
     } catch (error) {
       if (mounted.current && currentUserId.current === userId) {
@@ -65,7 +100,7 @@ export default function PlusSandboxScreen() {
     mounted.current = true;
     setBusy(false);
     let unsubscribe: (() => void) | undefined;
-    const listener = (info: CustomerInfo) => { if (mounted.current && currentUserId.current === userId) setActive(isSandboxPlus(info)); };
+    const listener = (info: CustomerInfo) => { void applyCustomerInfo(info, false); };
     if (!setupError && userId) {
       void getSandbox(userId).then(sdk => {
         if (!mounted.current || currentUserId.current !== userId) return;
@@ -75,6 +110,7 @@ export default function PlusSandboxScreen() {
       void run('refresh');
     } else {
       setActive(null);
+      setAllowance(null);
       setMonthly(null);
       setMessage('');
     }
@@ -125,6 +161,11 @@ export default function PlusSandboxScreen() {
               <Text style={styles.checkoutText}>{busy ? 'Loading plan details…' : userId ? 'Plan details are currently unavailable.' : 'Sign in to see checkout details.'}</Text>
             )}
             <Text style={styles.previewNote}>{plusTestStoreAvailable ? 'RevenueCat Test Store · Purchases are simulated. No real money is charged.' : 'Preview only · Checkout is disabled in this build.'}</Text>
+            {active === true && allowance && (
+              <Text style={styles.allowanceStatus}>
+                {Math.max(0, allowance.limit - allowance.usedCount)} of {allowance.limit} AI-assisted scans available this month
+              </Text>
+            )}
           </View>
         </View>
 
@@ -186,6 +227,7 @@ const styles = StyleSheet.create({
   checkoutInfo: { gap: spacing.xs, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
   checkoutText: { fontFamily: typography.bodySemibold, fontSize: 13, lineHeight: 18, color: colors.text },
   previewNote: { fontFamily: typography.body, fontSize: 13, lineHeight: 20, color: colors.textMuted },
+  allowanceStatus: { fontFamily: typography.bodySemibold, fontSize: 13, lineHeight: 20, color: colors.primary },
   actions: { gap: spacing.xs },
   links: { flexDirection: 'row', justifyContent: 'center', gap: spacing.lg },
   link: { minHeight: minimumTouchTarget, justifyContent: 'center', paddingHorizontal: spacing.sm },

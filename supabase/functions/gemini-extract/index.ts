@@ -122,6 +122,40 @@ function extractionFieldSchema(valueSchema: JsonRecord) {
   };
 }
 
+async function synchronizeVerifiedAllowance(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+) {
+  const limit = await verifiedAiScanLimit(
+    userId,
+    Deno.env.get('REVENUECAT_SECRET_API_KEY'),
+    Deno.env.get('REVENUECAT_PLUS_ENTITLEMENT_ID') || 'duely_plus',
+  );
+  const { error: limitError } = await admin.rpc('set_verified_ai_allowance_limit', {
+    p_user_id: userId,
+    p_allowance_limit: limit,
+  });
+  if (limitError) throw new Error('Could not update the verified allowance.');
+
+  const { data: allowance, error: allowanceError } = await admin
+    .from('ai_allowances')
+    .select('used_count, allowance_limit, period_start, period_end')
+    .eq('user_id', userId)
+    .order('period_start', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (allowanceError || !allowance) {
+    throw new Error('Could not load the verified allowance.');
+  }
+
+  return {
+    usedCount: allowance.used_count,
+    limit: allowance.allowance_limit,
+    periodStart: allowance.period_start,
+    periodEnd: allowance.period_end,
+  };
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') {
@@ -142,10 +176,14 @@ Deno.serve(async (request) => {
   }
 
   const requestId = input.requestId;
-  const action = input.action === 'cancel' ? 'cancel' : 'extract';
+  const action = input.action === 'cancel'
+    ? 'cancel'
+    : input.action === 'sync-allowance'
+      ? 'sync-allowance'
+      : 'extract';
   const ocrText = typeof input.ocrText === 'string' ? input.ocrText.trim() : '';
   if (
-    !isUuid(requestId) ||
+    (action !== 'sync-allowance' && !isUuid(requestId)) ||
     (action === 'extract' && (ocrText.length < 3 || ocrText.length > maxOcrCharacters))
   ) {
     return jsonResponse(400, {
@@ -169,6 +207,21 @@ Deno.serve(async (request) => {
   const { data: userData, error: userError } = await admin.auth.getUser(accessToken);
   if (userError || !userData.user) {
     return jsonResponse(401, { code: 'authentication_required', message: 'Sign in again.' });
+  }
+
+  if (action === 'sync-allowance') {
+    try {
+      const allowance = await synchronizeVerifiedAllowance(admin, userData.user.id);
+      return jsonResponse(200, {
+        active: allowance.limit === 20,
+        allowance,
+      });
+    } catch {
+      return jsonResponse(503, {
+        code: 'allowance_unavailable',
+        message: 'Duely could not synchronize the Plus scan allowance.',
+      });
+    }
   }
 
   if (action === 'cancel') {
@@ -202,28 +255,13 @@ Deno.serve(async (request) => {
 
   // The client never supplies a tier. A server-only RevenueCat key verifies the
   // entitlement attached to this authenticated Supabase user on every request.
-  let verifiedLimit: number;
+  let verifiedAllowance: Awaited<ReturnType<typeof synchronizeVerifiedAllowance>>;
   try {
-    verifiedLimit = await verifiedAiScanLimit(
-      userData.user.id,
-      Deno.env.get('REVENUECAT_SECRET_API_KEY'),
-      Deno.env.get('REVENUECAT_PLUS_ENTITLEMENT_ID') || 'duely_plus',
-    );
+    verifiedAllowance = await synchronizeVerifiedAllowance(admin, userData.user.id);
   } catch {
     return jsonResponse(503, {
       code: 'allowance_unavailable',
       message: 'Duely could not verify the AI scan allowance. On-device scanning is still available.',
-    });
-  }
-
-  const { error: limitError } = await admin.rpc('set_verified_ai_allowance_limit', {
-    p_user_id: userData.user.id,
-    p_allowance_limit: verifiedLimit,
-  });
-  if (limitError) {
-    return jsonResponse(503, {
-      code: 'allowance_unavailable',
-      message: 'Duely could not check the AI scan allowance.',
     });
   }
 
@@ -320,7 +358,7 @@ Deno.serve(async (request) => {
       extraction,
       allowance: {
         usedCount: reservation.current_used_count,
-        limit: reservation.current_allowance_limit,
+        limit: verifiedAllowance.limit,
         periodStart: reservation.current_period_start,
         periodEnd: reservation.current_period_end,
       },

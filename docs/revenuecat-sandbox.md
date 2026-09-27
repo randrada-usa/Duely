@@ -15,14 +15,18 @@ Missing configuration fails closed. The production EAS profile explicitly disabl
 
 Without the server secret, the server grants only the free 5-scan test limit even if the client shows an active Plus test entitlement. If RevenueCat verification fails while configured, the AI request returns an allowance-unavailable error and the on-device scan remains usable. A lapsed entitlement returns to the free limit; historical usage is retained, so a user who already used more than five scans cannot request more that month. Do not deploy a Test Store secret as a production subscription configuration.
 
-## Device verification (Pixel 7 emulator, September 23, 2026)
+## Device verification (Pixel 7 emulator, September 27, 2026)
 
 - Verified: the current monthly Test Store package loaded at the SDK-reported $9.99 price. The dashboard price was not independently checked.
-- Verified: the Test Store dialog identified product `monthly`; simulated valid purchase returned active `duely_plus` in Duely.
-- Verified: Restore retained the active test entitlement; a process relaunch fetched and displayed it again.
+- Verified: the Test Store dialog identified product `monthly`; simulated valid purchase returned active `duely_plus` in Duely without resetting navigation.
+- Verified: the authenticated server rechecked RevenueCat, stored the 20-scan monthly allowance, and returned `20 of 20 AI-assisted scans available this month` to the app.
+- Verified: a force-stop/cold relaunch fetched and displayed the active entitlement and 20-scan allowance again.
+- Verified: the visible Restore purchases action retained both the active entitlement and the server-verified allowance.
 - Automated tests cover disabled configuration, missing exact entitlement, no monthly fallback, and offering fetch errors.
 - Still to check on device: cancel, failed purchase, restore without active access, expiry, offline recovery, large text, and TalkBack. Confirm the transaction in the RevenueCat dashboard.
 
-The SDK now identifies the signed-in Supabase user by ID, without sending the user's email. Previous anonymous test purchases may need restore after sign-in. The updated backend is deployed with JWT verification, but the server secret and signed-in end-to-end 5/20 allowance behavior have not yet been verified. Production store products, the final paywall, and release policy require Rey review. No real student data is sent by this screen.
+The SDK identifies the signed-in Supabase user by ID, without sending the user's email. Previous anonymous test purchases may need restore after sign-in. The updated backend is deployed with JWT verification, and the signed-in Plus path now verifies the 20-scan allowance end to end. A full uninstall clears Duely's local sign-in session; after reinstall, sign in to the same Google account and use Restore purchases so RevenueCat receives the same Supabase user ID. Production store products, the final paywall, and release policy require Rey review. No real student data is sent by this screen.
+
+The Expo Android config plugin keeps `MainActivity` on `singleTop`, as required for returning safely from RevenueCat's Android purchase activity. Do not replace it with Expo's default `singleTask` launch mode.
 
 SDK dependency: `react-native-purchases` provides native purchase and entitlement verification without introducing a second UI stack. Official guides: https://www.revenuecat.com/docs/getting-started/installation/expo and https://www.revenuecat.com/docs/test-and-launch/sandbox/test-store.

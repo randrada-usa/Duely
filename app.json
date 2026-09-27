@@ -72,7 +72,8 @@
       ],
       "expo-mlkit-ocr",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      "./plugins/withRevenueCatAndroid"
     ],
     "extra": {
       "eas": {
