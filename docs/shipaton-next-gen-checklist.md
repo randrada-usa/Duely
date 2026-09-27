@@ -11,7 +11,7 @@ The submission deadline in the supplied rules is **September 30, 2026 at
 
 | Requirement | Status | Duely evidence or remaining action |
 | --- | --- | --- |
-| Active student using a `.edu` or equivalent academic email | Entrant action | Rey must confirm current enrollment and submit with the qualifying academic email. |
+| Active student using a `.edu` or equivalent academic email | Confirmed | Rey confirmed current student status and access to a qualifying academic email. Do not record the address in the repository. |
 | Parent or guardian consent when the entrant is under the local age of majority | If applicable | Obtain and retain consent before entering; the sponsor may request written confirmation. |
 | Android app with meaningful working functionality | Ready | Guest task creation, image-to-editable-task OCR, reminders, Tasks, Calendar, and Profile run in the Android beta. |
 | RevenueCat thoughtfully powers a purchase flow | Ready for demo | Duely Plus loads a RevenueCat Test Store offering in a development build, supports purchase/restore testing, and keeps premium AI allowance enforcement server-side. Release builds never initialize the Test Store. |
@@ -69,7 +69,7 @@ sequence is:
 
 ## Do not submit until these are complete
 
-- [ ] Qualifying student status and academic email confirmed.
+- [x] Qualifying student status and academic email confirmed.
 - [ ] Parent or guardian consent recorded if applicable.
 - [ ] GitHub About panel visibly shows the MIT license.
 - [ ] Final video is under two minutes and publicly viewable while signed out.
