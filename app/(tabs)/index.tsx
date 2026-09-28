@@ -16,6 +16,12 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { TaskCard } from '../../src/components/TaskCard';
 import { TaskStorageWarning } from '../../src/components/TaskStorageWarning';
+import {
+  homeHeroDeadline,
+  homeHeroEmptyMessage,
+  homeHeroEyebrow,
+  homeHeroTitle,
+} from '../../src/domain/homeHero';
 import { isOverdue, sortBySmartPriority, type Task } from '../../src/domain/task';
 import { useAuth } from '../../src/store/AuthStore';
 import { useNotificationStore } from '../../src/store/NotificationStore';
@@ -50,15 +56,9 @@ function displayName(metadata: Record<string, unknown> | undefined) {
     .join(' ');
 }
 
-function nextTaskSummary(task: Task | undefined) {
-  if (!task) return 'Add or scan an assignment to get started.';
-  if (!task.dueAt) return `Next up: “${task.title}”`;
-  const due = new Intl.DateTimeFormat(undefined, {
-    weekday: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(task.dueAt));
-  return `Next up: “${task.title}” · ${due}`;
+function nextTaskSummary(task: Task | undefined, hasTaskHistory: boolean) {
+  if (!task) return homeHeroEmptyMessage(hasTaskHistory);
+  return `Next up: “${task.title}”. ${homeHeroDeadline(task.dueAt)}`;
 }
 
 export default function HomeScreen() {
@@ -85,6 +85,8 @@ export default function HomeScreen() {
   const visibleTasks = view === 'today' ? [...overdueTasks, ...todayTasks] : upcomingTasks;
   const recommended = openTasks[0];
   const heroCount = overdueTasks.length + todayTasks.length;
+  const heroTitle = homeHeroTitle(overdueTasks.length, todayTasks.length);
+  const compactHero = fontScale >= 1.15 || width < 380;
   const hasUnreadNotices =
     notificationsReady &&
     openTasks.some((task) => task.dueAt && isUnread(task));
@@ -124,11 +126,7 @@ export default function HomeScreen() {
 
       <Pressable
         accessibilityHint={recommended ? 'Opens your next task' : undefined}
-        accessibilityLabel={`${
-          heroCount === 0
-            ? 'No urgent tasks today'
-            : `${heroCount} ${heroCount === 1 ? 'task needs' : 'tasks need'} attention`
-        }. ${nextTaskSummary(recommended)}`}
+        accessibilityLabel={`${heroTitle}. ${nextTaskSummary(recommended, tasks.length > 0)}`}
         accessibilityRole={recommended ? 'button' : undefined}
         disabled={!recommended}
         onPress={recommended ? () => router.push(`/task/${recommended.id}`) : undefined}
@@ -140,7 +138,7 @@ export default function HomeScreen() {
           source={require('../../assets/home-attention-banner.png')}
           style={styles.heroBackground}
         >
-          <View style={styles.heroCopy}>
+          <View style={[styles.heroCopy, compactHero && styles.heroCopyCompact]}>
             <View style={styles.heroEyebrowPill}>
               <Ionicons
                 accessibilityElementsHidden
@@ -149,30 +147,46 @@ export default function HomeScreen() {
                 size={14}
               />
               <Text style={styles.heroEyebrow}>
-                {heroCount > 0 ? `${heroCount} NEED ATTENTION` : 'YOU’RE ON TRACK'}
+                {homeHeroEyebrow(heroCount)}
               </Text>
             </View>
-            <Text style={styles.heroTitle}>
-              {heroCount === 0
-                ? 'No urgent tasks today'
-                : `${heroCount} ${heroCount === 1 ? 'task needs' : 'tasks need'} attention`}
+            <Text style={[styles.heroTitle, compactHero && styles.heroTitleCompact]}>
+              {heroTitle}
             </Text>
-            <View style={styles.heroNext}>
-              <Text numberOfLines={2} style={styles.heroBody}>
-                {nextTaskSummary(recommended)}
-              </Text>
-              {recommended && (
-                <View style={styles.heroLink}>
-                  <Text style={styles.heroLinkText}>View task</Text>
-                  <Ionicons
-                    accessibilityElementsHidden
-                    color={colors.surface}
-                    name="arrow-forward"
-                    size={14}
-                  />
-                </View>
+          </View>
+          <View style={[styles.heroFooter, compactHero && styles.heroFooterCompact]}>
+            <View style={styles.heroDetails}>
+              {recommended ? (
+                <>
+                  <Text ellipsizeMode="tail" numberOfLines={2} style={styles.heroTaskTitle}>
+                    Next up: “{recommended.title}”
+                  </Text>
+                  <Text
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.78}
+                    numberOfLines={1}
+                    style={styles.heroDeadline}
+                  >
+                    {homeHeroDeadline(recommended.dueAt)}
+                  </Text>
+                </>
+              ) : (
+                <Text style={styles.heroEmptyMessage}>
+                  {homeHeroEmptyMessage(tasks.length > 0)}
+                </Text>
               )}
             </View>
+            {recommended && (
+              <View style={styles.heroLink}>
+                <Text style={styles.heroLinkText}>View task</Text>
+                <Ionicons
+                  accessibilityElementsHidden
+                  color={colors.surface}
+                  name="arrow-forward"
+                  size={14}
+                />
+              </View>
+            )}
           </View>
         </ImageBackground>
       </Pressable>
@@ -335,14 +349,16 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   heroPressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
-  heroBackground: { minHeight: 208, justifyContent: 'center' },
+  heroBackground: { minHeight: 208 },
   heroImage: { borderRadius: radius.xl },
   heroCopy: {
-    width: '64%',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
+    width: '60%',
+    gap: spacing.sm,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.sm,
+    paddingTop: spacing.lg,
   },
+  heroCopyCompact: { width: '62%', paddingLeft: spacing.md },
   heroEyebrowPill: {
     alignSelf: 'flex-start',
     minHeight: 28,
@@ -364,20 +380,64 @@ const styles = StyleSheet.create({
     fontFamily: typography.headingStrong,
     fontSize: 24,
     lineHeight: 28,
+    textShadowColor: 'rgba(2, 10, 54, 0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
-  heroNext: {
+  heroTitleCompact: { fontSize: 21, lineHeight: 25 },
+  heroFooter: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.lg,
+    left: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  heroFooterCompact: { right: spacing.md, bottom: spacing.md, left: spacing.md },
+  heroDetails: {
+    flex: 1,
+    maxWidth: '62%',
     gap: spacing.xs,
-    padding: spacing.sm,
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(8, 15, 70, 0.5)',
   },
-  heroBody: {
+  heroTaskTitle: {
+    color: colors.surface,
+    fontFamily: typography.bodyMedium,
+    fontSize: 15,
+    lineHeight: 19,
+    textShadowColor: 'rgba(2, 10, 54, 0.65)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  heroDeadline: {
+    color: '#F0F2FF',
+    fontFamily: typography.bodySemibold,
+    fontSize: 14,
+    lineHeight: 18,
+    textShadowColor: 'rgba(2, 10, 54, 0.65)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  heroEmptyMessage: {
     color: '#F0F2FF',
     fontFamily: typography.bodyMedium,
-    fontSize: 16,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 20,
+    textShadowColor: 'rgba(2, 10, 54, 0.65)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
-  heroLink: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  heroLink: {
+    flexShrink: 0,
+    minHeight: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(8, 15, 70, 0.4)',
+  },
   heroLinkText: {
     color: colors.surface,
     fontFamily: typography.bodyBold,
