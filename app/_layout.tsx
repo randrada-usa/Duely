@@ -115,6 +115,8 @@ export default function RootLayout() {
                       >
                         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
                         <Stack.Screen name="sign-in" options={{ headerShown: false, gestureEnabled: false }} />
+                        <Stack.Screen name="legal/terms" options={{ title: 'Beta Terms' }} />
+                        <Stack.Screen name="legal/privacy" options={{ title: 'Beta Privacy Notice' }} />
                         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                         <Stack.Screen
                           name="auth/callback"

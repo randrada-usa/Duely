@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Linking } from 'react-native';
+import { AppState, Linking } from 'react-native';
 
 import { parseSavedReminder } from '../domain/reminder';
 import type { ReminderMinutes } from '../domain/task';
@@ -72,6 +72,18 @@ export function ReminderStoreProvider({ children }: PropsWithChildren) {
     return () => {
       active = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      void getNotificationPermission()
+        .then(setPermission)
+        .catch(() => {
+          setSchedulingError('Notification settings could not be refreshed.');
+        });
+    });
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {

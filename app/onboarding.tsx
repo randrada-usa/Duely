@@ -1,20 +1,32 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import {
+  useRef,
+  useState,
+  type ComponentProps,
+  type ComponentType,
+} from 'react';
 import {
   ActivityIndicator,
-  Image,
+  FlatList,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
+import type { SvgProps } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import DueyScan from '../DuelyMascots/DueyScan.svg';
+import DuelyNotify from '../DuelyMascots/DuelyNotify.svg';
+import DuelyOrganize from '../DuelyMascots/DuelyOrganize.svg';
+import DuelyProfile from '../DuelyMascots/DuelyProfile.svg';
 import { PrimaryButton } from '../src/components/PrimaryButton';
 import { markOnboardingCompleted } from '../src/services/onboardingStorage';
 import { useAuth } from '../src/store/AuthStore';
+import { useReminders } from '../src/store/ReminderStore';
 import {
   colors,
   minimumTouchTarget,
@@ -23,46 +35,66 @@ import {
   typography,
 } from '../src/theme/tokens';
 
-type IconName = React.ComponentProps<typeof Ionicons>['name'];
-
-const slides: Array<{
+type IntroSlide = {
+  kind: 'intro';
   title: string;
   body: string;
-  icon: IconName;
-  detail: string;
-}> = [
+  illustration: ComponentType<SvgProps>;
+};
+
+type PermissionSlide = {
+  kind: 'permissions';
+  title: string;
+};
+
+type OnboardingSlide = IntroSlide | PermissionSlide;
+
+const slides: OnboardingSlide[] = [
   {
+    kind: 'intro',
     title: 'Capture an assignment',
     body: 'Take a clear photo or choose an assignment image from your gallery.',
-    icon: 'camera-outline',
-    detail: 'One image becomes one task.',
+    illustration: DueyScan,
   },
   {
+    kind: 'intro',
     title: 'Review the important details',
     body: 'Duely finds the title, subject, deadline, and instructions for you to check.',
-    icon: 'document-text-outline',
-    detail: 'You always confirm before saving.',
+    illustration: DuelyOrganize,
   },
   {
+    kind: 'intro',
     title: 'Stay ahead of deadlines',
     body: 'Organize upcoming work and choose when Duely should remind you.',
-    icon: 'calendar-outline',
-    detail: 'See what needs attention next.',
+    illustration: DuelyNotify,
+  },
+  {
+    kind: 'permissions',
+    title: 'Set up helpful access',
   },
 ];
 
 export default function OnboardingScreen({ authOnly = false }: { authOnly?: boolean } = {}) {
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
   const router = useRouter();
+  const listRef = useRef<FlatList<OnboardingSlide>>(null);
   const {
     status,
     authActionError,
     isAuthActionPending,
     startGoogleSignIn,
   } = useAuth();
+  const {
+    isReady: remindersReady,
+    permission,
+    requestPermission,
+    openSettings,
+  } = useReminders();
   const [slideIndex, setSlideIndex] = useState(0);
   const [showAuthChoice, setShowAuthChoice] = useState(authOnly);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
 
   const finishOnboarding = async () => {
@@ -81,9 +113,24 @@ export default function OnboardingScreen({ authOnly = false }: { authOnly?: bool
     }
   };
 
+  const continueAfterAccountChoice = async () => {
+    await finishOnboarding();
+  };
+
   const continueWithGoogle = async () => {
     const signedIn = await startGoogleSignIn();
-    if (signedIn) await finishOnboarding();
+    if (signedIn) await continueAfterAccountChoice();
+  };
+
+  const enableNotifications = async () => {
+    if (isRequestingPermission || permission.granted) return;
+    if (!permission.canAskAgain) {
+      await openSettings();
+      return;
+    }
+    setIsRequestingPermission(true);
+    await requestPermission();
+    setIsRequestingPermission(false);
   };
 
   if (showAuthChoice) {
@@ -92,39 +139,32 @@ export default function OnboardingScreen({ authOnly = false }: { authOnly?: bool
       <ScrollView
         contentContainerStyle={[
           styles.authPage,
-          { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.xl },
+          {
+            paddingTop: insets.top + spacing.xxl,
+            paddingBottom: insets.bottom + spacing.lg,
+          },
         ]}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.brandRow}>
-          <Image
-            accessibilityIgnoresInvertColors
-            accessibilityLabel="Due, the Duely mascot"
-            source={require('../assets/mascot.png')}
-            style={styles.brandMascot}
-          />
-          <Text style={styles.brandName}>Duely</Text>
-        </View>
-
         <View style={styles.authIllustration}>
-          <View style={styles.authIconRing}>
-            <Ionicons
-              accessibilityElementsHidden
-              color={colors.primary}
-              name="school-outline"
-              size={54}
-            />
+          <View
+            accessibilityLabel="Due, the Duely mascot"
+            accessibilityRole="image"
+            style={styles.authIconRing}
+          >
+            <DuelyProfile height="100%" width="100%" />
           </View>
         </View>
 
         <View style={styles.authCopy}>
           <Text accessibilityRole="header" style={styles.title}>
-            {isAuthenticated ? 'You are ready to go' : 'Choose how to continue'}
+            {isAuthenticated ? 'You are ready to go' : 'Welcome to Duely'}
           </Text>
           <Text style={styles.body}>
             {isAuthenticated
               ? 'Your account is connected. Continue to start organizing your assignments.'
-              : 'Manual tasks and on-device scanning work without an account.'}
+              : 'Sign in to start planning smarter.'}
           </Text>
         </View>
 
@@ -132,8 +172,8 @@ export default function OnboardingScreen({ authOnly = false }: { authOnly?: bool
           {isAuthenticated ? (
             <PrimaryButton
               disabled={isFinishing}
-              label={isFinishing ? 'Opening Duely…' : 'Continue to Duely'}
-              onPress={() => void finishOnboarding()}
+              label={isFinishing ? 'Opening Duely…' : authOnly ? 'Continue to Duely' : 'Continue'}
+              onPress={() => void continueAfterAccountChoice()}
             />
           ) : (
             <>
@@ -144,27 +184,40 @@ export default function OnboardingScreen({ authOnly = false }: { authOnly?: bool
                 onPress={() => void continueWithGoogle()}
                 style={({ pressed }) => [
                   styles.googleButton,
-                  pressed && styles.secondaryPressed,
+                  pressed && styles.googleButtonPressed,
                   (isAuthActionPending || isFinishing) && styles.disabled,
                 ]}
               >
                 {isAuthActionPending ? (
-                  <ActivityIndicator color={colors.primary} />
+                  <ActivityIndicator color={colors.surface} />
                 ) : (
                   <Ionicons
                     accessibilityElementsHidden
-                    color={colors.primary}
+                    color={colors.surface}
                     name="logo-google"
                     size={22}
                   />
                 )}
                 <Text style={styles.googleButtonText}>Continue with Google</Text>
               </Pressable>
-              <PrimaryButton
+              <View accessibilityElementsHidden style={styles.orDivider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.orText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: isAuthActionPending || isFinishing }}
                 disabled={isAuthActionPending || isFinishing}
-                label={isFinishing ? 'Opening Duely…' : 'Continue without an account'}
-                onPress={() => void finishOnboarding()}
-              />
+                onPress={() => void continueAfterAccountChoice()}
+                style={({ pressed }) => [
+                  styles.guestButton,
+                  pressed && styles.secondaryPressed,
+                  (isAuthActionPending || isFinishing) && styles.disabled,
+                ]}
+              >
+                <Text style={styles.guestButtonText}>Continue without an account</Text>
+              </Pressable>
             </>
           )}
           {!isAuthenticated ? (
@@ -182,210 +235,291 @@ export default function OnboardingScreen({ authOnly = false }: { authOnly?: bool
               {finishError}
             </Text>
           ) : null}
+          <View style={styles.legalFooter}>
+            <Text style={styles.legalAgreement}>
+              By continuing, you agree to the Beta Terms and acknowledge the Beta Privacy Notice.
+            </Text>
+            <View style={styles.legalLinks}>
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => router.push('/legal/terms')}
+                style={({ pressed }) => [styles.legalLinkButton, pressed && styles.secondaryPressed]}
+              >
+                <Text style={styles.legalLink}>Beta Terms</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => router.push('/legal/privacy')}
+                style={({ pressed }) => [styles.legalLinkButton, pressed && styles.secondaryPressed]}
+              >
+                <Text style={styles.legalLink}>Privacy Notice</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
       </ScrollView>
     );
   }
 
-  const slide = slides[slideIndex];
+  const goToSlide = (index: number) => {
+    listRef.current?.scrollToIndex({ animated: true, index });
+    setSlideIndex(index);
+  };
+
   const isLastSlide = slideIndex === slides.length - 1;
+  const illustrationHeight = Math.min(375, Math.max(260, height * 0.4));
+  const notificationAction = permission.granted
+    ? 'Enabled'
+    : permission.canAskAgain
+      ? 'Enable'
+      : 'Open settings';
 
   return (
     <View
       style={[
         styles.page,
-        { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.lg },
+        { paddingTop: insets.top, paddingBottom: insets.bottom + spacing.lg },
       ]}
     >
-      <View style={styles.topBar}>
-        <View style={styles.brandRow}>
-          <Image
-            accessibilityIgnoresInvertColors
-            accessibilityLabel="Due, the Duely mascot"
-            source={require('../assets/mascot.png')}
-            style={styles.brandMascot}
-          />
-          <Text style={styles.brandName}>Duely</Text>
-        </View>
-        <Pressable
-          accessibilityLabel="Skip onboarding"
-          accessibilityRole="button"
-          onPress={() => setShowAuthChoice(true)}
-          style={({ pressed }) => [styles.skipButton, pressed && styles.secondaryPressed]}
-        >
-          <Text style={styles.skipText}>Skip</Text>
-        </Pressable>
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.slideContent}
-        showsVerticalScrollIndicator={false}
+      <Pressable
+        accessibilityLabel="Skip onboarding introduction"
+        accessibilityRole="button"
+        onPress={() => setShowAuthChoice(true)}
+        style={({ pressed }) => [
+          styles.skipButton,
+          { top: insets.top + spacing.sm },
+          pressed && styles.secondaryPressed,
+        ]}
       >
-        <View style={styles.illustrationCard}>
-          <View style={styles.orbitLarge} />
-          <View style={styles.orbitSmall} />
-          <View style={styles.iconTile}>
-            <Ionicons
-              accessibilityElementsHidden
-              color={colors.surface}
-              name={slide.icon}
-              size={64}
-            />
-          </View>
-          <View style={[styles.sparkle, styles.sparkleTop]} />
-          <View style={[styles.sparkle, styles.sparkleBottom]} />
-        </View>
+        <Text style={styles.skipText}>Skip</Text>
+      </Pressable>
 
-        <View style={styles.slideCopy}>
-          <Text accessibilityRole="header" style={styles.title}>
-            {slide.title}
-          </Text>
-          <Text style={styles.body}>{slide.body}</Text>
-          <View style={styles.detailPill}>
-            <Ionicons
-              accessibilityElementsHidden
-              color={colors.primary}
-              name="checkmark-circle"
-              size={20}
-            />
-            <Text style={styles.detailText}>{slide.detail}</Text>
-          </View>
-        </View>
-      </ScrollView>
+      <FlatList
+        accessibilityActions={[
+          { name: 'increment', label: 'Next onboarding page' },
+          { name: 'decrement', label: 'Previous onboarding page' },
+        ]}
+        accessibilityLabel={`Onboarding page ${slideIndex + 1} of ${slides.length}`}
+        data={slides}
+        decelerationRate="fast"
+        getItemLayout={(_, index) => ({ index, length: width, offset: width * index })}
+        horizontal
+        keyExtractor={(item) => item.title}
+        onAccessibilityAction={(event) => {
+          if (event.nativeEvent.actionName === 'increment') {
+            goToSlide(Math.min(slides.length - 1, slideIndex + 1));
+          } else if (event.nativeEvent.actionName === 'decrement') {
+            goToSlide(Math.max(0, slideIndex - 1));
+          }
+        }}
+        onMomentumScrollEnd={(event) => {
+          setSlideIndex(Math.round(event.nativeEvent.contentOffset.x / width));
+        }}
+        pagingEnabled
+        ref={listRef}
+        renderItem={({ item }) => {
+          if (item.kind === 'permissions') {
+            return (
+              <ScrollView
+                contentContainerStyle={styles.permissionSlide}
+                showsVerticalScrollIndicator={false}
+                style={{ width }}
+              >
+                <View style={styles.setupIntro}>
+                  <Text style={styles.setupEyebrow}>LAST STEP</Text>
+                  <Text accessibilityRole="header" style={styles.setupTitle}>
+                    Set up helpful access
+                  </Text>
+                  <Text style={styles.setupBody}>
+                    Choose what Duely can use. You can change these choices later in your device settings.
+                  </Text>
+                </View>
+
+                <View style={styles.permissionList}>
+                  <PermissionCard
+                    action={notificationAction}
+                    actionDisabled={!remindersReady || permission.granted || isRequestingPermission}
+                    body="Duely only notifies you about task reminders you choose."
+                    icon="notifications-outline"
+                    loading={isRequestingPermission}
+                    onPress={() => void enableNotifications()}
+                    title="Task notifications"
+                  />
+                  <PermissionCard
+                    body="Camera access is requested only when you open Scan to photograph an assignment."
+                    icon="camera-outline"
+                    title="Camera"
+                  />
+                </View>
+
+                <View style={styles.privacyNote}>
+                  <Ionicons
+                    accessibilityElementsHidden
+                    color={colors.primary}
+                    name="shield-checkmark-outline"
+                    size={20}
+                  />
+                  <Text style={styles.privacyText}>
+                    Permissions are optional. Manual task creation will still work.
+                  </Text>
+                </View>
+              </ScrollView>
+            );
+          }
+
+          const Illustration = item.illustration;
+          return (
+            <ScrollView
+              contentContainerStyle={styles.slide}
+              showsVerticalScrollIndicator={false}
+              style={{ width }}
+            >
+              <View
+                style={[styles.illustration, { height: illustrationHeight }]}
+              >
+                <Illustration
+                    accessibilityLabel={`${item.title} illustration`}
+                    height="100%"
+                    preserveAspectRatio="xMidYMid meet"
+                    width="100%"
+                  />
+              </View>
+              <View style={styles.slideCopy}>
+                <Text accessibilityRole="header" style={styles.title}>
+                  {item.title}
+                </Text>
+                <Text style={styles.body}>{item.body}</Text>
+              </View>
+            </ScrollView>
+          );
+        }}
+        showsHorizontalScrollIndicator={false}
+      />
 
       <View style={styles.footer}>
         <View
-          accessibilityLabel={`Step ${slideIndex + 1} of ${slides.length}`}
-          accessibilityRole="progressbar"
+          accessibilityLabel={`Page ${slideIndex + 1} of ${slides.length}`}
           style={styles.progressRow}
         >
           {slides.map((item, index) => (
-            <View
-              key={item.title}
-              style={[styles.progressDot, index === slideIndex && styles.progressDotActive]}
-            />
-          ))}
-        </View>
-
-        <View style={styles.navigationRow}>
-          {slideIndex > 0 ? (
             <Pressable
-              accessibilityLabel="Previous onboarding step"
+              accessibilityLabel={`Go to onboarding page ${index + 1}`}
               accessibilityRole="button"
-              onPress={() => setSlideIndex((index) => Math.max(0, index - 1))}
-              style={({ pressed }) => [styles.backButton, pressed && styles.secondaryPressed]}
+              accessibilityState={{ selected: index === slideIndex }}
+              hitSlop={10}
+              key={item.title}
+              onPress={() => goToSlide(index)}
+              style={styles.progressButton}
             >
-              <Ionicons
-                accessibilityElementsHidden
-                color={colors.primary}
-                name="arrow-back"
-                size={22}
+              <View
+                style={[
+                  styles.progressDot,
+                  index === slideIndex && styles.progressDotActive,
+                ]}
               />
             </Pressable>
-          ) : (
-            <View style={styles.backButtonPlaceholder} />
-          )}
-          <PrimaryButton
-            label={isLastSlide ? 'Get started' : 'Next'}
-            onPress={() => {
-              if (isLastSlide) setShowAuthChoice(true);
-              else setSlideIndex((index) => Math.min(slides.length - 1, index + 1));
-            }}
-            style={styles.nextButton}
-          />
+          ))}
         </View>
+        <PrimaryButton
+          label={isLastSlide ? 'Continue' : 'Next'}
+          onPress={() => {
+            if (isLastSlide) setShowAuthChoice(true);
+            else goToSlide(slideIndex + 1);
+          }}
+        />
       </View>
     </View>
   );
 }
 
+function PermissionCard({
+  action,
+  actionDisabled = false,
+  body,
+  icon,
+  loading = false,
+  onPress,
+  title,
+}: {
+  action?: string;
+  actionDisabled?: boolean;
+  body: string;
+  icon: ComponentProps<typeof Ionicons>['name'];
+  loading?: boolean;
+  onPress?: () => void;
+  title: string;
+}) {
+  return (
+    <View style={styles.permissionCard}>
+      <View style={styles.permissionIcon}>
+        <Ionicons
+          accessibilityElementsHidden
+          color={colors.primary}
+          name={icon}
+          size={26}
+        />
+      </View>
+      <View style={styles.permissionCopy}>
+        <Text style={styles.permissionTitle}>{title}</Text>
+        <Text style={styles.permissionBody}>{body}</Text>
+      </View>
+      {action ? (
+        <Pressable
+          accessibilityLabel={`${title}: ${action}`}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: actionDisabled }}
+          disabled={actionDisabled}
+          onPress={onPress}
+          style={({ pressed }) => [
+            styles.permissionAction,
+            actionDisabled && styles.permissionActionDisabled,
+            pressed && !actionDisabled && styles.secondaryPressed,
+          ]}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.primary} size="small" />
+          ) : (
+            <Text style={styles.permissionActionText}>{action}</Text>
+          )}
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-    paddingHorizontal: spacing.xl,
-    backgroundColor: colors.background,
-  },
-  authPage: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.xl,
-    backgroundColor: colors.background,
-  },
-  topBar: {
-    minHeight: minimumTouchTarget,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  brandMascot: { width: 40, height: 40, borderRadius: radius.full },
-  brandName: {
-    color: colors.text,
-    fontFamily: typography.headingStrong,
-    fontSize: 20,
-  },
+  page: { flex: 1, backgroundColor: colors.surface },
   skipButton: {
+    position: 'absolute',
+    right: spacing.xl,
+    zIndex: 2,
     minWidth: minimumTouchTarget,
     minHeight: minimumTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.full,
   },
-  skipText: {
-    color: colors.primary,
-    fontFamily: typography.bodySemibold,
-    fontSize: 15,
-  },
-  slideContent: { flexGrow: 1, justifyContent: 'center', gap: spacing.xxl, paddingVertical: spacing.xl },
-  illustrationCard: {
-    minHeight: 270,
-    alignItems: 'center',
+  skipText: { color: colors.textMuted, fontFamily: typography.bodySemibold, fontSize: 15 },
+  slide: {
+    flexGrow: 1,
     justifyContent: 'center',
-    overflow: 'hidden',
-    borderRadius: radius.xl,
-    backgroundColor: colors.primarySoft,
+    paddingTop: spacing.xxl + minimumTouchTarget,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
   },
-  orbitLarge: {
-    position: 'absolute',
-    width: 230,
-    height: 230,
-    borderWidth: 2,
-    borderColor: colors.primarySoft,
-    borderRadius: 115,
-  },
-  orbitSmall: {
-    position: 'absolute',
-    width: 170,
-    height: 170,
-    borderWidth: 2,
-    borderColor: '#CBD1FF',
-    borderRadius: 85,
-  },
-  iconTile: {
-    width: 116,
-    height: 116,
-    alignItems: 'center',
+  illustration: {
+    width: '100%',
+    maxWidth: 430,
+    alignSelf: 'center',
     justifyContent: 'center',
-    borderRadius: 36,
-    backgroundColor: colors.primary,
-    elevation: 8,
   },
-  sparkle: {
-    position: 'absolute',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: colors.warningSoft,
-    borderWidth: 2,
-    borderColor: '#F4BD59',
-  },
-  sparkleTop: { top: 42, right: 46 },
-  sparkleBottom: { bottom: 42, left: 48 },
-  slideCopy: { alignItems: 'center', gap: spacing.md },
+  slideCopy: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.sm },
   title: {
+    maxWidth: 430,
     color: colors.text,
     fontFamily: typography.headingStrong,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 29,
+    lineHeight: 35,
     textAlign: 'center',
   },
   body: {
@@ -396,66 +530,28 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: 'center',
   },
-  detailPill: {
-    minHeight: 42,
-    flexDirection: 'row',
+  footer: { paddingHorizontal: spacing.xl, gap: spacing.lg },
+  progressRow: { minHeight: 32, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  progressButton: { width: 28, height: 32, alignItems: 'center', justifyContent: 'center' },
+  progressDot: { width: 8, height: 8, borderRadius: radius.full, backgroundColor: colors.borderStrong },
+  progressDotActive: { width: 24, backgroundColor: colors.primary },
+  authPage: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+    backgroundColor: colors.background,
+  },
+  authIllustration: { minHeight: 170, alignItems: 'center', justifyContent: 'flex-end' },
+  authIconRing: {
+    width: 104,
+    height: 104,
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.full,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderRadius: 52,
     backgroundColor: colors.primarySoft,
   },
-  detailText: {
-    flexShrink: 1,
-    color: colors.primary,
-    fontFamily: typography.bodySemibold,
-    fontSize: 14,
-  },
-  footer: { gap: spacing.xl },
-  progressRow: {
-    minHeight: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  progressDot: {
-    width: 9,
-    height: 9,
-    borderRadius: radius.full,
-    backgroundColor: colors.borderStrong,
-  },
-  progressDotActive: { width: 28, backgroundColor: colors.primary },
-  navigationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  backButton: {
-    width: minimumTouchTarget,
-    height: minimumTouchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-  },
-  backButtonPlaceholder: { width: minimumTouchTarget, height: minimumTouchTarget },
-  nextButton: { flex: 1 },
-  authIllustration: {
-    flex: 1,
-    minHeight: 230,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  authIconRing: {
-    width: 138,
-    height: 138,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 18,
-    borderColor: colors.primarySoft,
-    borderRadius: 69,
-    backgroundColor: colors.surface,
-  },
-  authCopy: { alignItems: 'center', gap: spacing.md, marginBottom: spacing.xxl },
+  authCopy: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.xl, marginBottom: spacing.xxl },
   authActions: { gap: spacing.md },
   googleButton: {
     minHeight: 56,
@@ -466,30 +562,93 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.xl,
     borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+  },
+  googleButtonPressed: { backgroundColor: colors.primaryPressed, borderColor: colors.primaryPressed },
+  googleButtonText: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 16 },
+  orDivider: { minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  orText: { color: colors.textMuted, fontFamily: typography.body, fontSize: 13 },
+  guestButton: {
+    minHeight: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+    borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: radius.full,
     backgroundColor: colors.surface,
   },
-  googleButtonText: {
-    flexShrink: 1,
-    color: colors.text,
-    fontFamily: typography.bodyBold,
-    fontSize: 16,
-  },
-  guestExplanation: {
+  guestButtonText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 16 },
+  guestExplanation: { color: colors.textMuted, fontFamily: typography.body, fontSize: 13, lineHeight: 19, textAlign: 'center' },
+  legalFooter: { marginTop: spacing.xxl, gap: spacing.sm },
+  legalAgreement: {
     color: colors.textMuted,
     fontFamily: typography.body,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 18,
     textAlign: 'center',
   },
-  errorText: {
-    color: colors.danger,
-    fontFamily: typography.bodySemibold,
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: 'center',
+  legalLinks: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
+  legalLinkButton: {
+    minHeight: minimumTouchTarget,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
   },
+  legalLink: { color: colors.primary, fontFamily: typography.bodySemibold, textDecorationLine: 'underline' },
+  permissionSlide: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingTop: spacing.xxl + minimumTouchTarget,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  setupIntro: { gap: spacing.sm, marginBottom: spacing.xl },
+  setupEyebrow: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 13, letterSpacing: 1.4 },
+  setupTitle: { color: colors.text, fontFamily: typography.headingStrong, fontSize: 30, lineHeight: 36 },
+  setupBody: { color: colors.textMuted, fontFamily: typography.body, fontSize: 16, lineHeight: 24 },
+  permissionList: { gap: spacing.md },
+  permissionCard: {
+    minHeight: 134,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
+  permissionIcon: {
+    width: minimumTouchTarget,
+    height: minimumTouchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryFaint,
+  },
+  permissionCopy: { flex: 1, minWidth: 180, gap: spacing.xs },
+  permissionTitle: { color: colors.text, fontFamily: typography.bodyBold, fontSize: 16 },
+  permissionBody: { color: colors.textMuted, fontFamily: typography.body, fontSize: 14, lineHeight: 20 },
+  permissionAction: {
+    minHeight: minimumTouchTarget,
+    minWidth: 84,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+  },
+  permissionActionDisabled: { borderColor: colors.border, backgroundColor: colors.primaryFaint },
+  permissionActionText: { color: colors.primary, fontFamily: typography.bodySemibold, fontSize: 13, textAlign: 'center' },
+  privacyNote: { marginTop: spacing.xl, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  privacyText: { flex: 1, color: colors.textMuted, fontFamily: typography.body, fontSize: 13, lineHeight: 19 },
+  errorText: { color: colors.danger, fontFamily: typography.bodySemibold, fontSize: 14, lineHeight: 20, textAlign: 'center' },
   disabled: { opacity: 0.5 },
-  secondaryPressed: { backgroundColor: colors.primaryFaint },
+  secondaryPressed: { opacity: 0.72 },
 });

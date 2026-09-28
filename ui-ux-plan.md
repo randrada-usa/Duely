@@ -188,6 +188,16 @@ Include:
 
 Defer school-email authentication, the verified-school badge, Google Calendar sync, academic-calendar integration, study-hour planning, weekly goals, and general AI coach settings.
 
+## First-run onboarding
+
+- Open first-time installs on onboarding before the main tabs.
+- Use a four-page horizontal carousel for Capture, Review, Reminders, and Permissions. Use the approved Duely mascot illustrations on the first three pages.
+- Keep Skip in the upper-right. Do not show a Duely header logo, decorative detail pills, or a dedicated back button.
+- Allow backward and forward swipes, tappable progress indicators, and a visible Next/Get started action.
+- On page four, request notification access and explain that camera access will be requested later when the student opens Scan. Show the Google/Guest choice after the carousel.
+- Declining permissions must not block manual task creation or entry into Duely. Keep Profile as the recovery path for notification settings.
+- Do not replay first-run onboarding or its permission page after sign-out.
+
 ## Onboarding
 
 ### Slide 1
