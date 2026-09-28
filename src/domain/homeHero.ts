@@ -18,6 +18,17 @@ export function homeHeroEmptyMessage(hasTaskHistory: boolean) {
     : 'Add or scan your first task.';
 }
 
+export type HomeScheduleView = 'today' | 'upcoming';
+
+export function defaultHomeScheduleView(
+  todayOrOverdueCount: number,
+  upcomingCount: number,
+): HomeScheduleView {
+  return todayOrOverdueCount === 0 && upcomingCount > 0
+    ? 'upcoming'
+    : 'today';
+}
+
 export function homeHeroDeadline(
   dueAt: string | null | undefined,
   locale?: string | string[],

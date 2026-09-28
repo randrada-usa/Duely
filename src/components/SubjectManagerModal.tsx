@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -14,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Subject } from '../domain/subject';
 import { useTasks } from '../store/TaskStore';
 import { colors, minimumTouchTarget, radius, spacing, typography } from '../theme/tokens';
+import { useDuelyDialog } from './DuelyDialog';
 
 type SubjectManagerModalProps = {
   visible: boolean;
@@ -25,6 +25,7 @@ export function SubjectManagerModal({
   onClose,
 }: SubjectManagerModalProps) {
   const { addSubject, deleteSubject, renameSubject, subjects, tasks } = useTasks();
+  const { showDialog } = useDuelyDialog();
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -78,24 +79,21 @@ export function SubjectManagerModal({
         ? 'No tasks currently use this subject.'
         : `${taskCount} ${taskCount === 1 ? 'task' : 'tasks'} will move to Unassigned.`;
 
-    Alert.alert(
-      `Delete ${subject.name}?`,
-      `${assignmentMessage} This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            deleteSubject(subject.id);
-            if (editingId === subject.id) {
-              setEditingId(null);
-              setEditingName('');
-            }
-          },
-        },
-      ],
-    );
+    showDialog({
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Delete subject',
+      icon: 'trash-outline',
+      message: `${assignmentMessage} This cannot be undone.`,
+      onConfirm: () => {
+        deleteSubject(subject.id);
+        if (editingId === subject.id) {
+          setEditingId(null);
+          setEditingName('');
+        }
+      },
+      title: `Delete ${subject.name}?`,
+      tone: 'destructive',
+    });
   }
 
   return (

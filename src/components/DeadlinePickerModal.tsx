@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   calendarMonthCells,
@@ -41,6 +41,7 @@ export function DeadlinePickerModal({
   onSave,
   visible,
 }: DeadlinePickerModalProps) {
+  const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState(initialValue);
   const [visibleMonth, setVisibleMonth] = useState(() =>
     startOfLocalMonth(initialValue),
@@ -104,7 +105,7 @@ export function DeadlinePickerModal({
       transparent
       visible={visible}
     >
-      <SafeAreaView style={styles.overlay}>
+      <View style={styles.overlay}>
         <Pressable
           accessibilityLabel="Close deadline picker"
           accessibilityRole="button"
@@ -362,7 +363,12 @@ export function DeadlinePickerModal({
             </View>
           </ScrollView>
 
-          <View style={styles.footer}>
+          <View
+            style={[
+              styles.footer,
+              { paddingBottom: Math.max(spacing.lg, insets.bottom + spacing.sm) },
+            ]}
+          >
             {onClear && (
               <Pressable
                 accessibilityRole="button"
@@ -381,7 +387,7 @@ export function DeadlinePickerModal({
             </Pressable>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
@@ -452,7 +458,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     width: '100%',
-    maxHeight: '92%',
+    maxHeight: '96%',
     overflow: 'hidden',
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
@@ -665,7 +671,9 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     gap: spacing.md,
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.surface,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  defaultHomeScheduleView,
   homeHeroDeadline,
   homeHeroEmptyMessage,
   homeHeroEyebrow,
@@ -33,5 +34,11 @@ describe('Home attention banner copy', () => {
       'Sep 24, 2026 · 11:59 PM',
     );
     expect(homeHeroDeadline(null, 'en-US')).toBe('No deadline set');
+  });
+
+  it('opens Upcoming when today is empty and future work exists', () => {
+    expect(defaultHomeScheduleView(0, 2)).toBe('upcoming');
+    expect(defaultHomeScheduleView(1, 2)).toBe('today');
+    expect(defaultHomeScheduleView(0, 0)).toBe('today');
   });
 });

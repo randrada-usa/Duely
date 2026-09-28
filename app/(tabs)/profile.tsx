@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AccountAvatar } from '../../src/components/AccountAvatar';
+import { useDuelyDialog } from '../../src/components/DuelyDialog';
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { SubjectManagerModal } from '../../src/components/SubjectManagerModal';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
@@ -25,6 +26,7 @@ import {
 
 export default function ProfileScreen() {
   const [showSubjectManager, setShowSubjectManager] = useState(false);
+  const { showDialog } = useDuelyDialog();
   const {
     status,
     user,
@@ -97,67 +99,66 @@ export default function ProfileScreen() {
       : 'Your profile';
 
   function enableNotifications() {
-    Alert.alert(
-      'Enable task reminders?',
-      'Duely uses notifications only for reminders you choose. You can change this anytime in your device settings.',
-      [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'Continue', onPress: () => void requestPermission() },
-      ],
-    );
+    showDialog({
+      cancelLabel: 'Not now',
+      confirmLabel: 'Continue',
+      icon: 'notifications-outline',
+      message:
+        'Duely uses notifications only for reminders you choose. You can change this anytime in your device settings.',
+      onConfirm: () => void requestPermission(),
+      title: 'Enable task reminders?',
+      tone: 'permission',
+    });
   }
 
   function confirmSignOut() {
-    Alert.alert(
-      'Sign out of Duely?',
-      'This signs out only this phone. Your local tasks will stay on this device.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign out',
-          onPress: () =>
-            void signOutToChoice(
-              signOut,
-              () => router.replace('/sign-in'),
-              () => {
-                Alert.alert(
-                  'Could not sign out',
-                  'Check your connection and try again.',
-                );
-              },
-            ),
-        },
-      ],
-    );
+    showDialog({
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Sign out',
+      icon: 'log-out-outline',
+      message:
+        'This signs out only this phone. Your local tasks will stay on this device.',
+      onConfirm: () =>
+        void signOutToChoice(
+          signOut,
+          () => router.replace('/sign-in'),
+          () => {
+            showDialog({
+              confirmLabel: 'Got it',
+              icon: 'alert-circle-outline',
+              message: 'Check your connection and try again.',
+              title: 'Could not sign out',
+              tone: 'info',
+            });
+          },
+        ),
+      title: 'Sign out of Duely?',
+    });
   }
 
   function explainAndEnableAiProcessing() {
-    Alert.alert(
-      'Allow optional cloud AI?',
-      'Only the recognized OCR text—not the assignment image—is sent to Google Gemini to suggest task fields. Duely does not save that raw text. You still review every field, and on-device extraction keeps working if you decline.',
-      [
-        { text: 'Keep it on-device', style: 'cancel' },
-        {
-          text: 'Allow OCR text',
-          onPress: () => void setAiProcessingDecision('granted'),
-        },
-      ],
-    );
+    showDialog({
+      cancelLabel: 'Keep it on-device',
+      confirmLabel: 'Allow OCR text',
+      icon: 'sparkles-outline',
+      message:
+        'Only the recognized OCR text—not the assignment image—is sent to Google Gemini to suggest task fields. Duely does not save that raw text. You still review every field, and on-device extraction keeps working if you decline.',
+      onConfirm: () => void setAiProcessingDecision('granted'),
+      title: 'Allow optional cloud AI?',
+      tone: 'permission',
+    });
   }
 
   function confirmDisableAiProcessing() {
-    Alert.alert(
-      'Turn off cloud AI?',
-      'Future scans will stay on this phone and use on-device text extraction.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Turn off',
-          style: 'destructive',
-          onPress: () => void setAiProcessingDecision('withdrawn'),
-        },
-      ],
-    );
+    showDialog({
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Turn off',
+      icon: 'cloud-offline-outline',
+      message:
+        'Future scans will stay on this phone and use on-device text extraction.',
+      onConfirm: () => void setAiProcessingDecision('withdrawn'),
+      title: 'Turn off cloud AI?',
+    });
   }
 
   return (
@@ -560,10 +561,14 @@ export default function ProfileScreen() {
           icon="help-circle-outline"
           label="Help & feedback"
           onPress={() =>
-            Alert.alert(
-              'Help & feedback',
-              'For this internal preview, share the screen and steps that caused the issue with the Duely beta team. Do not include assignment images or personal information.',
-            )
+            showDialog({
+              confirmLabel: 'Got it',
+              icon: 'help-circle-outline',
+              message:
+                'For this internal preview, share the screen and steps that caused the issue with the Duely beta team. Do not include assignment images or personal information.',
+              title: 'Help & feedback',
+              tone: 'info',
+            })
           }
           value="Report a problem safely"
         />

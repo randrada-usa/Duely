@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ImageBackground,
@@ -17,6 +17,7 @@ import { ScreenShell } from '../../src/components/ScreenShell';
 import { TaskCard } from '../../src/components/TaskCard';
 import { TaskStorageWarning } from '../../src/components/TaskStorageWarning';
 import {
+  defaultHomeScheduleView,
   homeHeroDeadline,
   homeHeroEmptyMessage,
   homeHeroEyebrow,
@@ -67,6 +68,7 @@ export default function HomeScreen() {
   const { isReady: notificationsReady, isUnread } = useNotificationStore();
   const { canEditTasks, isHydrated, tasks } = useTasks();
   const [view, setView] = useState<HomeView>('today');
+  const scheduleViewInitialized = useRef(false);
   const now = new Date();
   const name = displayName(user?.user_metadata);
   const dateLabel = new Intl.DateTimeFormat(undefined, {
@@ -81,6 +83,22 @@ export default function HomeScreen() {
   const upcomingTasks = openTasks.filter(
     (task) => task.dueAt && !isSameLocalDay(task.dueAt, now) && !isOverdue(task, now),
   );
+
+  useEffect(() => {
+    if (!isHydrated || scheduleViewInitialized.current) return;
+    scheduleViewInitialized.current = true;
+    setView(
+      defaultHomeScheduleView(
+        overdueTasks.length + todayTasks.length,
+        upcomingTasks.length,
+      ),
+    );
+  }, [
+    isHydrated,
+    overdueTasks.length,
+    todayTasks.length,
+    upcomingTasks.length,
+  ]);
 
   const visibleTasks = view === 'today' ? [...overdueTasks, ...todayTasks] : upcomingTasks;
   const recommended = openTasks[0];
@@ -272,7 +290,10 @@ export default function HomeScreen() {
                 accessibilityRole="tab"
                 accessibilityState={{ selected }}
                 key={option}
-                onPress={() => setView(option)}
+                onPress={() => {
+                  scheduleViewInitialized.current = true;
+                  setView(option);
+                }}
                 style={[
                   styles.segment,
                   (fontScale >= 1.2 || width < 430) && styles.segmentLargeText,
