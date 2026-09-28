@@ -5,10 +5,10 @@ import { spacing } from './tokens';
 
 describe('adaptive Android bottom actions', () => {
   it('keeps a comfortable minimum with gesture navigation', () => {
-    expect(bottomActionBarPadding(0)).toBe(spacing.md);
+    expect(bottomActionBarPadding(0)).toBe(spacing.xl);
   });
 
-  it('uses the larger system inset with three-button navigation', () => {
-    expect(bottomActionBarPadding(48)).toBe(48);
+  it('keeps breathing room above the system navigation inset', () => {
+    expect(bottomActionBarPadding(48)).toBe(48 + spacing.md);
   });
 });
