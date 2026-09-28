@@ -178,12 +178,34 @@ export default function HomeScreen() {
       </Pressable>
 
       <View style={styles.statsRow}>
-        <View style={styles.statCard}>
+        <Pressable
+          accessibilityLabel={`Active tasks, ${openTasks.length}`}
+          accessibilityRole="button"
+          onPress={() => router.push('/(tabs)/tasks')}
+          style={({ pressed }) => [
+            styles.statCard,
+            pressed && styles.pressed,
+          ]}
+        >
           <Text style={styles.statLabel}>Active tasks</Text>
           <Text style={styles.statValue}>{openTasks.length}</Text>
           <Text style={styles.statHint}>Across all subjects</Text>
-        </View>
-        <View style={[styles.statCard, overdueTasks.length > 0 && styles.alertStatCard]}>
+        </Pressable>
+        <Pressable
+          accessibilityLabel={`Overdue tasks, ${overdueTasks.length}`}
+          accessibilityRole="button"
+          onPress={() =>
+            router.push({
+              pathname: '/(tabs)/tasks',
+              params: { state: 'overdue' },
+            })
+          }
+          style={({ pressed }) => [
+            styles.statCard,
+            overdueTasks.length > 0 && styles.alertStatCard,
+            pressed && styles.pressed,
+          ]}
+        >
           <Text style={styles.statLabel}>Overdue</Text>
           <Text style={[styles.statValue, overdueTasks.length > 0 && styles.alertStatValue]}>
             {overdueTasks.length}
@@ -191,7 +213,7 @@ export default function HomeScreen() {
           <Text style={styles.statHint}>
             {overdueTasks.length > 0 ? 'Review these first' : 'Nothing missed'}
           </Text>
-        </View>
+        </Pressable>
       </View>
 
       <Pressable
