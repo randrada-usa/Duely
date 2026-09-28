@@ -125,6 +125,8 @@ Do not add archive, trash, nested folders, shared folders, or multi-subject memb
 
 Only one task is created per image in the beta. If multiple assignments are detected, ask the student to crop or select one.
 
+Keep the confirmed task's source image only on the student's device so task cards can show its thumbnail. Exclude the image and its local reference from cloud backup, clear raw OCR text after review, and delete the retained image when its task is deleted.
+
 If OCR does not find clear assignment language or a recognized assignment/deadline/instruction label, continue to the editable review with a visible “may be reference material” warning. Do not block manual task creation.
 
 Prefill Instructions/notes only from an explicitly labeled instruction, question, direction, requirement, description, or notes section. Do not copy arbitrary surrounding OCR or unrelated conversation into Notes.

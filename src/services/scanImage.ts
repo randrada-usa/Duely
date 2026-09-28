@@ -15,6 +15,8 @@ import {
 } from '../domain/scanImage';
 
 const MANAGED_SCAN_PREFIX = 'duely-scan-';
+const RETAINED_SCAN_PREFIX = 'duely-task-scan-';
+const retainedScanDirectory = new Directory(Paths.document, 'task-images');
 
 function releaseManipulation(
   context: ImageManipulatorContext | null,
@@ -164,6 +166,48 @@ export function deleteTemporaryScanImage(uri: string | null | undefined) {
     if (file.exists) file.delete();
   } catch {
     // The OS may have already cleared this cache file.
+  }
+}
+
+export function retainTaskScanImage(uri: string) {
+  const source = new File(uri);
+  if (!source.exists || !uri.startsWith(Paths.cache.uri)) {
+    throw new Error('Prepared scan image is unavailable.');
+  }
+
+  retainedScanDirectory.create({ idempotent: true, intermediates: true });
+  const destination = new File(
+    retainedScanDirectory,
+    `${RETAINED_SCAN_PREFIX}${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 9)}.jpg`,
+  );
+  source.copySync(destination);
+  return destination.uri;
+}
+
+export function deleteRetainedTaskImage(uri: string | null | undefined) {
+  if (!uri || !uri.startsWith(retainedScanDirectory.uri)) return;
+
+  try {
+    const file = new File(uri);
+    if (!file.name.startsWith(RETAINED_SCAN_PREFIX)) return;
+    if (file.exists) file.delete();
+  } catch {
+    // Local image cleanup is best-effort after the task has been removed.
+  }
+}
+
+export function deleteAllRetainedTaskImages() {
+  try {
+    if (!retainedScanDirectory.exists) return;
+    for (const entry of retainedScanDirectory.list()) {
+      if (entry instanceof File && entry.name.startsWith(RETAINED_SCAN_PREFIX)) {
+        entry.delete();
+      }
+    }
+  } catch {
+    // Corrupt-storage recovery must still proceed if image cleanup fails.
   }
 }
 

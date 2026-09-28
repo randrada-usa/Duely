@@ -33,6 +33,10 @@ import {
   persistLocalTaskData,
   resetLocalTaskData as clearLocalTaskData,
 } from '../services/taskStorage';
+import {
+  deleteAllRetainedTaskImages,
+  deleteRetainedTaskImage,
+} from '../services/scanImage';
 
 const CORRUPT_ERROR =
   'Your saved tasks could not be read. Duely left the stored data untouched.';
@@ -150,6 +154,7 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
     setIsResettingLocalData(true);
     try {
       await clearLocalTaskData(AsyncStorage);
+      deleteAllRetainedTaskImages();
       setData(emptyData);
       setStorageIssue(null);
       setStorageError(null);
@@ -287,6 +292,9 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
   const deleteTask = useCallback(
     (id: string) => {
       if (!canPersist) return;
+      deleteRetainedTaskImage(
+        dataRef.current.tasks.find((task) => task.id === id)?.sourceImageRef,
+      );
       setData((current) => ({
         ...current,
         tasks: current.tasks.filter((task) => task.id !== id),

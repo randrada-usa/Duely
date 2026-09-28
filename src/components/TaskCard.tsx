@@ -1,6 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  Image,
+  type ImageSourcePropType,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { isOverdue, type Task, type TaskType } from '../domain/task';
 import { useTasks } from '../store/TaskStore';
@@ -25,31 +33,19 @@ function formatDueDate(dueAt: string | null) {
   }).format(new Date(dueAt));
 }
 
-const taskTypeIcons: Record<TaskType, React.ComponentProps<typeof Ionicons>['name']> = {
-  assignment: 'document-text-outline',
-  quiz: 'help-circle-outline',
-  exam: 'school-outline',
-  project: 'construct-outline',
-  reading: 'book-outline',
-  other: 'clipboard-outline',
+const taskTypeArtwork: Record<TaskType, ImageSourcePropType> = {
+  assignment: require('../../assets/task-artwork/assignment.png'),
+  quiz: require('../../assets/task-artwork/quiz.png'),
+  exam: require('../../assets/task-artwork/exam.png'),
+  project: require('../../assets/task-artwork/project.png'),
+  reading: require('../../assets/task-artwork/reading.png'),
+  other: require('../../assets/task-artwork/other.png'),
 };
 
 const priorityLabels = {
   high: 'High priority',
   medium: 'Medium priority',
   low: 'Low priority',
-} as const;
-
-const priorityIconBackgrounds = {
-  high: priorityColors.high.background,
-  medium: priorityColors.medium.background,
-  low: priorityColors.low.background,
-} as const;
-
-const priorityIconColors = {
-  high: priorityColors.high.accent,
-  medium: priorityColors.medium.accent,
-  low: priorityColors.low.accent,
 } as const;
 
 export function TaskCard({ task }: { task: Task }) {
@@ -68,19 +64,7 @@ export function TaskCard({ task }: { task: Task }) {
       onPress={() => router.push(`/task/${task.id}`)}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <View
-        style={[
-          styles.typeIcon,
-          { backgroundColor: priorityIconBackgrounds[task.priority] },
-        ]}
-      >
-        <Ionicons
-          accessibilityElementsHidden
-          color={priorityIconColors[task.priority]}
-          name={taskTypeIcons[task.taskType]}
-          size={24}
-        />
-      </View>
+      <TaskArtwork task={task} />
       <View style={styles.content}>
         <Text style={styles.subject}>
           {subjectName}
@@ -135,6 +119,38 @@ export function TaskCard({ task }: { task: Task }) {
   );
 }
 
+function TaskArtwork({ task }: { task: Task }) {
+  const [sourceFailed, setSourceFailed] = useState(false);
+  const sourceImageRef = task.sourceImageRef;
+
+  useEffect(() => setSourceFailed(false), [sourceImageRef]);
+
+  const showsScan = Boolean(sourceImageRef) && !sourceFailed;
+  const source: ImageSourcePropType = showsScan
+    ? { uri: sourceImageRef ?? undefined }
+    : taskTypeArtwork[task.taskType];
+
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={styles.artworkFrame}
+    >
+      <Image
+        onError={() => setSourceFailed(true)}
+        resizeMode="cover"
+        source={source}
+        style={styles.artwork}
+      />
+      {showsScan && (
+        <View style={styles.scanBadge}>
+          <Ionicons color={colors.surface} name="camera" size={11} />
+        </View>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   card: {
     ...surfaces.card,
@@ -145,12 +161,24 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   pressed: { opacity: 0.82, transform: [{ scale: 0.995 }] },
-  typeIcon: {
-    width: 40,
-    height: 48,
+  artworkFrame: {
+    width: 58,
+    height: 64,
+    overflow: 'hidden',
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryFaint,
+  },
+  artwork: { width: '100%', height: '100%' },
+  scanBadge: {
+    position: 'absolute',
+    right: 4,
+    bottom: 4,
+    width: 22,
+    height: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(30, 32, 54, 0.78)',
   },
   checkboxTarget: {
     width: minimumTouchTarget,

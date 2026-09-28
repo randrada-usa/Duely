@@ -61,7 +61,9 @@ import {
 import {
   cleanupAbandonedScanImages,
   deleteTemporaryScanImage,
+  deleteRetainedTaskImage,
   prepareScanImage,
+  retainTaskScanImage,
   rotateScanImage,
 } from '../../src/services/scanImage';
 import { useReminders } from '../../src/store/ReminderStore';
@@ -673,12 +675,23 @@ export default function ScanScreen() {
     const provenance = geminiExtraction
       ? buildCombinedProvenance(extraction, geminiExtraction, confirmedValues)
       : buildMlKitProvenance(extraction, confirmedValues);
+    let sourceImageRef: string;
+    try {
+      sourceImageRef = retainTaskScanImage(image?.uri ?? '');
+    } catch {
+      setError(
+        'Duely could not keep the assignment image with this task. Your review is still here; try again.',
+      );
+      return;
+    }
+
     const saved = addTask({
       ...draft,
-      sourceImageRef: null,
+      sourceImageRef,
       extractionProvenance: provenance,
     });
     if (!saved) {
+      deleteRetainedTaskImage(sourceImageRef);
       setError('Duely could not save this task. Your review is still here; try again.');
       return;
     }
@@ -710,7 +723,7 @@ export default function ScanScreen() {
             Task saved
           </Text>
           <Text style={styles.successBody}>
-            Duely saved the details you reviewed and cleared the temporary scan image.
+            Duely saved the details you reviewed and kept the assignment image on this device with the task.
           </Text>
         </View>
         <PrimaryButton
@@ -1029,8 +1042,8 @@ export default function ScanScreen() {
                 />
                 <Text style={styles.reviewPrivacyBody}>
                   {geminiExtraction
-                    ? 'Only OCR text was sent to cloud AI. The image stayed on this phone, and raw text is not retained by Duely.'
-                    : 'Raw recognized text and the temporary image are cleared after you save or re-scan.'}
+                    ? 'Only OCR text was sent to cloud AI. The image stays on this phone with the task, and raw text is not retained by Duely.'
+                    : 'Raw recognized text is cleared after you save. The image stays on this phone with the task until you delete it.'}
                 </Text>
               </View>
               {aiAllowance && (
