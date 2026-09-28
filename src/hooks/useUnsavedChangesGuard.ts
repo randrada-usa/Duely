@@ -1,11 +1,11 @@
 import { useNavigation } from 'expo-router';
-import { useCallback, useEffect, useRef } from 'react';
-import { Alert } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useUnsavedChangesGuard(hasUnsavedChanges: boolean) {
   const navigation = useNavigation();
   const allowRemoval = useRef(false);
-  const alertOpen = useRef(false);
+  const pendingNavigation = useRef<(() => void) | null>(null);
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
   useEffect(() => {
     if (!hasUnsavedChanges) allowRemoval.current = false;
@@ -17,42 +17,34 @@ export function useUnsavedChangesGuard(hasUnsavedChanges: boolean) {
         if (!hasUnsavedChanges || allowRemoval.current) return;
 
         event.preventDefault();
-        if (alertOpen.current) return;
-        alertOpen.current = true;
-
-        Alert.alert(
-          'Discard changes?',
-          "Your changes haven't been saved.",
-          [
-            {
-              text: 'Keep editing',
-              style: 'cancel',
-              onPress: () => {
-                alertOpen.current = false;
-              },
-            },
-            {
-              text: 'Discard',
-              style: 'destructive',
-              onPress: () => {
-                alertOpen.current = false;
-                allowRemoval.current = true;
-                navigation.dispatch(event.data.action);
-              },
-            },
-          ],
-          {
-            cancelable: true,
-            onDismiss: () => {
-              alertOpen.current = false;
-            },
-          },
-        );
+        if (pendingNavigation.current) return;
+        pendingNavigation.current = () => navigation.dispatch(event.data.action);
+        setShowDiscardDialog(true);
       }),
     [hasUnsavedChanges, navigation],
   );
 
-  return useCallback(() => {
+  const allowNavigation = useCallback(() => {
     allowRemoval.current = true;
   }, []);
+
+  const cancelNavigation = useCallback(() => {
+    pendingNavigation.current = null;
+    setShowDiscardDialog(false);
+  }, []);
+
+  const discardAndNavigate = useCallback(() => {
+    const continueNavigation = pendingNavigation.current;
+    pendingNavigation.current = null;
+    setShowDiscardDialog(false);
+    allowRemoval.current = true;
+    continueNavigation?.();
+  }, []);
+
+  return {
+    allowNavigation,
+    cancelNavigation,
+    discardAndNavigate,
+    showDiscardDialog,
+  };
 }

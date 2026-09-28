@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '../../src/components/PrimaryButton';
+import { DuelyDialog } from '../../src/components/DuelyDialog';
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { TaskForm } from '../../src/components/TaskForm';
 import { TaskStorageWarning } from '../../src/components/TaskStorageWarning';
@@ -19,7 +20,12 @@ export default function NewTaskScreen() {
   const { addTask, canEditTasks, isHydrated } = useTasks();
   const { defaultReminder } = useReminders();
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const allowNavigation = useUnsavedChangesGuard(hasUnsavedChanges);
+  const {
+    allowNavigation,
+    cancelNavigation,
+    discardAndNavigate,
+    showDiscardDialog,
+  } = useUnsavedChangesGuard(hasUnsavedChanges);
   const initial: TaskDraft = {
     title: '',
     subjectId: null,
@@ -52,21 +58,33 @@ export default function NewTaskScreen() {
   }
 
   return (
-    <SafeAreaView edges={['left', 'right']} style={styles.editor}>
-    <TaskForm
-      defaultReminder={defaultReminder}
-      enableSmartReminderSuggestion
-      initial={initial}
-      onDirtyChange={setHasUnsavedChanges}
-      submitLabel="Save task"
-      onSubmit={(draft) => {
-        const savedTask = addTask(draft);
-        if (!savedTask) return;
-        allowNavigation();
-        router.back();
-      }}
-    />
-    </SafeAreaView>
+    <>
+      <SafeAreaView edges={['left', 'right']} style={styles.editor}>
+        <TaskForm
+          defaultReminder={defaultReminder}
+          enableSmartReminderSuggestion
+          initial={initial}
+          onDirtyChange={setHasUnsavedChanges}
+          submitLabel="Save task"
+          onSubmit={(draft) => {
+            const savedTask = addTask(draft);
+            if (!savedTask) return;
+            allowNavigation();
+            router.back();
+          }}
+        />
+      </SafeAreaView>
+      <DuelyDialog
+        cancelLabel="Keep editing"
+        confirmLabel="Discard changes"
+        destructive
+        message="Your task has not been saved. If you leave now, these changes will be lost."
+        onCancel={cancelNavigation}
+        onConfirm={discardAndNavigate}
+        title="Discard this task?"
+        visible={showDiscardDialog}
+      />
+    </>
   );
 }
 

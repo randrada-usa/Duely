@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useCompletionUndo } from '../../src/components/CompletionUndoProvider';
+import { DuelyDialog } from '../../src/components/DuelyDialog';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { TaskEditorHero } from '../../src/components/TaskEditorHero';
@@ -37,7 +38,13 @@ export default function TaskDetailsScreen() {
   const { toggleTaskCompletion } = useCompletionUndo();
   const [isEditing, setIsEditing] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const allowNavigation = useUnsavedChangesGuard(hasUnsavedChanges);
+  const [confirmation, setConfirmation] = useState<'delete' | 'discard' | null>(null);
+  const {
+    allowNavigation,
+    cancelNavigation,
+    discardAndNavigate,
+    showDiscardDialog,
+  } = useUnsavedChangesGuard(hasUnsavedChanges);
   const task = getTask(id);
 
   if (!task) {
@@ -51,14 +58,7 @@ export default function TaskDetailsScreen() {
   const taskId = task.id;
 
   function confirmDelete() {
-    Alert.alert('Delete task?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => {
-        allowNavigation();
-        deleteTask(taskId);
-        router.replace('/tasks');
-      } },
-    ]);
+    setConfirmation('delete');
   }
 
   function cancelEditing() {
@@ -66,23 +66,42 @@ export default function TaskDetailsScreen() {
       setIsEditing(false);
       return;
     }
-    Alert.alert('Discard task changes?', 'Your unsaved edits will be lost.', [
-      { text: 'Keep editing', style: 'cancel' },
-      {
-        text: 'Discard changes',
-        style: 'destructive',
-        onPress: () => {
-          setHasUnsavedChanges(false);
-          setIsEditing(false);
-        },
-      },
-    ]);
+    setConfirmation('discard');
   }
+
+  const confirmationDialog = (
+    <DuelyDialog
+      cancelLabel={confirmation === 'discard' ? 'Keep editing' : 'Cancel'}
+      confirmLabel={confirmation === 'discard' ? 'Discard changes' : 'Delete task'}
+      destructive
+      message={
+        confirmation === 'discard'
+          ? 'Your unsaved edits will be lost.'
+          : 'This task will be permanently removed. This cannot be undone.'
+      }
+      onCancel={() => setConfirmation(null)}
+      onConfirm={() => {
+        if (confirmation === 'delete') {
+          allowNavigation();
+          deleteTask(taskId);
+          setConfirmation(null);
+          router.replace('/tasks');
+          return;
+        }
+        setHasUnsavedChanges(false);
+        setIsEditing(false);
+        setConfirmation(null);
+      }}
+      title={confirmation === 'discard' ? 'Discard task changes?' : 'Delete task?'}
+      visible={confirmation !== null}
+    />
+  );
 
   if (isEditing) {
     return (
-      <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
-        <TaskForm
+      <>
+        <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
+          <TaskForm
           footer={
             <Pressable
               accessibilityRole="button"
@@ -108,8 +127,20 @@ export default function TaskDetailsScreen() {
             setHasUnsavedChanges(false);
             setIsEditing(false);
           }}
+          />
+        </SafeAreaView>
+        {confirmationDialog}
+        <DuelyDialog
+          cancelLabel="Keep editing"
+          confirmLabel="Discard changes"
+          destructive
+          message="Your changes have not been saved. If you leave now, they will be lost."
+          onCancel={cancelNavigation}
+          onConfirm={discardAndNavigate}
+          title="Discard changes?"
+          visible={showDiscardDialog}
         />
-      </SafeAreaView>
+      </>
     );
   }
 
@@ -224,6 +255,7 @@ export default function TaskDetailsScreen() {
           <Text style={styles.completeButtonText}>{completed ? 'Mark as open' : 'Mark as done'}</Text>
         </Pressable>
       </View>
+      {confirmationDialog}
     </ScreenShell>
   );
 }

@@ -1,8 +1,6 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -47,6 +45,7 @@ import {
   typography,
 } from '../theme/tokens';
 import { PrimaryButton } from './PrimaryButton';
+import { DeadlinePickerModal } from './DeadlinePickerModal';
 
 type TaskFormProps = {
   initial?: TaskDraft;
@@ -97,7 +96,7 @@ export function TaskForm({
   const [notes, setNotes] = useState(initial.notes);
   const [date, setDate] = useState(parts.date);
   const [time, setTime] = useState(parts.time);
-  const [pickerMode, setPickerMode] = useState<'date' | 'time' | null>(null);
+  const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [taskType, setTaskType] = useState<TaskType>(initial.taskType);
   const [estimatedEffortMinutes, setEstimatedEffortMinutes] =
     useState<EstimatedEffortMinutes | null>(initial.estimatedEffortMinutes);
@@ -257,26 +256,30 @@ export function TaskForm({
     acknowledgeNotice('subject');
   }
 
-  function setNativeDeadline(selected: Date) {
+  function setDeadline(selected: Date) {
     const selectedParts = deadlineParts(selected.toISOString());
-    if (pickerMode === 'date') {
-      if (!date && reminderMinutesBefore === null && !reminderWasEdited) {
-        setReminderMinutesBefore(defaultReminder);
-      }
-      setDate(selectedParts.date);
-    } else {
-      setTime(selectedParts.time);
+    if (!date && reminderMinutesBefore === null && !reminderWasEdited) {
+      setReminderMinutesBefore(defaultReminder);
     }
+    setDate(selectedParts.date);
+    setTime(selectedParts.time);
     acknowledgeNotice('dueAt');
-    setPickerMode(null);
+    setShowDeadlinePicker(false);
   }
 
   function clearDeadline() {
     setDate('');
     setTime('');
     setReminderMinutesBefore(null);
-    setPickerMode(null);
+    setShowDeadlinePicker(false);
     acknowledgeNotice('dueAt');
+  }
+
+  function deadlinePickerValue() {
+    if (date) return pickerDate(date, time);
+    const fallback = new Date();
+    fallback.setHours(23, 59, 0, 0);
+    return fallback;
   }
 
   const subjectOptions = [
@@ -408,115 +411,76 @@ export function TaskForm({
       )}
       <FieldNotice message={noticeFor('subject')} />
 
-      {Platform.OS === 'android' ? (
-        <>
-          <View style={[styles.row, stackedFields && styles.stackedRow]}>
-            <View style={styles.flex}>
-              <Text style={styles.label}>Due date</Text>
-              <Pressable
-                accessibilityLabel={
-                  date
-                    ? `Due date, ${new Intl.DateTimeFormat(undefined, {
-                        dateStyle: 'medium',
-                      }).format(pickerDate(date, time))}`
-                    : 'Choose due date'
-                }
-                accessibilityRole="button"
-                onPress={() => setPickerMode('date')}
-                style={[
-                  styles.inputButton,
-                  noticeFor('dueAt') && styles.attentionControl,
-                ]}
-              >
-                <Text
-                  style={[styles.inputButtonText, !date && styles.placeholder]}
-                >
-                  {date
-                    ? new Intl.DateTimeFormat(undefined, {
-                        dateStyle: 'medium',
-                      }).format(pickerDate(date, time))
-                    : 'Choose date'}
-                </Text>
-              </Pressable>
-            </View>
-            <View style={[styles.time, stackedFields && styles.fullWidth]}>
-              <Text style={styles.label}>Time</Text>
-              <Pressable
-                accessibilityLabel={
-                  date
-                    ? `Due time, ${new Intl.DateTimeFormat(undefined, {
-                        timeStyle: 'short',
-                      }).format(pickerDate(date, time))}`
-                    : 'Choose a due date first'
-                }
-                accessibilityRole="button"
-                accessibilityState={{ disabled: !date }}
-                disabled={!date}
-                onPress={() => setPickerMode('time')}
-                style={[
-                  styles.inputButton,
-                  noticeFor('dueAt') && styles.attentionControl,
-                  !date && styles.disabled,
-                ]}
-              >
-                <Text
-                  style={[styles.inputButtonText, !date && styles.placeholder]}
-                >
-                  {date
-                    ? new Intl.DateTimeFormat(undefined, {
-                        timeStyle: 'short',
-                      }).format(pickerDate(date, time))
-                    : 'Time'}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-          {!!date && (
-            <Pressable
-              accessibilityRole="button"
-              onPress={clearDeadline}
-              style={styles.clearDeadline}
-            >
-              <Text style={styles.clearDeadlineText}>Clear deadline</Text>
-            </Pressable>
-          )}
-          {pickerMode && (
-            <DateTimePicker
-              mode={pickerMode}
-              onDismiss={() => setPickerMode(null)}
-              onValueChange={(_, selected) => setNativeDeadline(selected)}
-              value={pickerDate(date, time)}
-            />
-          )}
-        </>
-      ) : (
-        <View style={[styles.row, stackedFields && styles.stackedRow]}>
-          <View style={styles.flex}>
-            <Field
-              keyboardType="numbers-and-punctuation"
-              label="Due date"
-              onChangeText={(value) => {
-                setDate(value);
-                acknowledgeNotice('dueAt');
-              }}
-              placeholder="YYYY-MM-DD"
-              value={date}
-            />
-          </View>
-          <View style={[styles.time, stackedFields && styles.fullWidth]}>
-            <Field
-              keyboardType="numbers-and-punctuation"
-              label="Time"
-              onChangeText={(value) => {
-                setTime(value);
-                acknowledgeNotice('dueAt');
-              }}
-              placeholder="23:59"
-              value={time}
-            />
-          </View>
+      <View style={[styles.row, stackedFields && styles.stackedRow]}>
+        <View style={styles.flex}>
+          <Text style={styles.label}>Due date</Text>
+          <Pressable
+            accessibilityLabel={
+              date
+                ? `Due date, ${new Intl.DateTimeFormat(undefined, {
+                    dateStyle: 'medium',
+                  }).format(pickerDate(date, time))}`
+                : 'Choose due date'
+            }
+            accessibilityRole="button"
+            onPress={() => setShowDeadlinePicker(true)}
+            style={[
+              styles.inputButton,
+              noticeFor('dueAt') && styles.attentionControl,
+            ]}
+          >
+            <Text style={[styles.inputButtonText, !date && styles.placeholder]}>
+              {date
+                ? new Intl.DateTimeFormat(undefined, {
+                    dateStyle: 'medium',
+                  }).format(pickerDate(date, time))
+                : 'Choose date'}
+            </Text>
+          </Pressable>
         </View>
+        <View style={[styles.time, stackedFields && styles.fullWidth]}>
+          <Text style={styles.label}>Time</Text>
+          <Pressable
+            accessibilityLabel={
+              date
+                ? `Due time, ${new Intl.DateTimeFormat(undefined, {
+                    timeStyle: 'short',
+                  }).format(pickerDate(date, time))}`
+                : 'Choose deadline date and time'
+            }
+            accessibilityRole="button"
+            onPress={() => setShowDeadlinePicker(true)}
+            style={[
+              styles.inputButton,
+              noticeFor('dueAt') && styles.attentionControl,
+            ]}
+          >
+            <Text style={[styles.inputButtonText, !date && styles.placeholder]}>
+              {date
+                ? new Intl.DateTimeFormat(undefined, {
+                    timeStyle: 'short',
+                  }).format(pickerDate(date, time))
+                : 'Time'}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+      {!!date && (
+        <Pressable
+          accessibilityRole="button"
+          onPress={clearDeadline}
+          style={styles.clearDeadline}
+        >
+          <Text style={styles.clearDeadlineText}>Clear deadline</Text>
+        </Pressable>
       )}
+      <DeadlinePickerModal
+        initialValue={deadlinePickerValue()}
+        onCancel={() => setShowDeadlinePicker(false)}
+        onClear={date ? clearDeadline : undefined}
+        onSave={setDeadline}
+        visible={showDeadlinePicker}
+      />
       <FieldNotice message={noticeFor('dueAt')} />
 
       <Text style={styles.label}>Task type</Text>
@@ -560,7 +524,6 @@ export function TaskForm({
                   selected && styles.priorityTextSelected,
                 ]}
               >
-                {selected ? '✓ ' : ''}
                 {value[0].toUpperCase() + value.slice(1)}
               </Text>
             </Pressable>
@@ -749,7 +712,6 @@ function SelectionChips<T extends string | number | null>({
             <Text
               style={[styles.chipText, selected && styles.chipTextSelected]}
             >
-              {selected ? '✓ ' : ''}
               {option.label}
             </Text>
           </Pressable>
