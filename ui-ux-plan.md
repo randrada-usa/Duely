@@ -45,6 +45,9 @@ Include:
   complete date and time remain together on one line.
 - Quick scan card.
 - Short upcoming-deadlines preview.
+- When Today has no due or overdue tasks but future tasks exist, open the
+  schedule preview on Upcoming. Keep Today selected when both views are empty,
+  and respect a student's manual tab choice after the initial selection.
 - Manual **Add task** action.
 - Clear path to the full Tasks collection.
 
@@ -296,6 +299,12 @@ Manage subjects remains available from Profile.
 - Ensure all actions are usable without gesture-only interaction.
 - Use plain-language errors that explain recovery.
 - Keep destructive actions separated from routine controls and require confirmation.
+- Use Duely-branded dialogs for app-owned confirmations, consent explanations,
+  and informational messages. Preserve native Android dialogs only for actual
+  operating-system permission requests.
+- Bottom sheets must extend their surface through the bottom safe area. Keep
+  primary actions above the gesture indicator without exposing the dimmed
+  backdrop underneath the sheet.
 - Test TalkBack, large text, display scaling, high contrast, and common forms of color-vision deficiency.
 
 ## Icon Production Requirements

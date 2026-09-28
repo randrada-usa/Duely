@@ -1,9 +1,11 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTasks } from '../store/TaskStore';
 import { colors, minimumTouchTarget, radius, spacing } from '../theme/tokens';
+import { useDuelyDialog } from './DuelyDialog';
 
 export function TaskStorageWarning() {
+  const { showDialog } = useDuelyDialog();
   const {
     canResetLocalData,
     isResettingLocalData,
@@ -14,20 +16,16 @@ export function TaskStorageWarning() {
   if (!storageError) return null;
 
   function confirmReset() {
-    Alert.alert(
-      'Reset local data?',
-      'This permanently deletes all tasks and subjects stored on this device. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: () => {
-            void resetLocalData();
-          },
-        },
-      ],
-    );
+    showDialog({
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Reset local data',
+      icon: 'warning-outline',
+      message:
+        'This permanently deletes all tasks and subjects stored on this device. This cannot be undone.',
+      onConfirm: () => void resetLocalData(),
+      title: 'Reset local data?',
+      tone: 'destructive',
+    });
   }
 
   return (

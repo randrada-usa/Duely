@@ -10,7 +10,6 @@ import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Linking,
   Platform,
@@ -26,6 +25,7 @@ import { PrimaryButton } from '../../src/components/PrimaryButton';
 import { ScreenShell } from '../../src/components/ScreenShell';
 import { TaskEditorHero } from '../../src/components/TaskEditorHero';
 import { TaskForm } from '../../src/components/TaskForm';
+import { useDuelyDialog } from '../../src/components/DuelyDialog';
 import {
   buildCombinedProvenance,
   mergeGeminiExtraction,
@@ -107,6 +107,7 @@ const pickerOptions: ImagePicker.ImagePickerOptions = {
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const { showDialog } = useDuelyDialog();
   const [cameraPermission, requestCameraPermission, getCameraPermission] =
     useCameraPermissions();
   const { status: authStatus } = useAuth();
@@ -313,17 +314,16 @@ export default function ScanScreen() {
     setError(null);
 
     if (source === 'gallery' && Platform.OS === 'android') {
-      Alert.alert(
-        'Choose one assignment image',
-        'Android lets Duely read only the image you select. Duely will not browse your other photos.',
-        [
-          { text: 'Not now', style: 'cancel' },
-          {
-            text: 'Choose image',
-            onPress: () => void launchGallery(),
-          },
-        ],
-      );
+      showDialog({
+        cancelLabel: 'Not now',
+        confirmLabel: 'Choose image',
+        icon: 'images-outline',
+        message:
+          'Android lets Duely read only the image you select. Duely will not browse your other photos.',
+        onConfirm: () => void launchGallery(),
+        title: 'Choose one assignment image',
+        tone: 'permission',
+      });
       return;
     }
 
@@ -342,19 +342,18 @@ export default function ScanScreen() {
         return;
       }
 
-      Alert.alert(
-        source === 'camera' ? 'Camera access' : 'Photo access',
-        source === 'camera'
-          ? 'Duely needs camera access only while you capture one assignment image.'
-          : 'Duely needs photo access so you can choose one assignment image.',
-        [
-          { text: 'Not now', style: 'cancel' },
-          {
-            text: 'Continue',
-            onPress: () => void requestAndLaunch(source),
-          },
-        ],
-      );
+      showDialog({
+        cancelLabel: 'Not now',
+        confirmLabel: 'Continue',
+        icon: source === 'camera' ? 'camera-outline' : 'images-outline',
+        message:
+          source === 'camera'
+            ? 'Duely needs camera access only while you capture one assignment image.'
+            : 'Duely needs photo access so you can choose one assignment image.',
+        onConfirm: () => void requestAndLaunch(source),
+        title: source === 'camera' ? 'Camera access' : 'Photo access',
+        tone: 'permission',
+      });
     } catch {
       setError('Duely could not check this permission. Please try again.');
     }
@@ -562,20 +561,20 @@ export default function ScanScreen() {
       return;
     }
 
-    Alert.alert(
-      'Send recognized text to cloud AI?',
-      'Duely will send only the OCR text—not the assignment image—to Google Gemini. Duely does not retain the raw text, and you will review every suggested field. This is separate from model-improvement consent.',
-      [
-        { text: 'Keep it on-device', onPress: () => setScanStage('review') },
-        {
-          text: 'Allow and continue',
-          onPress: () =>
-            void setAiProcessingDecision('granted').then((saved) => {
-              if (saved) void runAiAssistance(localExtraction);
-            }),
-        },
-      ],
-    );
+    showDialog({
+      cancelLabel: 'Keep it on-device',
+      confirmLabel: 'Allow and continue',
+      icon: 'sparkles-outline',
+      message:
+        'Duely will send only the OCR text—not the assignment image—to Google Gemini. Duely does not retain the raw text, and you will review every suggested field. This is separate from model-improvement consent.',
+      onCancel: () => setScanStage('review'),
+      onConfirm: () =>
+        void setAiProcessingDecision('granted').then((saved) => {
+          if (saved) void runAiAssistance(localExtraction);
+        }),
+      title: 'Send recognized text to cloud AI?',
+      tone: 'permission',
+    });
   }
 
   function selectScanMode(mode: ScanMode) {
@@ -588,16 +587,24 @@ export default function ScanScreen() {
       return;
     }
     if (resolvedMode.blocker === 'ai-disabled') {
-      Alert.alert(
-        'AI Assist unavailable',
-        'AI-assisted extraction is not enabled in this build. On-device OCR is still available.',
-      );
+      showDialog({
+        confirmLabel: 'Got it',
+        icon: 'sparkles-outline',
+        message:
+          'AI-assisted extraction is not enabled in this build. On-device OCR is still available.',
+        title: 'AI Assist unavailable',
+        tone: 'info',
+      });
       return;
     }
-    Alert.alert(
-      'Sign in for AI Assist',
-      'Google sign-in is required before recognized OCR text can be sent to cloud AI. The assignment image always stays on this phone.',
-    );
+    showDialog({
+      confirmLabel: 'Got it',
+      icon: 'person-circle-outline',
+      message:
+        'Google sign-in is required before recognized OCR text can be sent to cloud AI. The assignment image always stays on this phone.',
+      title: 'Sign in for AI Assist',
+      tone: 'info',
+    });
   }
 
   function cancelAiAssistance() {
@@ -620,39 +627,33 @@ export default function ScanScreen() {
   }
 
   function confirmRescan(source: IntakeSource) {
-    Alert.alert(
-      'Discard this extraction review?',
-      'Your edits and extracted fields have not been saved.',
-      [
-        { text: 'Keep reviewing', style: 'cancel' },
-        {
-          text: source === 'camera' ? 'Retake' : 'Choose image',
-          style: 'destructive',
-          onPress: () => retryWith(source),
-        },
-      ],
-    );
+    showDialog({
+      cancelLabel: 'Keep reviewing',
+      confirmLabel: source === 'camera' ? 'Retake' : 'Choose image',
+      icon: 'refresh-outline',
+      message: 'Your edits and extracted fields have not been saved.',
+      onConfirm: () => retryWith(source),
+      title: 'Discard this extraction review?',
+      tone: 'destructive',
+    });
   }
 
   function confirmReturnToImage() {
-    Alert.alert(
-      'Return to image review?',
-      'Your extraction edits have not been saved.',
-      [
-        { text: 'Keep reviewing', style: 'cancel' },
-        {
-          text: 'Return to image',
-          style: 'destructive',
-          onPress: () => {
-            setExtraction(null);
-            setGeminiExtraction(null);
-            setAiAllowance(null);
-            setError(null);
-            setScanStage('image');
-          },
-        },
-      ],
-    );
+    showDialog({
+      cancelLabel: 'Keep reviewing',
+      confirmLabel: 'Return to image',
+      icon: 'arrow-back-outline',
+      message: 'Your extraction edits have not been saved.',
+      onConfirm: () => {
+        setExtraction(null);
+        setGeminiExtraction(null);
+        setAiAllowance(null);
+        setError(null);
+        setScanStage('image');
+      },
+      title: 'Return to image review?',
+      tone: 'destructive',
+    });
   }
 
   function saveExtractedTask(draft: TaskDraft, subjectName: string) {

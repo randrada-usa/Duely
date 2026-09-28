@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { CompletionUndoProvider } from '../src/components/CompletionUndoProvider';
+import { DuelyDialogProvider } from '../src/components/DuelyDialog';
 import { LaunchScreen } from '../src/components/LaunchScreen';
 import { initialRouteAction } from '../src/domain/initialRoute';
 import { loadOnboardingCompleted } from '../src/services/onboardingStorage';
@@ -101,52 +102,79 @@ export default function RootLayout() {
     <View style={styles.root}>
       <StatusBar style="dark" />
       {appReady && (
-        <AuthStoreProvider>
-          <AiPrivacyStoreProvider>
-            <TaskStoreProvider>
-              <CloudBackupStoreProvider>
-                <CompletionUndoProvider>
-                  <ReminderStoreProvider>
-                    <NotificationStoreProvider>
-                      <Stack
-                        initialRouteName={onboardingCompleted ? '(tabs)' : 'onboarding'}
-                        screenOptions={{
-                          contentStyle: { backgroundColor: colors.background },
-                          headerStyle: { backgroundColor: colors.background },
-                          headerShadowVisible: false,
-                          headerTintColor: colors.text,
-                          headerTitleStyle: { fontFamily: typography.heading },
-                        }}
-                      >
-                        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-                        <Stack.Screen name="sign-in" options={{ headerShown: false, gestureEnabled: false }} />
-                        <Stack.Screen name="legal/terms" options={{ title: 'Beta Terms' }} />
-                        <Stack.Screen name="legal/privacy" options={{ title: 'Beta Privacy Notice' }} />
-                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                        <Stack.Screen
-                          name="auth/callback"
-                          options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                          name="task/new"
-                          options={{ title: 'Add task', presentation: 'modal' }}
-                        />
-                        <Stack.Screen
-                          name="task/[id]"
-                          options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                          name="ocr-evaluation"
-                          options={{ title: 'OCR evaluation' }}
-                        />
-                      </Stack>
-                    </NotificationStoreProvider>
-                  </ReminderStoreProvider>
-                </CompletionUndoProvider>
-              </CloudBackupStoreProvider>
-            </TaskStoreProvider>
-          </AiPrivacyStoreProvider>
-        </AuthStoreProvider>
+        <DuelyDialogProvider>
+          <AuthStoreProvider>
+            <AiPrivacyStoreProvider>
+              <TaskStoreProvider>
+                <CloudBackupStoreProvider>
+                  <CompletionUndoProvider>
+                    <ReminderStoreProvider>
+                      <NotificationStoreProvider>
+                        <Stack
+                          initialRouteName={
+                            onboardingCompleted ? '(tabs)' : 'onboarding'
+                          }
+                          screenOptions={{
+                            contentStyle: { backgroundColor: colors.background },
+                            headerStyle: { backgroundColor: colors.background },
+                            headerShadowVisible: false,
+                            headerTintColor: colors.text,
+                            headerTitleStyle: {
+                              fontFamily: typography.heading,
+                            },
+                          }}
+                        >
+                          <Stack.Screen
+                            name="onboarding"
+                            options={{ headerShown: false }}
+                          />
+                          <Stack.Screen
+                            name="sign-in"
+                            options={{
+                              gestureEnabled: false,
+                              headerShown: false,
+                            }}
+                          />
+                          <Stack.Screen
+                            name="legal/terms"
+                            options={{ title: 'Beta Terms' }}
+                          />
+                          <Stack.Screen
+                            name="legal/privacy"
+                            options={{ title: 'Beta Privacy Notice' }}
+                          />
+                          <Stack.Screen
+                            name="(tabs)"
+                            options={{ headerShown: false }}
+                          />
+                          <Stack.Screen
+                            name="auth/callback"
+                            options={{ headerShown: false }}
+                          />
+                          <Stack.Screen
+                            name="task/new"
+                            options={{
+                              presentation: 'modal',
+                              title: 'Add task',
+                            }}
+                          />
+                          <Stack.Screen
+                            name="task/[id]"
+                            options={{ headerShown: false }}
+                          />
+                          <Stack.Screen
+                            name="ocr-evaluation"
+                            options={{ title: 'OCR evaluation' }}
+                          />
+                        </Stack>
+                      </NotificationStoreProvider>
+                    </ReminderStoreProvider>
+                  </CompletionUndoProvider>
+                </CloudBackupStoreProvider>
+              </TaskStoreProvider>
+            </AiPrivacyStoreProvider>
+          </AuthStoreProvider>
+        </DuelyDialogProvider>
       )}
       {!launchComplete && (
         <LaunchScreen
