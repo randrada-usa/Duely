@@ -178,41 +178,6 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {status !== 'authenticated' && status !== 'loading' && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Your Duely account</Text>
-          {status === 'guest' ? (
-            <>
-              <Text style={styles.cardBody}>Sign in to use Duely Plus and optional cloud backup. Your local tasks stay on this phone until you choose to back them up.</Text>
-              <Pressable
-                accessibilityLabel={isAuthActionPending ? 'Google sign-in in progress' : 'Sign in with Google'}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: isAuthActionPending }}
-                disabled={isAuthActionPending}
-                onPress={() => void startGoogleSignIn()}
-                style={({ pressed }) => [
-                  styles.googleAction,
-                  pressed && styles.secondaryActionPressed,
-                  isAuthActionPending && styles.actionDisabled,
-                ]}
-              >
-                <Ionicons accessibilityElementsHidden name="logo-google" size={22} color={colors.text} />
-                <Text style={styles.googleActionText}>{isAuthActionPending ? 'Please wait…' : 'Sign in with Google'}</Text>
-              </Pressable>
-            </>
-          ) : (
-            <Text style={styles.cardBody} accessibilityRole="alert">
-              {status === 'unconfigured'
-                ? 'Account sign-in is unavailable in this build. Cloud configuration is missing; ask the Duely beta team for an updated build.'
-                : authError}
-            </Text>
-          )}
-          {!!authActionError && <Text accessibilityRole="alert" style={styles.error}>{authActionError}</Text>}
-          {status === 'error' && (
-            <PrimaryButton label="Retry account check" onPress={retry} />
-          )}
-        </View>
-      )}
       {plusSandboxEnabled && (
         <Pressable
           accessibilityHint="Opens the Duely Plus plan preview"
@@ -254,6 +219,41 @@ export default function ProfileScreen() {
             </View>
           </ImageBackground>
         </Pressable>
+      )}
+      {status !== 'authenticated' && status !== 'loading' && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Your Duely account</Text>
+          {status === 'guest' ? (
+            <>
+              <Text style={styles.cardBody}>Sign in to use Duely Plus and optional cloud backup. Your local tasks stay on this phone until you choose to back them up.</Text>
+              <Pressable
+                accessibilityLabel={isAuthActionPending ? 'Google sign-in in progress' : 'Sign in with Google'}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: isAuthActionPending }}
+                disabled={isAuthActionPending}
+                onPress={() => void startGoogleSignIn()}
+                style={({ pressed }) => [
+                  styles.googleAction,
+                  pressed && styles.secondaryActionPressed,
+                  isAuthActionPending && styles.actionDisabled,
+                ]}
+              >
+                <Ionicons accessibilityElementsHidden name="logo-google" size={22} color={colors.text} />
+                <Text style={styles.googleActionText}>{isAuthActionPending ? 'Please wait…' : 'Sign in with Google'}</Text>
+              </Pressable>
+            </>
+          ) : (
+            <Text style={styles.cardBody} accessibilityRole="alert">
+              {status === 'unconfigured'
+                ? 'Account sign-in is unavailable in this build. Cloud configuration is missing; ask the Duely beta team for an updated build.'
+                : authError}
+            </Text>
+          )}
+          {!!authActionError && <Text accessibilityRole="alert" style={styles.error}>{authActionError}</Text>}
+          {status === 'error' && (
+            <PrimaryButton label="Retry account check" onPress={retry} />
+          )}
+        </View>
       )}
 
       <View style={styles.card}>

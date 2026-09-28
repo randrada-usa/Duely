@@ -1,7 +1,8 @@
-import type { ImageStyle, StyleProp } from 'react-native';
-import { Image } from 'react-native';
 import { useState } from 'react';
+import type { ImageStyle, StyleProp, ViewStyle } from 'react-native';
+import { Image, View } from 'react-native';
 
+import DuelyProfile from '../../DuelyMascots/DuelyProfile.svg';
 import { googleProfilePhotoUrl } from '../domain/profile';
 
 type Props = {
@@ -16,21 +17,25 @@ export function AccountAvatar({ displayName, metadata, signedIn, style }: Props)
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const showGooglePhoto = !!photoUrl && failedUrl !== photoUrl;
 
+  if (!showGooglePhoto) {
+    return (
+      <View
+        accessibilityLabel="Due, the Duely mascot"
+        accessibilityRole="image"
+        style={style as StyleProp<ViewStyle>}
+      >
+        <DuelyProfile height="100%" width="100%" />
+      </View>
+    );
+  }
+
   return (
     <Image
       accessibilityIgnoresInvertColors
-      accessibilityLabel={
-        showGooglePhoto
-          ? `${displayName?.trim() || 'Google account'} profile photo`
-          : 'Due, the Duely mascot'
-      }
-      onError={showGooglePhoto ? () => setFailedUrl(photoUrl) : undefined}
-      resizeMode={showGooglePhoto ? 'cover' : 'contain'}
-      source={
-        showGooglePhoto
-          ? { uri: photoUrl }
-          : require('../../assets/mascot.png')
-      }
+      accessibilityLabel={`${displayName?.trim() || 'Google account'} profile photo`}
+      onError={() => setFailedUrl(photoUrl)}
+      resizeMode="cover"
+      source={{ uri: photoUrl }}
       style={style}
     />
   );
