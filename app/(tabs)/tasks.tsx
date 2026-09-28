@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -39,6 +39,7 @@ import {
 
 export default function TasksScreen() {
   const { canEditTasks, isHydrated, subjects, tasks } = useTasks();
+  const { state } = useLocalSearchParams<{ state?: string }>();
   const [taskQuery, setTaskQuery] = useState<TaskQuery>(DEFAULT_TASK_QUERY);
   const [showViewOptions, setShowViewOptions] = useState(false);
 
@@ -51,6 +52,17 @@ export default function TasksScreen() {
       setTaskQuery((current) => ({ ...current, subject: ALL_SUBJECTS }));
     }
   }, [subjects, taskQuery.subject]);
+
+  useEffect(() => {
+    if (state === 'overdue') {
+      setTaskQuery({
+        ...DEFAULT_TASK_QUERY,
+        state: 'overdue',
+      });
+    } else {
+      setTaskQuery(DEFAULT_TASK_QUERY);
+    }
+  }, [state]);
 
   const sections = useMemo(
     () => taskSections(tasks, subjects, taskQuery),
