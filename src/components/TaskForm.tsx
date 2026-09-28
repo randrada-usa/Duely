@@ -350,7 +350,7 @@ export function TaskForm({
             placeholder="e.g. CS 301 · Algorithms"
             placeholderTextColor={colors.textMuted}
             returnKeyType="done"
-            style={styles.input}
+            style={[styles.input, styles.newSubjectInput]}
             value={newSubjectName}
           />
           <Pressable
@@ -754,9 +754,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   newSubjectCard: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  newSubjectInput: {
+  flex: 1,
+  minWidth: 0,
   },
   addSubjectButton: {
     minHeight: minimumTouchTarget,
@@ -766,7 +771,10 @@ const styles = StyleSheet.create({
   addSubjectText: { color: colors.primary, fontFamily: typography.bodyBold, fontSize: 14 },
   saveSubjectButton: {
     minHeight: minimumTouchTarget,
+    minWidth: 64,
+    flexShrink: 0,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
     borderRadius: radius.lg,
     backgroundColor: colors.primary,
