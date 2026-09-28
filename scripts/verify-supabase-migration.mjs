@@ -35,6 +35,18 @@ const verifiedPlusSql = readFileSync(
   ),
   'utf8',
 ).toLowerCase();
+const taskTextLimitsSql = readFileSync(
+  resolve(
+    'supabase/migrations/20260927162914_enforce_task_text_limits.sql',
+  ),
+  'utf8',
+).toLowerCase();
+const expandedReminderIntervalsSql = readFileSync(
+  resolve(
+    'supabase/migrations/20260927164208_expand_reminder_intervals.sql',
+  ),
+  'utf8',
+).toLowerCase();
 const tables = [
   'profiles',
   'subjects',
@@ -173,6 +185,23 @@ assert(
     verifiedPlusSql.includes('to service_role') &&
     !verifiedPlusSql.includes('security definer'),
   'verified Plus allowance changes must remain server-only',
+);
+assert(
+  taskTextLimitsSql.includes('constraint tasks_title_length_v2') &&
+    taskTextLimitsSql.includes('char_length(btrim(title)) between 1 and 120') &&
+    taskTextLimitsSql.includes('constraint tasks_notes_length_v2') &&
+    taskTextLimitsSql.includes('char_length(notes) <= 2000') &&
+    (taskTextLimitsSql.match(/not valid/g) ?? []).length === 2,
+  'new task text limits must be enforced without invalidating older oversized rows',
+);
+assert(
+  expandedReminderIntervalsSql.includes(
+    'drop constraint if exists reminders_minutes_before_check',
+  ) &&
+    expandedReminderIntervalsSql.includes(
+      'check (minutes_before in (0, 15, 60, 1440, 2880, 4320, 7200))',
+    ),
+  'reminder storage must accept every supported smart-reminder interval',
 );
 
 console.log(`Verified secure migration structure for ${tables.length} tables.`);

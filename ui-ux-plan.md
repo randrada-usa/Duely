@@ -40,6 +40,9 @@ Include:
 - Overdue section, shown only when needed.
 - Tasks due today.
 - Recommended next task using deterministic smart priority.
+- Attention-banner copy distinguishes overdue tasks from tasks due soon. The
+  next-task title wraps to two lines and then truncates with an ellipsis; its
+  complete date and time remain together on one line.
 - Quick scan card.
 - Short upcoming-deadlines preview.
 - Manual **Add task** action.
@@ -79,6 +82,14 @@ Search across:
 - Task type
 
 Search should work locally and tolerate partial words and letter case differences.
+
+### Task text limits
+
+- Assignment title: 120 characters.
+- Instructions and notes: 2,000 characters.
+- Show the current character count in manual and scan-review forms.
+- Never silently truncate OCR, AI, restored, or existing task text. Require the
+  student to shorten an oversized value before saving an edited or new task.
 
 ### Subject organization
 
@@ -131,6 +142,16 @@ Prefill Instructions/notes only from an explicitly labeled instruction, question
 - Source-image preview
 
 Do not show a single overall AI confidence percentage. Show uncertainty beside the affected field.
+
+### Smart reminder suggestions
+
+- Reminders require a deadline. If no deadline is available, leave reminders off and prompt the student to add one.
+- Respect **No reminder** when it is the student's saved Profile default.
+- With a deadline and no workload estimate, use the student's Profile default.
+- Keep the Profile default for 30-minute and 1-hour workloads. Suggest 2 days before for 2 hours, 3 days before for 3 hours, and 5 days before for 4+ hours.
+- If the preferred lead time has already passed, fall back in order to 1 hour before, 15 minutes before, then the due time.
+- Label workload- or time-adjusted values as suggestions and keep every reminder editable. A student's manual selection always wins.
+- Smart reminder suggestions are deterministic task rules, not AI output, and do not consume an AI-assisted scan.
 
 ## Calendar
 

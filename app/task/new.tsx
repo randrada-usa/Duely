@@ -55,6 +55,7 @@ export default function NewTaskScreen() {
     <SafeAreaView edges={['left', 'right']} style={styles.editor}>
     <TaskForm
       defaultReminder={defaultReminder}
+      enableSmartReminderSuggestion
       initial={initial}
       onDirtyChange={setHasUnsavedChanges}
       submitLabel="Save task"

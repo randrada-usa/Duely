@@ -18,6 +18,8 @@ const allowedTaskTypes = new Set([
 ]);
 const allowedPriorities = new Set(['low', 'medium', 'high']);
 const allowedEfforts = new Set([30, 60, 120, 180, 240]);
+const taskTitleMaxLength = 120;
+const taskNotesMaxLength = 2_000;
 const allowedConfidences = new Set(['low', 'medium', 'high']);
 const maxOcrCharacters = 12_000;
 
@@ -54,7 +56,7 @@ function isGeminiExtraction(value: unknown): value is JsonRecord {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const candidate = value as JsonRecord;
   return (
-    validField(candidate.title, (item) => nullableString(item, 240)) &&
+    validField(candidate.title, (item) => nullableString(item, taskTitleMaxLength)) &&
     validField(candidate.subject, (item) => nullableString(item, 80)) &&
     validField(candidate.dueAt, (item) =>
       item === null ||
@@ -71,7 +73,7 @@ function isGeminiExtraction(value: unknown): value is JsonRecord {
     validField(candidate.estimatedEffortMinutes, (item) =>
       item === null || allowedEfforts.has(item as number)
     ) &&
-    validField(candidate.notes, (item) => nullableString(item, 10_000)) &&
+    validField(candidate.notes, (item) => nullableString(item, taskNotesMaxLength)) &&
     typeof candidate.hasMultipleAssignments === 'boolean'
   );
 }
@@ -90,7 +92,10 @@ const responseSchema = {
     'hasMultipleAssignments',
   ],
   properties: {
-    title: extractionFieldSchema({ type: ['string', 'null'], maxLength: 240 }),
+    title: extractionFieldSchema({
+      type: ['string', 'null'],
+      maxLength: taskTitleMaxLength,
+    }),
     subject: extractionFieldSchema({ type: ['string', 'null'], maxLength: 80 }),
     dueAt: extractionFieldSchema({ type: ['string', 'null'], format: 'date-time' }),
     taskType: extractionFieldSchema({
@@ -105,7 +110,10 @@ const responseSchema = {
       type: ['integer', 'null'],
       enum: [30, 60, 120, 180, 240, null],
     }),
-    notes: extractionFieldSchema({ type: ['string', 'null'], maxLength: 10_000 }),
+    notes: extractionFieldSchema({
+      type: ['string', 'null'],
+      maxLength: taskNotesMaxLength,
+    }),
     hasMultipleAssignments: { type: 'boolean' },
   },
 };

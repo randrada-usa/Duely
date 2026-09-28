@@ -43,6 +43,7 @@ import {
   type ScanImageSource,
 } from '../../src/domain/scanImage';
 import { resolveScanMode, type ScanMode } from '../../src/domain/scanMode';
+import { suggestSmartReminder } from '../../src/domain/reminder';
 import { subjectNameKey } from '../../src/domain/subject';
 import type { TaskDraft } from '../../src/domain/task';
 import {
@@ -974,13 +975,18 @@ export default function ScanScreen() {
       taskType: values.taskType,
       estimatedEffortMinutes: values.estimatedEffortMinutes,
       priority: values.priority,
-      reminderMinutesBefore: values.dueAt ? defaultReminder : null,
+      reminderMinutesBefore: suggestSmartReminder(
+        values.dueAt,
+        values.estimatedEffortMinutes,
+        defaultReminder,
+      ).value,
     };
 
     return (
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.reviewSafeArea}>
         <TaskForm
           defaultReminder={defaultReminder}
+          enableSmartReminderSuggestion
           fieldNotices={reviewExtraction.issues}
           footer={
             <TextButton

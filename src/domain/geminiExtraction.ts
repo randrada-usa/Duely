@@ -12,6 +12,7 @@ import type {
   TaskPriority,
   TaskType,
 } from './task';
+import { TASK_NOTES_MAX_LENGTH, TASK_TITLE_MAX_LENGTH } from './taskLimits';
 
 export type GeminiScanExtraction = {
   title: ExtractedValue<string | null>;
@@ -72,7 +73,7 @@ function isNullableString(value: unknown, maxLength: number) {
 export function isGeminiScanExtraction(value: unknown): value is GeminiScanExtraction {
   if (!isRecord(value)) return false;
   return (
-    isField(value.title, (item) => isNullableString(item, 240)) &&
+    isField(value.title, (item) => isNullableString(item, TASK_TITLE_MAX_LENGTH)) &&
     isField(value.subject, (item) => isNullableString(item, 80)) &&
     isField(
       value.dueAt,
@@ -88,7 +89,7 @@ export function isGeminiScanExtraction(value: unknown): value is GeminiScanExtra
       value.estimatedEffortMinutes,
       (item) => item === null || efforts.has(item as EstimatedEffortMinutes),
     ) &&
-    isField(value.notes, (item) => isNullableString(item, 10_000)) &&
+    isField(value.notes, (item) => isNullableString(item, TASK_NOTES_MAX_LENGTH)) &&
     typeof value.hasMultipleAssignments === 'boolean'
   );
 }

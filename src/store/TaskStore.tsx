@@ -19,6 +19,7 @@ import {
   type Subject,
 } from '../domain/subject';
 import { normalizeTask, type Task, type TaskDraft } from '../domain/task';
+import { taskTextWithinLimits } from '../domain/taskLimits';
 import {
   completeTask as markTaskComplete,
   reopenTask as markTaskOpen,
@@ -191,7 +192,7 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
 
   const addTask = useCallback(
     (draft: TaskDraft) => {
-      if (!canPersist) return null;
+      if (!canPersist || !taskTextWithinLimits(draft.title, draft.notes)) return null;
 
       const task: Task = normalizeTask({
         ...draft,
@@ -218,7 +219,7 @@ export function TaskStoreProvider({ children }: PropsWithChildren) {
 
   const updateTask = useCallback(
     (id: string, draft: TaskDraft) => {
-      if (!canPersist) return;
+      if (!canPersist || !taskTextWithinLimits(draft.title, draft.notes)) return;
       setData((current) => {
         const subjectId = current.subjects.some(
           (subject) => subject.id === draft.subjectId,

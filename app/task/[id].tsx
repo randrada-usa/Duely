@@ -23,7 +23,11 @@ function formatDeadline(value: string | null) {
 function reminderLabel(value: number | null) {
   if (value === null) return 'No reminder';
   if (value === 0) return 'At due time';
-  if (value === 1440) return '1 day before';
+  if (value >= 1440) {
+    const days = value / 1440;
+    return `${days} ${days === 1 ? 'day' : 'days'} before`;
+  }
+  if (value === 60) return '1 hour before';
   return `${value} minutes before`;
 }
 

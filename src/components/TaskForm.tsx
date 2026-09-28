@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { deadlineParts, parseLocalDeadline, pickerDate } from '../domain/deadline';
-import { REMINDER_OPTIONS } from '../domain/reminder';
+import { REMINDER_OPTIONS, suggestSmartReminder } from '../domain/reminder';
 import { subjectNameKey, UNASSIGNED_SUBJECT_NAME } from '../domain/subject';
 import {
   EFFORT_OPTIONS,
@@ -31,6 +31,11 @@ import {
   taskFormSnapshotFromDraft,
   type TaskFormSnapshot,
 } from '../domain/taskForm';
+import {
+  TASK_NOTES_MAX_LENGTH,
+  TASK_TITLE_MAX_LENGTH,
+  taskTextLimitError,
+} from '../domain/taskLimits';
 import { useTasks } from '../store/TaskStore';
 import { bottomActionBarPadding } from '../theme/navigation';
 import { priorityColors } from '../theme/priority';
@@ -46,6 +51,7 @@ import { PrimaryButton } from './PrimaryButton';
 type TaskFormProps = {
   initial?: TaskDraft;
   defaultReminder?: ReminderMinutes | null;
+  enableSmartReminderSuggestion?: boolean;
   submitLabel: string;
   onSubmit: (draft: TaskDraft, context: TaskFormSubmitContext) => void;
   onDirtyChange?: (hasUnsavedChanges: boolean) => void;
@@ -71,6 +77,7 @@ const blank: TaskDraft = {
 export function TaskForm({
   initial = blank,
   defaultReminder = null,
+  enableSmartReminderSuggestion = false,
   submitLabel,
   onSubmit,
   onDirtyChange,
@@ -97,6 +104,7 @@ export function TaskForm({
   const [priority, setPriority] = useState<TaskPriority>(initial.priority);
   const [reminderMinutesBefore, setReminderMinutesBefore] =
     useState<ReminderMinutes | null>(initial.reminderMinutesBefore ?? null);
+  const [reminderWasEdited, setReminderWasEdited] = useState(false);
   const [showSubjectInput, setShowSubjectInput] = useState(
     Boolean(initialSubjectName.trim()),
   );
@@ -134,6 +142,24 @@ export function TaskForm({
     onDirtyChange?.(hasUnsavedChanges);
   }, [hasUnsavedChanges, onDirtyChange]);
 
+  const currentDeadline = parseLocalDeadline(date, time).dueAt;
+  const smartReminder = suggestSmartReminder(
+    currentDeadline,
+    estimatedEffortMinutes,
+    defaultReminder,
+  );
+
+  useEffect(() => {
+    if (!enableSmartReminderSuggestion || reminderWasEdited) return;
+    setReminderMinutesBefore((current) =>
+      current === smartReminder.value ? current : smartReminder.value,
+    );
+  }, [
+    enableSmartReminderSuggestion,
+    reminderWasEdited,
+    smartReminder.value,
+  ]);
+
   useEffect(() => {
     if (!error) return;
     const frame = requestAnimationFrame(() => {
@@ -160,6 +186,12 @@ export function TaskForm({
   function submit() {
     if (!title.trim()) {
       setError('Enter a task title.');
+      return;
+    }
+
+    const textLimitError = taskTextLimitError(title, notes);
+    if (textLimitError) {
+      setError(textLimitError);
       return;
     }
 
@@ -228,7 +260,7 @@ export function TaskForm({
   function setNativeDeadline(selected: Date) {
     const selectedParts = deadlineParts(selected.toISOString());
     if (pickerMode === 'date') {
-      if (!date && reminderMinutesBefore === null) {
+      if (!date && reminderMinutesBefore === null && !reminderWasEdited) {
         setReminderMinutesBefore(defaultReminder);
       }
       setDate(selectedParts.date);
@@ -284,7 +316,9 @@ export function TaskForm({
         )}
         <Field
           attention={Boolean(noticeFor('title'))}
+          characterCount={{ current: title.length, max: TASK_TITLE_MAX_LENGTH }}
           label="Assignment title *"
+          maxLength={TASK_TITLE_MAX_LENGTH}
           onChangeText={(value) => {
             setTitle(value);
             acknowledgeNotice('title');
@@ -296,7 +330,9 @@ export function TaskForm({
 
         <Field
           attention={Boolean(noticeFor('notes'))}
+          characterCount={{ current: notes.length, max: TASK_NOTES_MAX_LENGTH }}
           label="Instructions & notes"
+          maxLength={TASK_NOTES_MAX_LENGTH}
           multiline
           onChangeText={(value) => {
             setNotes(value);
@@ -556,7 +592,10 @@ export function TaskForm({
               accessibilityState={{ selected, disabled }}
               disabled={disabled}
               key={option.label}
-              onPress={() => setReminderMinutesBefore(option.value)}
+              onPress={() => {
+                setReminderMinutesBefore(option.value);
+                setReminderWasEdited(true);
+              }}
               style={[
                 styles.reminder,
                 selected && styles.reminderSelected,
@@ -579,8 +618,21 @@ export function TaskForm({
         })}
       </View>
       {!date.trim() && (
-        <Text style={styles.helper}>Add a due date to choose a reminder.</Text>
+        <Text style={styles.helper}>Add a deadline to enable reminders.</Text>
       )}
+      {date.trim() &&
+        enableSmartReminderSuggestion &&
+        !reminderWasEdited &&
+        smartReminder.value !== null &&
+        (smartReminder.workloadAdjusted || smartReminder.timeAdjusted) && (
+          <Text style={styles.helper}>
+            {smartReminder.workloadAdjusted
+              ? smartReminder.timeAdjusted
+                ? 'Suggested from workload and adjusted for the time remaining.'
+                : 'Suggested from workload. You can change this reminder.'
+              : 'Adjusted to a useful reminder for the time remaining.'}
+          </Text>
+        )}
 
         {!!error && (
           <Text accessibilityRole="alert" style={styles.error}>
@@ -626,11 +678,13 @@ function FieldNotice({ message }: { message?: string }) {
 
 type FieldProps = React.ComponentProps<typeof TextInput> & {
   attention?: boolean;
+  characterCount?: { current: number; max: number };
   label: string;
 };
 
 function Field({
   attention = false,
+  characterCount,
   label,
   multiline,
   style,
@@ -638,7 +692,20 @@ function Field({
 }: FieldProps) {
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
+      <View style={styles.fieldLabelRow}>
+        <Text style={styles.label}>{label}</Text>
+        {characterCount && (
+          <Text
+            accessibilityLabel={`${characterCount.current} of ${characterCount.max} characters used`}
+            style={[
+              styles.characterCount,
+              characterCount.current > characterCount.max && styles.characterCountOver,
+            ]}
+          >
+            {characterCount.current.toLocaleString()} / {characterCount.max.toLocaleString()}
+          </Text>
+        )}
+      </View>
       <TextInput
         accessibilityLabel={label}
         multiline={multiline}
@@ -701,6 +768,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   field: { gap: spacing.sm },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  characterCount: {
+    color: colors.textMuted,
+    fontFamily: typography.bodyMedium,
+    fontSize: 12,
+  },
+  characterCountOver: { color: colors.danger },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',

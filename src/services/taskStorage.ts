@@ -35,7 +35,7 @@ const TASK_TYPES = new Set([
   'other',
 ]);
 const EFFORT_VALUES = new Set([30, 60, 120, 180, 240]);
-const REMINDER_VALUES = new Set([0, 15, 60, 1_440]);
+const REMINDER_VALUES = new Set([0, 15, 60, 1_440, 2_880, 4_320, 7_200]);
 
 function isDateString(value: unknown) {
   return typeof value === 'string' && !Number.isNaN(new Date(value).getTime());

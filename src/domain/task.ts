@@ -1,6 +1,6 @@
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type TaskStatus = 'open' | 'completed';
-export type ReminderMinutes = 0 | 15 | 60 | 1440;
+export type ReminderMinutes = 0 | 15 | 60 | 1440 | 2880 | 4320 | 7200;
 export type TaskType = 'assignment' | 'quiz' | 'exam' | 'project' | 'reading' | 'other';
 export type EstimatedEffortMinutes = 30 | 60 | 120 | 180 | 240;
 export type ExtractionEngine = 'ml-kit' | 'gemini';

@@ -1,4 +1,8 @@
-import type { ReminderMinutes, Task } from './task';
+import type {
+  EstimatedEffortMinutes,
+  ReminderMinutes,
+  Task,
+} from './task';
 
 export const REMINDER_OPTIONS: ReadonlyArray<{
   label: string;
@@ -9,7 +13,58 @@ export const REMINDER_OPTIONS: ReadonlyArray<{
   { label: '15 minutes before', value: 15 },
   { label: '1 hour before', value: 60 },
   { label: '1 day before', value: 1440 },
+  { label: '2 days before', value: 2880 },
+  { label: '3 days before', value: 4320 },
+  { label: '5 days before', value: 7200 },
 ];
+
+export type SmartReminderSuggestion = {
+  value: ReminderMinutes | null;
+  workloadAdjusted: boolean;
+  timeAdjusted: boolean;
+};
+
+const workloadLeadTime: Partial<
+  Record<EstimatedEffortMinutes, ReminderMinutes>
+> = {
+  120: 2880,
+  180: 4320,
+  240: 7200,
+};
+
+export function suggestSmartReminder(
+  dueAt: string | null,
+  estimatedEffortMinutes: Task['estimatedEffortMinutes'],
+  defaultReminder: ReminderMinutes | null,
+  now = new Date(),
+): SmartReminderSuggestion {
+  if (!dueAt || defaultReminder === null) {
+    return { value: null, workloadAdjusted: false, timeAdjusted: false };
+  }
+
+  const due = new Date(dueAt);
+  const minutesRemaining = (due.getTime() - now.getTime()) / 60_000;
+  if (Number.isNaN(minutesRemaining) || minutesRemaining <= 0) {
+    return { value: null, workloadAdjusted: false, timeAdjusted: false };
+  }
+
+  const workloadReminder = estimatedEffortMinutes
+    ? workloadLeadTime[estimatedEffortMinutes]
+    : undefined;
+  const workloadAdjusted =
+    workloadReminder !== undefined && workloadReminder > defaultReminder;
+  const desired = workloadAdjusted ? workloadReminder : defaultReminder;
+  const value = ([desired, 60, 15, 0] as ReminderMinutes[]).find(
+    (candidate, index, candidates) =>
+      candidates.indexOf(candidate) === index && candidate < minutesRemaining,
+  ) ?? null;
+
+  return {
+    value,
+    workloadAdjusted,
+    timeAdjusted: value !== null && value !== desired,
+  };
+}
 
 export type DesiredReminder = {
   identifier: string;
@@ -40,7 +95,10 @@ export function parseSavedReminder(
       parsed === 0 ||
       parsed === 15 ||
       parsed === 60 ||
-      parsed === 1440
+      parsed === 1440 ||
+      parsed === 2880 ||
+      parsed === 4320 ||
+      parsed === 7200
       ? parsed
       : undefined;
   } catch {

@@ -7,6 +7,7 @@ import {
   type GeminiScanExtraction,
 } from './geminiExtraction';
 import { extractTaskFromOcr, scanReviewValues } from './scanExtraction';
+import { TASK_NOTES_MAX_LENGTH, TASK_TITLE_MAX_LENGTH } from './taskLimits';
 
 const gemini: GeminiScanExtraction = {
   title: { value: 'Cell Project', confidence: 'high' },
@@ -23,6 +24,21 @@ describe('Gemini extraction', () => {
   it('rejects malformed server data', () => {
     expect(isGeminiScanExtraction(gemini)).toBe(true);
     expect(isGeminiScanExtraction({ ...gemini, priority: { value: 'urgent', confidence: 'high' } })).toBe(false);
+  });
+
+  it('rejects AI suggestions that exceed editable task limits', () => {
+    expect(
+      isGeminiScanExtraction({
+        ...gemini,
+        title: { value: 'T'.repeat(TASK_TITLE_MAX_LENGTH + 1), confidence: 'high' },
+      }),
+    ).toBe(false);
+    expect(
+      isGeminiScanExtraction({
+        ...gemini,
+        notes: { value: 'N'.repeat(TASK_NOTES_MAX_LENGTH + 1), confidence: 'high' },
+      }),
+    ).toBe(false);
   });
 
   it('fills missing fields, marks disagreements, and rejects unlabeled AI notes', () => {
