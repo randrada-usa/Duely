@@ -16,9 +16,11 @@ const minimumVisibleMs = 1250;
 export function LaunchScreen({
   ready,
   onFinished,
+  onReadyToDisplay,
 }: {
   ready: boolean;
   onFinished: () => void;
+  onReadyToDisplay: () => void;
 }) {
   const { height, width } = useWindowDimensions();
   const mountedAt = useRef(Date.now());
@@ -67,6 +69,7 @@ export function LaunchScreen({
     <Animated.View
       accessibilityLabel="Duely is loading"
       accessibilityLiveRegion="polite"
+      onLayout={onReadyToDisplay}
       style={[styles.screen, { opacity }]}
     >
       <View style={styles.content}>

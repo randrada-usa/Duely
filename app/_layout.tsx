@@ -13,6 +13,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { CompletionUndoProvider } from '../src/components/CompletionUndoProvider';
 import { LaunchScreen } from '../src/components/LaunchScreen';
+import { initialRouteAction } from '../src/domain/initialRoute';
 import { loadOnboardingCompleted } from '../src/services/onboardingStorage';
 import { AiPrivacyStoreProvider } from '../src/store/AiPrivacyStore';
 import { AuthStoreProvider } from '../src/store/AuthStore';
@@ -27,11 +28,12 @@ void SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
-  const handledInitialRoute = useRef(false);
+  const pendingInitialRoute = useRef<'onboarding' | 'tabs' | null>(null);
   const nativeSplashHidden = useRef(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(
     null,
   );
+  const [initialRouteReady, setInitialRouteReady] = useState(false);
   const [launchComplete, setLaunchComplete] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -41,6 +43,7 @@ export default function RootLayout() {
     Nunito_700Bold,
     Nunito_800ExtraBold,
   });
+  const appReady = (fontsLoaded || !!fontError) && onboardingCompleted !== null;
 
   useEffect(() => {
     let active = true;
@@ -58,33 +61,35 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (
-      handledInitialRoute.current ||
-      !launchComplete ||
-      onboardingCompleted === null ||
-      (!fontsLoaded && !fontError)
-    ) {
+    if (!appReady || initialRouteReady) return;
+    const action = initialRouteAction(!!onboardingCompleted, segments[0]);
+
+    if (action === 'onboarding') {
+      if (pendingInitialRoute.current !== 'onboarding') {
+        pendingInitialRoute.current = 'onboarding';
+        router.replace('/onboarding');
+      }
       return;
     }
 
-    handledInitialRoute.current = true;
-    const isOnboarding = segments[0] === 'onboarding';
-
-    if (!onboardingCompleted && !isOnboarding) {
-      router.replace('/onboarding');
-    } else if (onboardingCompleted && isOnboarding) {
-      router.replace('/(tabs)');
+    if (action === 'tabs') {
+      if (pendingInitialRoute.current !== 'tabs') {
+        pendingInitialRoute.current = 'tabs';
+        router.replace('/(tabs)');
+      }
+      return;
     }
+
+    pendingInitialRoute.current = null;
+    setInitialRouteReady(true);
   }, [
-    fontError,
-    fontsLoaded,
-    launchComplete,
+    appReady,
+    initialRouteReady,
     onboardingCompleted,
     router,
     segments,
   ]);
 
-  const appReady = (fontsLoaded || !!fontError) && onboardingCompleted !== null;
   const finishLaunch = useCallback(() => setLaunchComplete(true), []);
   const revealLaunchScreen = useCallback(() => {
     if (nativeSplashHidden.current) return;
@@ -93,7 +98,7 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <View onLayout={revealLaunchScreen} style={styles.root}>
+    <View style={styles.root}>
       <StatusBar style="dark" />
       {appReady && (
         <AuthStoreProvider>
@@ -144,7 +149,11 @@ export default function RootLayout() {
         </AuthStoreProvider>
       )}
       {!launchComplete && (
-        <LaunchScreen onFinished={finishLaunch} ready={appReady} />
+        <LaunchScreen
+          onFinished={finishLaunch}
+          onReadyToDisplay={revealLaunchScreen}
+          ready={appReady && initialRouteReady}
+        />
       )}
     </View>
   );
