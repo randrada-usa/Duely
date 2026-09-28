@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 
 import { DuelyWordmark } from './DuelyWordmark';
+import { spacing } from '../theme/tokens';
 
 const minimumVisibleMs = 1250;
 
@@ -27,7 +28,7 @@ export function LaunchScreen({
     () => Math.min(width * 0.72, height * 0.37, 330),
     [height, width],
   );
-  const wordmarkWidth = Math.min(width * 0.5, 230);
+  const wordmarkWidth = Math.min(width * 0.62, 285);
 
   useEffect(() => {
     const loadingAnimation = Animated.timing(progress, {
@@ -69,8 +70,10 @@ export function LaunchScreen({
       style={[styles.screen, { opacity }]}
     >
       <View style={styles.content}>
-        <DuelyWordmark width={wordmarkWidth} />
-        <Text style={styles.tagline}>Scan. Organize. Succeed.</Text>
+        <View style={styles.brandBlock}>
+          <DuelyWordmark width={wordmarkWidth} />
+          <Text style={styles.tagline}>Scan. Organize. Succeed.</Text>
+        </View>
 
         <Image
           accessibilityLabel="Due carrying books and school planners"
@@ -92,7 +95,6 @@ export function LaunchScreen({
             ]}
           />
         </View>
-        <Text style={styles.loadingText}>Getting your tasks ready…</Text>
       </View>
     </Animated.View>
   );
@@ -115,12 +117,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    paddingHorizontal: 32,
+    paddingHorizontal: spacing.xxl,
     transform: [{ translateY: -8 }],
   },
+  brandBlock: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xl,
+  },
   tagline: {
-    marginTop: -2,
-    marginBottom: 24,
     color: '#53608A',
     fontSize: 16,
     fontWeight: '600',
@@ -131,7 +136,7 @@ const styles = StyleSheet.create({
     minWidth: 150,
     maxWidth: 210,
     height: 5,
-    marginTop: 24,
+    marginTop: spacing.xl,
     overflow: 'hidden',
     borderRadius: 999,
     backgroundColor: '#CFD5F4',
@@ -142,11 +147,5 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#4B5FD3',
     transformOrigin: 'left',
-  },
-  loadingText: {
-    marginTop: 12,
-    color: '#747C9A',
-    fontSize: 13,
-    fontWeight: '500',
   },
 });
