@@ -121,7 +121,7 @@ export default function PlusSandboxScreen() {
   }, [userId]);
 
   return (
-    <ScreenShell safeTop={false}>
+    <ScreenShell safeTop={false} scroll>
       <Stack.Screen options={{ title: 'Duely Plus' }} />
       <View style={[styles.page, compact && styles.pageCompact]}>
         <View style={[styles.intro, compact && styles.introCompact]}>
@@ -201,7 +201,7 @@ function Feature({ text }: { text: string }) {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, justifyContent: 'space-between', gap: spacing.lg, paddingBottom: spacing.md },
+  page: { gap: spacing.lg, paddingBottom: spacing.md },
   pageCompact: { gap: spacing.md, paddingBottom: spacing.sm },
   intro: { alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg },
   introCompact: { gap: spacing.xs },

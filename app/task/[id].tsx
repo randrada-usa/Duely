@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useCompletionUndo } from '../../src/components/CompletionUndoProvider';
@@ -38,6 +38,8 @@ export default function TaskDetailsScreen() {
   const { toggleTaskCompletion } = useCompletionUndo();
   const [isEditing, setIsEditing] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSourceImageOpen, setIsSourceImageOpen] = useState(false);
+  const [sourceImageFailed, setSourceImageFailed] = useState(false);
   const [confirmation, setConfirmation] = useState<'delete' | 'discard' | null>(null);
   const {
     allowNavigation,
@@ -115,6 +117,7 @@ export default function TaskDetailsScreen() {
             <TaskEditorHero
               description="Update the assignment details, deadline, priority, and reminder."
               eyebrow="Task details"
+              imageUri={task.sourceImageRef ?? undefined}
               onBack={cancelEditing}
               title="Edit task"
             />
@@ -150,7 +153,8 @@ export default function TaskDetailsScreen() {
   const priorityPalette = priorityColors[task.priority];
 
   return (
-    <ScreenShell scroll>
+    <>
+      <ScreenShell scroll>
       <View style={styles.hero}>
         <View style={styles.heroTopRow}>
           <View style={styles.heroLeading}>
@@ -220,6 +224,66 @@ export default function TaskDetailsScreen() {
         <Detail label="Reminder" value={reminderLabel(task.reminderMinutesBefore)} />
       </View>
 
+      {task.sourceImageRef && (
+        <View style={styles.sourceImageCard}>
+          <View style={styles.sourceImageHeading}>
+            <View style={styles.sourceImageCopy}>
+              <Text style={styles.label}>Source assignment image</Text>
+              <Text style={styles.sourceImageHelper}>
+                Kept only on this device with this task.
+              </Text>
+            </View>
+            {!sourceImageFailed && (
+              <Ionicons
+                accessibilityElementsHidden
+                color={colors.primary}
+                name="expand-outline"
+                size={21}
+              />
+            )}
+          </View>
+          {sourceImageFailed ? (
+            <View accessibilityRole="alert" style={styles.sourceImageUnavailable}>
+              <Ionicons
+                accessibilityElementsHidden
+                color={colors.textMuted}
+                name="image-outline"
+                size={24}
+              />
+              <Text style={styles.sourceImageUnavailableText}>
+                This image is no longer available on this device.
+              </Text>
+            </View>
+          ) : (
+            <Pressable
+              accessibilityHint="Opens the complete image in a full-screen viewer"
+              accessibilityLabel="View full source assignment image"
+              accessibilityRole="button"
+              onPress={() => setIsSourceImageOpen(true)}
+              style={({ pressed }) => [
+                styles.sourceImageButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Image
+                accessibilityIgnoresInvertColors
+                accessibilityLabel="Source assignment image preview"
+                onError={() => {
+                  setSourceImageFailed(true);
+                  setIsSourceImageOpen(false);
+                }}
+                resizeMode="cover"
+                source={{ uri: task.sourceImageRef }}
+                style={styles.sourceImagePreview}
+              />
+              <View pointerEvents="none" style={styles.sourceImageAction}>
+                <Text style={styles.sourceImageActionText}>View full image</Text>
+              </View>
+            </Pressable>
+          )}
+        </View>
+      )}
+
       <View style={styles.notesCard}>
         <Text style={styles.label}>Instructions &amp; notes</Text>
         <Text style={styles.notes}>{task.notes.trim() || 'No instructions or notes.'}</Text>
@@ -255,8 +319,54 @@ export default function TaskDetailsScreen() {
           <Text style={styles.completeButtonText}>{completed ? 'Mark as open' : 'Mark as done'}</Text>
         </Pressable>
       </View>
-      {confirmationDialog}
-    </ScreenShell>
+        {confirmationDialog}
+      </ScreenShell>
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setIsSourceImageOpen(false)}
+        presentationStyle="fullScreen"
+        visible={isSourceImageOpen && !sourceImageFailed}
+      >
+        <SafeAreaView
+          accessibilityViewIsModal
+          edges={['top', 'bottom', 'left', 'right']}
+          style={styles.sourceImageViewer}
+        >
+          <View style={styles.sourceImageViewerHeader}>
+            <Text accessibilityRole="header" style={styles.sourceImageViewerTitle}>
+              Source assignment image
+            </Text>
+            <Pressable
+              accessibilityLabel="Close source assignment image"
+              accessibilityRole="button"
+              onPress={() => setIsSourceImageOpen(false)}
+              style={({ pressed }) => [
+                styles.sourceImageClose,
+                pressed && styles.sourceImageClosePressed,
+              ]}
+            >
+              <Ionicons
+                accessibilityElementsHidden
+                color={colors.surface}
+                name="close"
+                size={26}
+              />
+            </Pressable>
+          </View>
+          <Image
+            accessibilityIgnoresInvertColors
+            accessibilityLabel="Full source assignment image"
+            onError={() => {
+              setSourceImageFailed(true);
+              setIsSourceImageOpen(false);
+            }}
+            resizeMode="contain"
+            source={{ uri: task.sourceImageRef ?? undefined }}
+            style={styles.sourceImageFull}
+          />
+        </SafeAreaView>
+      </Modal>
+    </>
   );
 }
 
@@ -297,6 +407,22 @@ const styles = StyleSheet.create({
   detailCard: { ...surfaces.card, minHeight: 96, flexBasis: '45%', flexGrow: 1, gap: spacing.sm, padding: spacing.lg },
   label: { color: colors.textMuted, fontFamily: typography.bodyBold, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
   detailValue: { color: colors.text, fontFamily: typography.bodySemibold, fontSize: 16, lineHeight: 24 },
+  sourceImageCard: { ...surfaces.card, gap: spacing.md, padding: spacing.lg },
+  sourceImageHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  sourceImageCopy: { flex: 1, gap: spacing.xs },
+  sourceImageHelper: { color: colors.textMuted, fontFamily: typography.body, fontSize: 13, lineHeight: 19 },
+  sourceImageButton: { minHeight: minimumTouchTarget, overflow: 'hidden', borderRadius: radius.lg, backgroundColor: colors.surfaceSubtle },
+  sourceImagePreview: { width: '100%', height: 180, backgroundColor: colors.surfaceSubtle },
+  sourceImageAction: { position: 'absolute', right: spacing.md, bottom: spacing.md, minHeight: 32, justifyContent: 'center', paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: 'rgba(21, 23, 43, 0.88)' },
+  sourceImageActionText: { color: colors.surface, fontFamily: typography.bodyBold, fontSize: 12 },
+  sourceImageUnavailable: { minHeight: 96, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.lg, borderRadius: radius.lg, backgroundColor: colors.surfaceSubtle },
+  sourceImageUnavailableText: { flex: 1, color: colors.textMuted, fontFamily: typography.body, fontSize: 15, lineHeight: 22 },
+  sourceImageViewer: { flex: 1, backgroundColor: '#080912' },
+  sourceImageViewerHeader: { minHeight: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingHorizontal: spacing.lg },
+  sourceImageViewerTitle: { flex: 1, color: colors.surface, fontFamily: typography.bodyBold, fontSize: 16 },
+  sourceImageClose: { width: minimumTouchTarget, height: minimumTouchTarget, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full, backgroundColor: '#15172B' },
+  sourceImageClosePressed: { opacity: 0.75 },
+  sourceImageFull: { flex: 1, width: '100%', backgroundColor: '#080912' },
   notesCard: { ...surfaces.card, minHeight: 96, gap: spacing.md, padding: spacing.xl },
   notes: { color: colors.text, fontFamily: typography.body, fontSize: 16, lineHeight: 24 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

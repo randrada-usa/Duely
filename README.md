@@ -1,5 +1,6 @@
 <p align="center">
   <img src="assets/icon.png" alt="Duely app icon" width="96" height="96" />
+  <img src="DuelyIcons/DuelyWordmarks/Duely%20Word%20with%20white%20bg%20(SVG).svg" alt="Duely wordmark" width="236" height="96" />
 </p>
 
 # Duely
