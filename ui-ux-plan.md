@@ -132,7 +132,7 @@ Keep the confirmed task's source image only on the student's device so task card
 
 If OCR does not find clear assignment language or a recognized assignment/deadline/instruction label, continue to the editable review with a visible “may be reference material” warning. Do not block manual task creation.
 
-Prefill Instructions/notes only from an explicitly labeled instruction, question, direction, requirement, description, or notes section. Do not copy arbitrary surrounding OCR or unrelated conversation into Notes.
+Prefill Instructions/notes only from an explicitly labeled instruction, question, direction, requirement, description, or notes section. A labeled assignment brief followed by at least two numbered requirements may also prefill Notes, preserving recognized line breaks and excluding separately parsed deadline metadata. Do not copy arbitrary surrounding OCR or unrelated conversation into Notes.
 
 ### Review fields
 

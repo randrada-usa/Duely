@@ -265,6 +265,75 @@ describe('scan extraction', () => {
     expect(extraction.needsAssignmentConfirmation).toBe(false);
   });
 
+  it('preserves a labeled assignment brief and numbered requirements as notes', () => {
+    const extraction = extractTaskFromOcr(
+      [
+        'Culinary Arts & Hospitality',
+        'Practical Assignment: Mother Sauce Variation',
+        '1. Base Preparation: Prepare the base sauce from scratch.',
+        '2. Derivative Creation: Convert the base into a derivative sauce.',
+        '3. Plating & Documentation: Take three high-resolution photos',
+        'displaying texture, color, and consistency.',
+        '4. Costing Sheet: Fill out the ingredient yield cost template.',
+        'SUBMIT BEFORE: Sunday, Nov 22, 2026 at 8:00 PM',
+      ].join('\n'),
+      now,
+    );
+
+    expect(extraction.fields.title?.value).toBe('Culinary Arts & Hospitality');
+    expect(extraction.fields.notes).toEqual({
+      value: [
+        'Practical Assignment: Mother Sauce Variation',
+        '1. Base Preparation: Prepare the base sauce from scratch.',
+        '2. Derivative Creation: Convert the base into a derivative sauce.',
+        '3. Plating & Documentation: Take three high-resolution photos',
+        'displaying texture, color, and consistency.',
+        '4. Costing Sheet: Fill out the ingredient yield cost template.',
+      ].join('\n'),
+      confidence: 'medium',
+    });
+    expect(extraction.fields.notes?.value).not.toContain('SUBMIT BEFORE');
+    expect(extraction.hasExplicitInstructions).toBe(true);
+    expect(extraction.issues.notes).toContain('assembled from likely detail lines');
+    expect(deadlineParts(extraction.fields.dueAt?.value ?? null)).toEqual({
+      date: '2026-11-22',
+      time: '20:00',
+    });
+  });
+
+  it('does not treat a single numbered line as an assignment brief', () => {
+    const extraction = extractTaskFromOcr(
+      'Assignment: Weekly update\n1. A participant posted an unrelated reply.',
+      now,
+    );
+
+    expect(extraction.fields.notes).toBeNull();
+    expect(extraction.hasExplicitInstructions).toBe(false);
+  });
+
+  it('recognizes numbered requirements when OCR separates markers from their text', () => {
+    const extraction = extractTaskFromOcr(
+      [
+        'Practical Assignment: Sauce Variation',
+        '1.',
+        'Prepare the base sauce.',
+        '2.',
+        'Create the derivative sauce.',
+      ].join('\n'),
+      now,
+    );
+
+    expect(extraction.fields.notes?.value).toBe(
+      [
+        'Practical Assignment: Sauce Variation',
+        '1.',
+        'Prepare the base sauce.',
+        '2.',
+        'Create the derivative sauce.',
+      ].join('\n'),
+    );
+  });
+
   it('reads conservative Filipino field labels and month names', () => {
     const extraction = extractTaskFromOcr(
       [

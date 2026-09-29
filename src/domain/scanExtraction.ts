@@ -53,6 +53,10 @@ const effortLabels =
   'estimated\\s+(?:time|effort|workload)|workload|tinatayang\\s+(?:oras|tagal)';
 const notesLabels =
   'instructions?(?:\\s*\\/\\s*questions?)?|directions?|requirements?|notes?|description|panuto|mga\\s+panuto|tala|paglalarawan';
+const assignmentBriefLabelPattern =
+  /^(?:(?:practical|laboratory|lab|written|final|group)\s+)?(?:assignment|activity|project|task)\s*[:\-\u2013\u2014]\s*.+$/i;
+const numberedDetailPattern =
+  /^\s*(?:\d+[.)]|[a-z][.)]|[\u2022\u25e6\u25aa-])(?:\s+\S|\s*$)/i;
 const metadataLabelPattern = new RegExp(
   `^(?:${titleLabels}|${subjectLabels}|${deadlineLabels}|${taskTypeLabels}|${priorityLabels}|${effortLabels}|${notesLabels})\\b`,
   'i',
@@ -425,6 +429,35 @@ function notesCandidate(lines: string[]) {
       };
     }
     return { field: null, hasExplicitLabel: true };
+  }
+
+  // Some assignment cards use a labeled assignment heading followed by a
+  // numbered brief instead of a separate Instructions/Requirements label.
+  // Require multiple numbered items so ordinary OCR or conversation text is
+  // not copied into Notes. Preserve the OCR line breaks for review.
+  const briefIndex = lines.findIndex((line) =>
+    assignmentBriefLabelPattern.test(line),
+  );
+  if (briefIndex >= 0) {
+    const values: string[] = [lines[briefIndex]];
+    let numberedItemCount = 0;
+
+    for (let index = briefIndex + 1; index < lines.length; index += 1) {
+      const line = lines[index];
+      if (deadlineLinePattern.test(line) || metadataLabelPattern.test(line)) break;
+      if (numberedDetailPattern.test(line)) numberedItemCount += 1;
+      values.push(line);
+    }
+
+    if (numberedItemCount >= 2) {
+      return {
+        field: {
+          value: values.join('\n').trim(),
+          confidence: 'medium',
+        } satisfies ExtractedValue<string>,
+        hasExplicitLabel: true,
+      };
+    }
   }
 
   return { field: null, hasExplicitLabel: false };
